@@ -1,0 +1,13 @@
+No specified saving path, using ./opt/replyMERA_ising_32_T_2.4_depthLevel_-1_MERA_l4_M2_H32_R2/
+Traceback (most recent call last):
+  File "./main.py", line 58, in <module>
+    with h5py.File(rootFolder+"/parameters.hdf5","r") as f:
+  File "/cluster/home/hhuang05/.conda/envs/neuralrg/lib/python3.8/site-packages/h5py/_hl/files.py", line 562, in __init__
+    fid = make_fid(name, mode, userblock_size, fapl, fcpl, swmr=swmr)
+  File "/cluster/home/hhuang05/.conda/envs/neuralrg/lib/python3.8/site-packages/h5py/_hl/files.py", line 235, in make_fid
+    fid = h5f.open(name, flags, fapl=fapl)
+  File "h5py/_objects.pyx", line 54, in h5py._objects.with_phil.wrapper
+  File "h5py/_objects.pyx", line 55, in h5py._objects.with_phil.wrapper
+  File "h5py/h5f.pyx", line 102, in h5py.h5f.open
+FileNotFoundError: [Errno 2] Unable to synchronously open file (unable to open file: name = './opt/replyMERA_ising_32_T_2.4_depthLevel_-1_MERA_l4_M2_H32_R2//parameters.hdf5', errno = 2, error message = 'No such file or directory', flags = 0, o_flags = 0)
+/var/spool/slurm/job31138318/slurm_script: line 21: -folder: command not found

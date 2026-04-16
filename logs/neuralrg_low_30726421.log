@@ -1,0 +1,10 @@
+usage: main.py [-h] [-folder FOLDER] [-name NAME] [-epochs EPOCHS]
+               [-batch BATCH] [-cuda CUDA] [-double] [-lr LR]
+               [-savePeriod SAVEPERIOD] [-alpha ALPHA] [-skipHMC] [-load]
+               [-nlayers NLAYERS] [-nmlp NMLP] [-nhidden NHIDDEN]
+               [-nrepeat NREPEAT] [-depthMERA DEPTHMERA] [-symmetry] [-L L]
+               [-d D] [-T T]
+main.py: error: unrecognized arguments:  
+/var/spool/slurm/job30726421/slurm_script: line 22: -epochs: command not found
+/var/spool/slurm/job30726421/slurm_script: line 23: -nlayers: command not found
+/var/spool/slurm/job30726421/slurm_script: line 26: -nrepeat: command not found

@@ -1,0 +1,81 @@
+kernelShape: [2, 2]
+total nubmer of trainable parameters: 1780400
+epoch: 0 L: 1465.445068359375 F: 1190.2763671875 +/- 75.24557495117188
+epoch: 1 L: 364.766357421875 F: 118.45836639404297 +/- 275.6170654296875
+epoch: 2 L: -8297.04296875 F: -9144.474609375 +/- 1007.302734375
+epoch: 3 L: -36569.48828125 F: -38115.6640625 +/- 2705.481201171875
+epoch: 4 L: -112793.2578125 F: -115427.765625 +/- 5313.50048828125
+epoch: 5 L: -288156.34375 F: -292869.6875 +/- 10286.4423828125
+epoch: 6 L: -660105.4375 F: -669091.0625 +/- 19458.59375
+epoch: 7 L: -1396743.375 F: -1414305.75 +/- 31661.685546875
+epoch: 8 L: -2837001.5 F: -2871559.25 +/- 57046.85546875
+epoch: 9 L: -5613481.0 F: -5680409.5 +/- 124142.8515625
+epoch: 10 L: -11155428.0 F: -11284320.0 +/- 266995.375
+epoch: 11 L: -22279918.0 F: -22524616.0 +/- 605711.5625
+epoch: 12 L: -45679460.0 F: -46146940.0 +/- 1427349.375
+epoch: 13 L: -98994592.0 F: -99916760.0 +/- 3603647.5
+epoch: 14 L: -224602224.0 F: -226400544.0 +/- 8872393.0
+epoch: 15 L: -550253376.0 F: -553832064.0 +/- 28501240.0
+epoch: 16 L: -1457525248.0 F: -1464944640.0 +/- 84569672.0
+epoch: 17 L: -4207425536.0 F: -4222915584.0 +/- 266272496.0
+epoch: 18 L: -13129954304.0 F: -13161192448.0 +/- 973402816.0
+epoch: 19 L: -46107787264.0 F: -46167932928.0 +/- 4022412800.0
+epoch: 20 L: -169716580352.0 F: -169807036416.0 +/- 16374139904.0
+epoch: 21 L: -703521488896.0 F: -703627001856.0 +/- 67106652160.0
+epoch: 22 L: -3115576983552.0 F: -3115858264064.0 +/- 323449028608.0
+epoch: 23 L: -14889827434496.0 F: -14891857477632.0 +/- 1606262063104.0
+epoch: 24 L: -77559056302080.0 F: -77563846197248.0 +/- 9191146127360.0
+epoch: 25 L: -445498838220800.0 F: -445546821058560.0 +/- 48942586789888.0
+epoch: 26 L: -2728705466040320.0 F: -2728931488694272.0 +/- 321672817147904.0
+epoch: 27 L: -1.8631690536615936e+16 F: -1.8632485105565696e+16 +/- 2396091655913472.0
+epoch: 28 L: -1.3165454305735475e+17 F: -1.316746778640384e+17 +/- 1.7485652601864192e+16
+epoch: 29 L: -1.0785582346854728e+18 F: -1.0786392549485445e+18 +/- 1.1954598227791053e+17
+epoch: 30 L: -8.911317442752414e+18 F: -8.912345486124384e+18 +/- 1.1107215611380367e+18
+epoch: 31 L: -8.741886219349341e+19 F: -8.743320862121263e+19 +/- inf
+epoch: 32 L: -7.834319766910476e+20 F: -7.834688499129967e+20 +/- inf
+epoch: 33 L: -2.262598460429264e+21 F: -2.2630225024816786e+21 +/- inf
+epoch: 34 L: -3.05073529135603e+21 F: -3.0508858804685704e+21 +/- inf
+epoch: 35 L: -3.8823317179494333e+21 F: -3.8827136794928297e+21 +/- inf
+epoch: 36 L: -4.6359257989967795e+21 F: -4.6360668179601115e+21 +/- inf
+epoch: 37 L: -5.355118852815479e+21 F: -5.355593419626214e+21 +/- inf
+epoch: 38 L: -6.294906379157111e+21 F: -6.295052183195047e+21 +/- inf
+epoch: 39 L: -6.832216213999896e+21 F: -6.832677832961701e+21 +/- inf
+epoch: 40 L: -7.523305961718874e+21 F: -7.523461898855971e+21 +/- inf
+epoch: 41 L: -8.233152638935896e+21 F: -8.233489845957996e+21 +/- inf
+epoch: 42 L: -8.989433680110922e+21 F: -8.989706147888378e+21 +/- inf
+epoch: 43 L: -9.794631131588586e+21 F: -9.79481915687303e+21 +/- inf
+epoch: 44 L: -1.03002547653531e+22 F: -1.0300598164824686e+22 +/- inf
+epoch: 45 L: -1.0914370114140968e+22 F: -1.091447257103249e+22 +/- inf
+epoch: 46 L: -1.164603504270274e+22 F: -1.1646362679575631e+22 +/- inf
+epoch: 47 L: -1.2393738415437485e+22 F: -1.2393880278825748e+22 +/- inf
+epoch: 48 L: -1.295674466385414e+22 F: -1.2956992361833645e+22 +/- inf
+epoch: 49 L: -1.3485629389694021e+22 F: -1.3485874835873713e+22 +/- inf
+epoch: 50 L: -1.4079264619176422e+22 F: -1.4079497680457138e+22 +/- inf
+epoch: 51 L: -1.472191477520331e+22 F: -1.4722295329371822e+22 +/- inf
+epoch: 52 L: -1.5318682258226547e+22 F: -1.5318906312308008e+22 +/- inf
+epoch: 53 L: -1.598084313373911e+22 F: -1.598105029932197e+22 +/- inf
+epoch: 54 L: -1.6562911993478517e+22 F: -1.6563137173459885e+22 +/- inf
+epoch: 55 L: -1.7327101918549159e+22 F: -1.7327410415123634e+22 +/- inf
+epoch: 56 L: -1.801529472580783e+22 F: -1.801559083748333e+22 +/- inf
+epoch: 57 L: -1.8363924002462115e+22 F: -1.836408275434898e+22 +/- inf
+epoch: 58 L: -1.884846853817072e+22 F: -1.8848780412444916e+22 +/- inf
+epoch: 59 L: -1.955955201643541e+22 F: -1.9559799714414915e+22 +/- inf
+epoch: 60 L: -1.9895076944073953e+22 F: -1.98953809370488e+22 +/- inf
+Traceback (most recent call last):
+  File "./main.py", line 167, in <module>
+    LOSS,ZACC,ZOBS,XACC,XOBS = train.learnInterface(target,fw,batch,epochs,save=True,saveSteps = savePeriod,savePath=rootFolder,measureFn = measure,alpha=args.alpha,skipHMC=args.skipHMC)
+  File "/cluster/home/hhuang05/NeuralRG/train/learn.py", line 219, in learnInterface
+    z_,zaccept = HMCwithAccept(latentU,z_.detach(),HMCthermal,HMCsteps,HMCepsilon)
+  File "/cluster/home/hhuang05/NeuralRG/utils/mc/hmc.py", line 26, in HMCwithAccept
+    gnew = grad(xnew.requires_grad_())
+  File "/cluster/home/hhuang05/NeuralRG/utils/mc/hmc.py", line 9, in grad
+    return torchgrad(energy(z),z,grad_outputs=z.new_ones(z.shape[0]))[0]
+  File "/cluster/home/hhuang05/NeuralRG/train/learn.py", line 165, in latentU
+    x,_ = flow.inverse(z)
+  File "/cluster/home/hhuang05/NeuralRG/flow/hierarchy/template.py", line 40, in inverse
+    z_,logProbability = self.layerList[no].inverse(z_.reshape(-1,channelSize,*self.kernelShape))
+  File "/cluster/home/hhuang05/NeuralRG/flow/rnvp.py", line 26, in inverse
+    y = y_ + self.maskListR[i] * (y * checkNan(torch.exp(s)) + t)
+  File "/cluster/home/hhuang05/NeuralRG/utils/checkNan.py", line 4, in checkNan
+    assert torch.isnan(x).sum().item() == 0
+AssertionError

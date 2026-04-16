@@ -1,0 +1,7 @@
+usage: main.py [-h] [-folder FOLDER] [-name NAME] [-epochs EPOCHS]
+               [-batch BATCH] [-cuda CUDA] [-double] [-lr LR]
+               [-savePeriod SAVEPERIOD] [-alpha ALPHA] [-skipHMC] [-load]
+               [-nlayers NLAYERS] [-nmlp NMLP] [-nhidden NHIDDEN]
+               [-nrepeat NREPEAT] [-depthMERA DEPTHMERA] [-symmetry]
+               [-weightTying] [-haarPrior] [-L L] [-d D] [-T T]
+main.py: error: argument -h/--help: ignored explicit argument 'arrPrior'

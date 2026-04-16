@@ -36,6 +36,9 @@ group.add_argument("-nhidden", type=int, default=32, help="")
 group.add_argument("-nrepeat", type=int, default=2, help="repeat of mera block")
 group.add_argument("-depthMERA", type=int, default=-1, help="maximum depth of MERA flow")
 group.add_argument("-symmetry", action='store_true', help="")
+# 【新增】：添加我们的两个物理先验开关
+group.add_argument("-weightTying", action='store_true', help="Tie weights across MERA layers for scale invariance")
+group.add_argument("-haarPrior", action='store_true', help="Force majority vote using Haar transform")
 
 group = parser.add_argument_group('Ising target parameters')
 #
@@ -70,6 +73,9 @@ if args.load:
         L = int(np.array(f["L"]))
         d = int(np.array(f["d"]))
         T = float(np.array(f["T"]))
+        # 【新增读取】
+        weightTying = bool(np.array(f["weightTying"])) if "weightTying" in f else False
+        haarPrior = bool(np.array(f["haarPrior"])) if "haarPrior" in f else False
 else:
     epochs = args.epochs
     batch = args.batch
@@ -85,6 +91,10 @@ else:
     L = args.L
     d = args.d
     T = args.T
+    # 【新增赋值】
+    weightTying = args.weightTying
+    haarPrior = args.haarPrior
+    
     with h5py.File(rootFolder+"parameters.hdf5","w") as f:
         f.create_dataset("epochs",data=args.epochs)
         f.create_dataset("batch",data=args.batch)
@@ -100,6 +110,9 @@ else:
         f.create_dataset("L",data=args.L)
         f.create_dataset("d",data=args.d)
         f.create_dataset("T",data=args.T)
+        # 【新增保存】
+        f.create_dataset("weightTying",data=weightTying)
+        f.create_dataset("haarPrior",data=haarPrior)
 
 device = torch.device("cpu" if cuda<0 else "cuda:"+str(cuda))
 
@@ -127,7 +140,12 @@ else:
 
 if depthMERA == -1:
     depthMERA = None
-fw = train.symmetryMERAInit(L,d,nlayers,nmlp,nhidden,nrepeat,sym,device,dtype,name,depthMERA=depthMERA)
+# fw = train.symmetryMERAInit(L,d,nlayers,nmlp,nhidden,nrepeat,sym,device,dtype,name,depthMERA=depthMERA)
+# 【修改为】：
+fw = train.symmetryMERAInit(L,d,nlayers,nmlp,nhidden,nrepeat,sym,device,dtype,name,
+                            depthMERA=depthMERA, 
+                            weightTying=weightTying, 
+                            haarPrior=haarPrior)
 
 #fw = train.symmetryMERAInit(L,d,nlayers,nmlp,nhidden,nrepeat,sym,device,dtype,name)
 

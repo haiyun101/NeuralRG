@@ -13,7 +13,41 @@ import source
 import math
 from flow import Flow
 
-def symmetryMERAInit(L,d,nlayers,nmlp,nhidden,nrepeat,symmetryList,device,dtype,name = None, channel = 1, depthMERA = None):
+class HaarRNVP(flow.Flow):
+    def __init__(self, rnvp_block, prior=None, name="HaarRNVP"):
+        super(HaarRNVP, self).__init__(prior, name)
+        self.rnvp = rnvp_block
+        # 4x4 正交 Haar 矩阵
+        matrix = 0.5 * torch.tensor([
+            [ 1.0,  1.0,  1.0,  1.0],  # 通道0：多数表决均值
+            [ 1.0,  1.0, -1.0, -1.0],  # 通道1：涨落
+            [ 1.0, -1.0,  1.0, -1.0],  # 通道2：涨落
+            [ 1.0, -1.0, -1.0,  1.0]   # 通道3：涨落
+        ], dtype=torch.float32)
+        self.register_buffer('haar_matrix', matrix)
+
+    def forward(self, x):
+        # x shape在MERA中被reshape为: (Batch, 1, 2, 2)
+        B = x.shape[0]
+        x_flat = x.reshape(B, 4)
+        # 1. 强制物理先验：正交矩阵相乘
+        z_flat = torch.matmul(x_flat, self.haar_matrix.t().to(x.device))
+        z = z_flat.reshape(B, 1, 2, 2)
+        # 2. 将分离后的慢模和快模送入网络去清除噪声
+        z_out, logp = self.rnvp.forward(z)
+        return z_out, logp
+
+    def inverse(self, z):
+        # 生成过程 (Latent -> Physical)
+        y, logp = self.rnvp.inverse(z)
+        B = y.shape[0]
+        y_flat = y.reshape(B, 4)
+        # 逆变换 (正交矩阵的逆即为转置)
+        x_flat = torch.matmul(y_flat, self.haar_matrix.to(y.device))
+        x = x_flat.reshape(B, 1, 2, 2)
+        return x, logp
+
+def symmetryMERAInit(L,d,nlayers,nmlp,nhidden,nrepeat,symmetryList,device,dtype,name = None, channel = 1, depthMERA = None,  weightTying=False, haarPrior=False):
     s = source.Gaussian([channel]+[L]*d)
 
     depth = int(math.log(L,2))*nrepeat*2
@@ -40,14 +74,45 @@ def symmetryMERAInit(L,d,nlayers,nmlp,nhidden,nrepeat,symmetryList,device,dtype,
         dimList.append(nhidden)
     dimList.append(coreSize)
 
-    layers = [flow.RNVP(MaskList[n], [utils.SimpleMLPreshape(dimList,[nn.ELU() for _ in range(nmlp)]+[None]) for _ in range(nlayers)], [utils.SimpleMLPreshape(dimList,[nn.ELU() for _ in range(nmlp)]+[utils.ScalableTanh(coreSize)]) for _ in range(nlayers)]) for n in range(depth)]
-
+    # layers = [flow.RNVP(MaskList[n], [utils.SimpleMLPreshape(dimList,[nn.ELU() for _ in range(nmlp)]+[None]) for _ in range(nlayers)], [utils.SimpleMLPreshape(dimList,[nn.ELU() for _ in range(nmlp)]+[utils.ScalableTanh(coreSize)]) for _ in range(nlayers)]) for n in range(depth)]
+    layers = []
+    
+    if weightTying:
+        print(">>> Using Physical Prior: Weight Tying (Scale Invariance)")
+        # 实例化一次
+        shared_mask = MaskList[0]
+        shared_tList = [utils.SimpleMLPreshape(dimList,[nn.ELU() for _ in range(nmlp)]+[None]) for _ in range(nlayers)]
+        shared_sList = [utils.SimpleMLPreshape(dimList,[nn.ELU() for _ in range(nmlp)]+[utils.ScalableTanh(coreSize)]) for _ in range(nlayers)]
+        rnvp_block = flow.RNVP(shared_mask, shared_tList, shared_sList)
+        
+        if haarPrior:
+            print(">>> Using Physical Prior: Haar Wavelet (Majority Vote)")
+            rnvp_block = HaarRNVP(rnvp_block)
+            
+        # 所有层复用同一个模块
+        layers = [rnvp_block for n in range(depth)]
+        
+    else:
+        # 原作者的 Baseline 逻辑：每一层都有独立的参数
+        for n in range(depth):
+            tList = [utils.SimpleMLPreshape(dimList,[nn.ELU() for _ in range(nmlp)]+[None]) for _ in range(nlayers)]
+            sList = [utils.SimpleMLPreshape(dimList,[nn.ELU() for _ in range(nmlp)]+[utils.ScalableTanh(coreSize)]) for _ in range(nlayers)]
+            rnvp_block = flow.RNVP(MaskList[n], tList, sList)
+            
+            if haarPrior:
+                if n == 0: # 只打印一次
+                    print(">>> Using Physical Prior: Haar Wavelet (Majority Vote)")
+                rnvp_block = HaarRNVP(rnvp_block)
+                
+            layers.append(rnvp_block)
+            
     f = flow.MERA(2,L,layers,nrepeat,depth = depthMERA,prior = s)
     if symmetryList is not None:
         f = Symmetrized(f,symmetryList,name = name)
     f.to(device = device,dtype = dtype)
     return f
 
+# useless
 def learn(source, flow, batchSize, epochs, lr=1e-3, save = True, saveSteps = 10,savePath=None, weight_decay = 0.001, adaptivelr = False, measureFn = None):
     if savePath is None:
         savePath = "./opt/tmp/"
@@ -67,8 +132,23 @@ def learn(source, flow, batchSize, epochs, lr=1e-3, save = True, saveSteps = 10,
 
     for epoch in range(epochs):
         x ,sampleLogProbability = flow.sample(batchSize)
+        # # 修改为以下逻辑：
+        # halfBatch = batchSize // 2
+        # # 1. 采样一半的正向噪声 z
+        # z_pos = flow.prior.sample(halfBatch)
+        # # 2. 构造对应的负向噪声 -z
+        # z_neg = -z_pos
+        # # 3. 拼接成完全对称的噪声 batch [z, -z]
+        # z_sym = torch.cat([z_pos, z_neg], dim=0)
+        
+        # # 4. 手动通过网络（代替 flow.sample）
+        # # 注意：这样可以保证噪声在输入前是绝对镜像的
+        # sampleLogp_z = flow.prior.logProbability(z_sym)
+        # x, inverseLogjac = flow.inverse(z_sym)
+        # sampleLogProbability = sampleLogp_z - inverseLogjac
+        
         #loss = sampleLogProbability.mean() - source.logProbability(x).mean()
-        lossorigin = (sampleLogProbability - source.logProbability(x))
+        lossorigin = (+sampleLogProbability + source.logProbability(x))
         loss = lossorigin.mean()
         lossstd = lossorigin.std()
         del lossorigin
@@ -126,6 +206,8 @@ def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save = True, saveSt
         x,sampleLogProbability = flow.sample(batchSize)
         lossorigin = (sampleLogProbability - source.logProbability(x))
         lossstd = lossorigin.std()
+        # loss = lossorigin.mean()
+        # 原来代码中的强制对称惩罚项
         loss = (lossorigin.mean()+alpha*(sampleLogProbability.mean()-flow.logProbability(-x).mean()))
         flow.zero_grad()
         loss.backward()

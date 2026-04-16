@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ising Model Loss 对比计算器</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            padding: 40px;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            max-width: 500px;
+            width: 100%;
+        }
+        h2 {
+            margin-top: 0;
+            color: #2c3e50;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 10px;
+        }
+        .control-group {
+            margin-bottom: 20px;
+        }
+        label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 8px;
+        }
+        input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+        }
+        .value-display {
+            float: right;
+            color: #3498db;
+            font-weight: bold;
+        }
+        .result-box {
+            margin-top: 25px;
+            padding: 15px;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+            border-left: 5px solid #3498db;
+        }
+        .result-box.danger {
+            border-left-color: #e74c3c;
+            background-color: #fdf2f0;
+        }
+        .result-title {
+            font-size: 0.9em;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+        .result-value {
+            font-size: 1.8em;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Ising Loss 理论对比</h2>
+    
+    <div class="control-group">
+        <label>
+            系统尺寸 L (总格点 N = L²)
+            <span id="l-val" class="value-display">32</span>
+        </label>
+        <input type="range" id="slider-l" min="4" max="64" step="1" value="32">
+    </div>
+
+    <div class="control-group">
+        <label>
+            温度 T
+            <span id="t-val" class="value-display">2.269</span>
+        </label>
+        <input type="range" id="slider-t" min="1.0" max="5.0" step="0.001" value="2.269">
+    </div>
+
+    <div class="result-box">
+        <div class="result-title">理论总 Loss (物理标准, J=1)</div>
+        <div class="result-value" id="res-physics" style="color: #2980b9;">-952.00</div>
+        <div style="font-size: 0.85em; color: #666; margin-top: 5px;">每个相互作用键计算 1 次</div>
+    </div>
+
+    <div class="result-box danger">
+        <div class="result-title">预测总 Loss (深度学习双重计数标准)</div>
+        <div class="result-value" id="res-dl" style="color: #c0392b;">-1904.00</div>
+        <div style="font-size: 0.85em; color: #666; margin-top: 5px;">遍历所有点并加总邻居 (键计算 2 次)</div>
+    </div>
+</div>
+
+<script>
+    // 使用一维积分公式计算 Onsager 精确自由能
+    function exactFreeEnergyPerSpin(T, J=1.0) {
+        const beta = 1.0 / T;
+        const k = 2 * Math.sinh(2 * beta * J) / Math.pow(Math.cosh(2 * beta * J), 2);
+        
+        // 辛普森/矩形法数值积分 (精度足够应对可视化)
+        const steps = 2000;
+        let integral = 0;
+        const d_phi = Math.PI / steps;
+        
+        for (let i = 0; i < steps; i++) {
+            const phi = (i + 0.5) * d_phi;
+            const term = 0.5 * (1 + Math.sqrt(1 - k * k * Math.pow(Math.sin(phi), 2)));
+            integral += Math.log(term) * d_phi;
+        }
+        
+        const f = -T * (Math.log(2 * Math.cosh(2 * beta * J)) + integral / (2 * Math.PI));
+        return f;
+    }
+
+    function updateCalculator() {
+        const L = parseFloat(document.getElementById('slider-l').value);
+        const T = parseFloat(document.getElementById('slider-t').value);
+        const N = L * L;
+
+        // 更新 UI 显示数值
+        document.getElementById('l-val').innerText = L;
+        document.getElementById('t-val').innerText = T.toFixed(3);
+
+        // 计算物理精确解
+        const f = exactFreeEnergyPerSpin(T);
+        const lossPerSpin = f / T;
+        const totalLossPhysics = N * lossPerSpin;
+
+        // 计算深度学习代码中双重计数的表现
+        const totalLossDL = totalLossPhysics * 2.0;
+
+        // 渲染到页面
+        document.getElementById('res-physics').innerText = totalLossPhysics.toFixed(2);
+        document.getElementById('res-dl').innerText = totalLossDL.toFixed(2);
+    }
+
+    // 绑定事件监听
+    document.getElementById('slider-l').addEventListener('input', updateCalculator);
+    document.getElementById('slider-t').addEventListener('input', updateCalculator);
+
+    // 初始化计算一次
+    updateCalculator();
+</script>
+
+</body>
+</html>

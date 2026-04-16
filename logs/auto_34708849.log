@@ -1,0 +1,26 @@
+=========================================
+Annealing: 2.8 -> 2.7
+Folder: 32Ising_T2.8_to_2.7_weightTying_from2.8
+=========================================
+anneal_trans.sh: line 2: $'\r': command not found
+anneal_trans.sh: line 7: $'\r': command not found
+Source: opt/32Ising_T2.8_weightTying
+Target: opt/32Ising_T2.8_to_2.7_weightTying_from2.8
+Target Temp: 2.7
+anneal_trans.sh: line 11: $'\r': command not found
+anneal_trans.sh: line 14: $'\r': command not found
+cp: cannot stat ‘opt/32Ising_T2.8_weightTying\r/savings’: No such file or directory
+cp: cannot stat ‘opt/32Ising_T2.8_weightTying\r/parameters.hdf5’: No such file or directory
+anneal_trans.sh: line 18: $'\r': command not found
+  File "<string>", line 4
+    dst = 'opt/32Ising_T2.8_to_2.7_weightTying_from2.8
+                                                     ^
+SyntaxError: EOL while scanning string literal
+usage: main.py [-h] [-folder FOLDER] [-name NAME] [-epochs EPOCHS]
+               [-batch BATCH] [-cuda CUDA] [-double] [-lr LR]
+               [-savePeriod SAVEPERIOD] [-alpha ALPHA] [-skipHMC] [-load]
+               [-nlayers NLAYERS] [-nmlp NMLP] [-nhidden NHIDDEN]
+               [-nrepeat NREPEAT] [-depthMERA DEPTHMERA] [-symmetry]
+               [-weightTying] [-haarPrior] [-L L] [-d D] [-T T]
+main.py: error: argument -epochs: expected one argument
+Pipeline finished or training failed.

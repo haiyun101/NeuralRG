@@ -1,0 +1,17 @@
+=========================================
+Annealing: 2.8 -> 2.7
+Folder: 32Ising_T2.8_to_2.7_weightTying_from2.8
+=========================================
+Source: opt/32Ising_T2.8_weightTying
+Target: opt/32Ising_T2.8_to_2.7_weightTying_from2.8
+Target Temp: 2.7
+Original T: 2.8
+New T successfully set to: 2.7
+usage: main.py [-h] [-folder FOLDER] [-name NAME] [-epochs EPOCHS]
+               [-batch BATCH] [-cuda CUDA] [-double] [-lr LR]
+               [-savePeriod SAVEPERIOD] [-alpha ALPHA] [-skipHMC] [-load]
+               [-nlayers NLAYERS] [-nmlp NMLP] [-nhidden NHIDDEN]
+               [-nrepeat NREPEAT] [-depthMERA DEPTHMERA] [-symmetry]
+               [-weightTying] [-haarPrior] [-L L] [-d D] [-T T]
+main.py: error: argument -epochs: expected one argument
+Pipeline finished or training failed.

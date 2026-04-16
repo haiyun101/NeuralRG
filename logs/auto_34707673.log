@@ -1,0 +1,30 @@
+=========================================
+Annealing: 2.6 -> 2.6
+Folder: 32Ising_T2.6_to_2.6_weightTying
+=========================================
+anneal_trans.sh: line 2: $'\r': command not found
+anneal_trans.sh: line 7: $'\r': command not found
+Source: opt/32Ising_T2.6_weightTying_continue
+Target: opt/32Ising_T2.6_to_2.6_weightTying
+Target Temp: 2.6
+anneal_trans.sh: line 11: $'\r': command not found
+anneal_trans.sh: line 14: $'\r': command not found
+cp: cannot stat ‘opt/32Ising_T2.6_weightTying_continue\r/savings’: No such file or directory
+cp: cannot stat ‘opt/32Ising_T2.6_weightTying_continue\r/parameters.hdf5’: No such file or directory
+anneal_trans.sh: line 18: $'\r': command not found
+  File "<string>", line 4
+    dst = 'opt/32Ising_T2.6_to_2.6_weightTying
+                                             ^
+SyntaxError: EOL while scanning string literal
+Traceback (most recent call last):
+  File "./main.py", line 61, in <module>
+    with h5py.File(rootFolder+"/parameters.hdf5","r") as f:
+  File "/cluster/home/hhuang05/.conda/envs/neuralrg/lib/python3.8/site-packages/h5py/_hl/files.py", line 562, in __init__
+    fid = make_fid(name, mode, userblock_size, fapl, fcpl, swmr=swmr)
+  File "/cluster/home/hhuang05/.conda/envs/neuralrg/lib/python3.8/site-packages/h5py/_hl/files.py", line 235, in make_fid
+    fid = h5f.open(name, flags, fapl=fapl)
+  File "h5py/_objects.pyx", line 54, in h5py._objects.with_phil.wrapper
+  File "h5py/_objects.pyx", line 55, in h5py._objects.with_phil.wrapper
+  File "h5py/h5f.pyx", line 102, in h5py.h5f.open
+FileNotFoundError: [Errno 2] Unable to synchronously open file (unable to open file: name = './opt/32Ising_T2.6_to_2.6_weightTying//parameters.hdf5', errno = 2, error message = 'No such file or directory', flags = 0, o_flags = 0)
+Pipeline finished or training failed.

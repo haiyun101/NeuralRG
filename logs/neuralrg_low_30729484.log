@@ -1,0 +1,31 @@
+Using symmetry
+kernelShape: [2, 2]
+total nubmer of trainable parameters: 1780400
+Traceback (most recent call last):
+  File "./main.py", line 149, in <module>
+    LOSS,ZACC,ZOBS,XACC,XOBS = train.learnInterface(target,fw,batch,epochs,save=True,saveSteps = savePeriod,savePath=rootFolder,measureFn = measure,alpha=args.alpha,skipHMC=args.skipHMC)
+  File "/cluster/home/hhuang05/NeuralRG/train/learn.py", line 129, in learnInterface
+    loss = (lossorigin.mean()+alpha*(sampleLogProbability.mean()-flow.logProbability(-x).mean()))
+  File "/cluster/home/hhuang05/NeuralRG/train/symmetry.py", line 28, in logProbability
+    logProbability = [self.flow.logProbability(x)]
+  File "/cluster/home/hhuang05/NeuralRG/flow/flow.py", line 32, in logProbability
+    z,logp = self.forward(x)
+  File "/cluster/home/hhuang05/NeuralRG/flow/hierarchy/template.py", line 29, in forward
+    x_,logProbability = self.layerList[no].forward(x_.reshape(-1,channelSize,*self.kernelShape))
+  File "/cluster/home/hhuang05/NeuralRG/flow/rnvp.py", line 37, in forward
+    t = self.tList[i](z_)*self.maskListR[i]
+  File "/cluster/home/hhuang05/.conda/envs/neuralrg/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1553, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/cluster/home/hhuang05/.conda/envs/neuralrg/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1562, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/cluster/home/hhuang05/NeuralRG/utils/layers/mlp.py", line 35, in forward
+    x = super(SimpleMLPreshape,self).forward(x)
+  File "/cluster/home/hhuang05/NeuralRG/utils/layers/mlp.py", line 26, in forward
+    tmp = layer(tmp)
+  File "/cluster/home/hhuang05/.conda/envs/neuralrg/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1553, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/cluster/home/hhuang05/.conda/envs/neuralrg/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1562, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/cluster/home/hhuang05/.conda/envs/neuralrg/lib/python3.8/site-packages/torch/nn/modules/linear.py", line 117, in forward
+    return F.linear(input, self.weight, self.bias)
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 20.00 MiB. GPU 0 has a total capacity of 39.39 GiB of which 15.94 MiB is free. Including non-PyTorch memory, this process has 39.37 GiB memory in use. Of the allocated memory 38.75 GiB is allocated by PyTorch, and 126.94 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)

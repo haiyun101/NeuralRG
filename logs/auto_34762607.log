@@ -1,0 +1,17 @@
+=========================================
+Annealing: 2.6 -> 2.45
+Folder: 32Ising_T2.6_to_2.45_weightTying_from2.8
+=========================================
+Source: opt/32Ising_T2.6_to_2.5_weightTying_from2.8
+Target: opt/32Ising_T2.6_to_2.45_weightTying_from2.8
+Target Temp: 2.45
+Original T: 2.5
+New T successfully set to: 2.45
+usage: main.py [-h] [-folder FOLDER] [-name NAME] [-epochs EPOCHS]
+               [-batch BATCH] [-cuda CUDA] [-double] [-lr LR]
+               [-savePeriod SAVEPERIOD] [-alpha ALPHA] [-skipHMC] [-load]
+               [-nlayers NLAYERS] [-nmlp NMLP] [-nhidden NHIDDEN]
+               [-nrepeat NREPEAT] [-depthMERA DEPTHMERA] [-symmetry]
+               [-weightTying] [-haarPrior] [-L L] [-d D] [-T T]
+main.py: error: argument -epochs: invalid int value: '2.45'
+Pipeline finished or training failed.
