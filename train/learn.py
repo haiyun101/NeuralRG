@@ -13,6 +13,9 @@ import source
 import math
 from flow import Flow
 
+import glob # Add for mcmc
+from torch.utils.data import DataLoader, TensorDataset # Add for mcmc
+
 class HaarRNVP(flow.Flow):
     def __init__(self, rnvp_block, prior=None, name="HaarRNVP"):
         super(HaarRNVP, self).__init__(prior, name)
@@ -167,7 +170,7 @@ def learn(source, flow, batchSize, epochs, lr=1e-3, save = True, saveSteps = 10,
     return LOSS,ACC,OBS
 
 
-def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save = True, saveSteps = 10,savePath=None,keepSavings = 3, weight_decay = 0.001, adaptivelr = False, HMCsteps = 10, HMCthermal = 10, HMCepsilon = 0.2, measureFn = None, alpha=1.0,skipHMC = True):
+def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save=True, saveSteps=10, savePath=None, keepSavings=3, weight_decay=0.001, adaptivelr=False, HMCsteps=10, HMCthermal=10, HMCepsilon=0.2, measureFn=None, alpha=1.0, skipHMC=True, dataDriven=False, dataPath=None, targetT=None):
 
     def cleanSaving(epoch):
         if epoch >= keepSavings*saveSteps:
@@ -182,6 +185,29 @@ def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save = True, saveSt
 
     if savePath is None:
         savePath = "./opt/tmp/"
+        
+    # ==============================================================
+    # 1. DATA-DRIVEN DATA LOADING BLOCK
+    # ==============================================================
+    L_dim = int(flow.prior.sample(1).shape[-1]**0.5)
+    if dataDriven:
+        if dataPath is None:
+            search_pattern = f"mcmc_wolff_L{L_dim}_T{targetT:.4f}_N*.pt"
+            found_files = glob.glob(search_pattern)
+            if not found_files:
+                raise FileNotFoundError(f"Could not automatically find data matching {search_pattern}")
+            dataPath = found_files[0]
+            print(f"Auto-selected MCMC dataset: {dataPath}")
+            
+        print("Initializing Data-Driven MLE Training...")
+        mcmc_data = torch.load(dataPath)
+        dataset = TensorDataset(mcmc_data)
+        dataloader = DataLoader(dataset, batch_size=batchSize, shuffle=True, drop_last=True)
+        data_iterator = iter(dataloader)
+    else:
+        print("Initializing Energy-Based Reverse-KL Training...")
+    # ==============================================================
+
     params = list(flow.parameters())
     params = list(filter(lambda p: p.requires_grad, params))
     nparams = sum([np.prod(p.size()) for p in params])
@@ -196,8 +222,8 @@ def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save = True, saveSt
     XACC = []
     ZOBS = []
     XOBS = []
-    ENERGY = []   # <--- 新增：记录能量
-    ENTROPY = []  # <--- 新增：记录微分熵
+    ENERGY = []   # <--- 记录能量
+    ENTROPY = []  # <--- 记录微分熵
 
     z_ = flow.prior.sample(batchSize)
     x_ = flow.prior.sample(batchSize)
@@ -205,32 +231,69 @@ def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save = True, saveSt
     L = int(x_.shape[-1]**0.5)
 
     for epoch in range(epochs):
-        x,sampleLogProbability = flow.sample(batchSize)
- # --- 新增：分离并提取单轮的 Energy 和 Entropy 标量值 ---
-        energy_val = -source.logProbability(x).mean().item()
-        entropy_val = -sampleLogProbability.mean().item()
+        
+        # ==============================================================
+        # 2. TOGGLED TRAINING LOOP (MLE vs Energy)
+        # ==============================================================
+        if dataDriven:
+            # --- Data-Driven Forward KL (MLE) ---
+            try:
+                x_real, = next(data_iterator)
+            except StopIteration:
+                data_iterator = iter(dataloader)
+                x_real, = next(data_iterator)
+                
+            x_real = x_real.to(device=x_.device, dtype=x_.dtype)
+            
+            # Dequantization noise to smooth the discrete states
+            noise = (torch.rand_like(x_real) - 0.5) * 0.2
+            x = x_real + noise
+            
+            log_prob = flow.logProbability(x)
+            
+            # Record Energy and Entropy for the MCMC dataset
+            energy_val = -source.logProbability(x).mean().item()
+            entropy_val = -log_prob.mean().item()
+            
+            lossorigin = -log_prob
+            lossstd = lossorigin.std()
+            loss = lossorigin.mean()
+            
+            if alpha > 0:
+                log_prob_sym = flow.logProbability(-x)
+                loss += alpha * (log_prob.mean() - log_prob_sym.mean())**2
+                
+        else:
+            # --- Original Energy-Based Reverse KL ---
+            x, sampleLogProbability = flow.sample(batchSize)
+            
+            # 分离并提取单轮的 Energy 和 Entropy 标量值
+            energy_val = -source.logProbability(x).mean().item()
+            entropy_val = -sampleLogProbability.mean().item()
 
-        lossorigin = (sampleLogProbability - source.logProbability(x))
-        lossstd = lossorigin.std()
-        # loss = lossorigin.mean()
-        # 原来代码中的强制对称惩罚项
-        loss = (lossorigin.mean()+alpha*(sampleLogProbability.mean()-flow.logProbability(-x).mean()))
+            lossorigin = (sampleLogProbability - source.logProbability(x))
+            lossstd = lossorigin.std()
+            # 原来代码中的强制对称惩罚项
+            loss = (lossorigin.mean()+alpha*(sampleLogProbability.mean()-flow.logProbability(-x).mean()))
+        # ==============================================================
+
         flow.zero_grad()
         loss.backward()
         optimizer.step()
+        
         if adaptivelr:
             scheduler.step()
 
-        del sampleLogProbability
+        if not dataDriven:
+            del sampleLogProbability
 
         print("epoch:",epoch, "L:",loss.item(),"F:",lossorigin.mean().item(),"+/-",lossstd.item())
         del lossorigin
 
         LOSS.append([loss.item(),lossstd.item()])
-        ENERGY.append(energy_val)   # <--- 新增
-        ENTROPY.append(entropy_val) # <--- 新增      
+        ENERGY.append(energy_val)   # <--- 记录当前轮数能量
+        ENTROPY.append(entropy_val) # <--- 记录当前轮数熵      
 
-        # if (epoch%saveSteps == 0 and epoch > 50) or epoch == epochs:
         # 将 epoch > 50 改为 epoch > 0，这样如果 saveSteps=10，就会从 10 开始存
         if (epoch > 0 and epoch % saveSteps == 0) or epoch == epochs:
             configuration = torch.sigmoid(2.*x[:100])
@@ -281,8 +344,8 @@ def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save = True, saveSt
                 with h5py.File(savePath+"records/"+flow.name+"Record_epoch"+str(epoch)+".hdf5", "w") as f:
                     f.create_dataset("LOSS",data=np.array(LOSS)[:,0])
                     f.create_dataset("LOSSSTD",data=np.array(LOSS)[:,1])
-                    f.create_dataset("ENERGY",data=np.array(ENERGY))   # <--- 新增
-                    f.create_dataset("ENTROPY",data=np.array(ENTROPY)) # <--- 新增
+                    f.create_dataset("ENERGY",data=np.array(ENERGY))   # <--- 存入hdf5
+                    f.create_dataset("ENTROPY",data=np.array(ENTROPY)) # <--- 存入hdf5
                     f.create_dataset("ZACC",data=np.array(ZACC))
                     f.create_dataset("ZOBS",data=np.array(ZOBS))
                     f.create_dataset("XACC",data=np.array(XACC))

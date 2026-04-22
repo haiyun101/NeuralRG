@@ -39,6 +39,9 @@ group.add_argument("-symmetry", action='store_true', help="")
 # 【新增】：添加我们的两个物理先验开关
 group.add_argument("-weightTying", action='store_true', help="Tie weights across MERA layers for scale invariance")
 group.add_argument("-haarPrior", action='store_true', help="Force majority vote using Haar transform")
+# add MCMC data drivin search toggle
+group.add_argument("-dataDriven", action='store_true', help="Use Data-Driven (Forward KL) training instead of Energy-Based")
+group.add_argument("-dataPath", default=None, type=str, help="Path to MCMC data. If None, auto-searches based on L and T")
 
 group = parser.add_argument_group('Ising target parameters')
 #
@@ -164,5 +167,11 @@ def measure(x):
         return  sf
 
 
-LOSS,ZACC,ZOBS,XACC,XOBS = train.learnInterface(target,fw,batch,epochs,save=True,saveSteps = savePeriod,savePath=rootFolder,measureFn = measure,alpha=args.alpha,skipHMC=args.skipHMC)
+# --- MODIFY THIS LINE ---
+LOSS,ZACC,ZOBS,XACC,XOBS = train.learnInterface(
+    target, fw, batch, epochs, save=True, saveSteps=savePeriod, 
+    savePath=rootFolder, measureFn=measure, alpha=args.alpha, 
+    skipHMC=args.skipHMC, dataDriven=args.dataDriven, 
+    dataPath=args.dataPath, targetT=args.T
+)
 #LOSS,ZACC,ZOBS,XACC,XOBS = train.learnInterface(target,fw,batch,epochs,save=True,saveSteps = savePeriod,savePath=rootFolder,measureFn = measure)

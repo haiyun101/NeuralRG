@@ -1,0 +1,9 @@
+==========================================
+Starting NeuralRG Data-Driven Training
+Lattice: 32 | Temp: 2.269
+Job ID: 36606560
+Node: s1cmp005
+==========================================
+kernelShape: [2, 2]
+==========================================
+Training completed.

@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "main.py", line 171, in <module>
+    LOSS,ZACC,ZOBS,XACC,XOBS = train.learnInterface(
+TypeError: learnInterface() got an unexpected keyword argument 'dataDriven'
+/var/spool/slurm/job36606560/slurm_script: line 33: -dataDriven: command not found
