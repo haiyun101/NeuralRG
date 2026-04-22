@@ -56,6 +56,44 @@ def guess_temperature_from_string(folder_name):
         return float(matches[-1]) 
     return T_C 
 
+def get_theory_min(target_T, L_target, filepath="../etc/exactz.md"):
+    """
+    1. 定位 L=target_L 的 Section
+    2. 匹配温度 (保留两位有效数字进行匹配)
+    """
+    if not os.path.exists(filepath):
+        # 尝试备用路径，防止运行路径不一致
+        filepath = os.path.join(os.path.dirname(__file__), "../etc/exactz.md")
+        if not os.path.exists(filepath): return None
+
+    target_T_str = f"{float(target_T):.1f}" # 根据截图，T 是一列如 2.3 的格式
+    section_found = False
+    
+    with open(filepath, 'r') as f:
+        for line in f:
+            # 只有匹配到正确的格点数标题才开始搜索
+            if line.startswith("###") and f"n={L_target}" in line:
+                section_found = True
+                continue
+            
+            # 如果进入了下一个标题，停止搜索
+            if section_found and line.startswith("###") and f"n={L_target}" not in line:
+                break
+            
+            if section_found and line.startswith("|"):
+                parts = [p.strip() for p in line.split('|')]
+                if len(parts) >= 4:
+                    try:
+                        # 尝试精确匹配字符串或数值
+                        t_val = float(parts[1])
+                        if abs(t_val - float(target_T)) < 1e-3:
+                            lnZ = float(parts[2])
+                            fix = float(parts[3])
+                            return -(lnZ + fix)
+                    except ValueError:
+                        continue
+    return None
+
 # --- Function to generate Interactive HTML Viewer ---
 def create_html_viewer(target_path, image_filenames, default_fps):
     # Removed the redundant <h2> title here, relying on matplotlib's suptitle
@@ -190,14 +228,21 @@ def main():
         # --- 在 for 循环开始前，找到最新的 Record 文件 ---
 
     # 这里的 target_path 是你传入的数据文件夹路径
-    all_records = sorted(glob.glob(os.path.join(target_path, "records", "*Record*.hdf5")), 
-                         key=lambda x: int(re.findall(r'\d+' , x)[-1]))
+    all_records = sorted( glob.glob(os.path.join(target_path, "records", "*Record_epoch*.hdf5")),
+                          key=lambda x: int(x.split('epoch')[-1].split('.')[0])
+                        )
     
     full_loss, full_xacc, full_zacc = None, None, None
     if all_records:
         latest_record = all_records[-1] # 使用最后一个文件，因为它存了最全的历史
         with h5py.File(latest_record, 'r') as rf:
             full_loss = np.array(rf["LOSS"]).flatten()
+        # --- 新增：提取能量和熵 ---
+            if "ENERGY" in rf:
+                full_energy = np.array(rf["ENERGY"]).flatten()
+            if "ENTROPY" in rf:
+                full_entropy = np.array(rf["ENTROPY"]).flatten()
+
             full_xacc = np.array(rf["XACC"]).flatten()
             full_zacc = np.array(rf["ZACC"]).flatten()
     
@@ -357,8 +402,28 @@ def main():
                 if len(display_loss) > 0:
                     # X 轴刻度：每一个点对应一个 savePeriod (10)
                     x_loss = np.arange(len(display_loss)) * 10
-                    ax5.plot(x_loss, display_loss, color='orange', label='Loss')
+                    # ax5.plot(x_loss, display_loss, color='orange', label='Loss')
+
+                    # 1. 画总 Loss (红线)
+                    ax5.plot(x_loss, display_loss, color='tab:red', label='Total Loss (F)', linewidth=2, zorder=4)
                     
+                    # 2. 画 Energy (橙线)
+                    if full_energy is not None:
+                        display_energy = full_energy[:current_idx + 1]
+                        ax5.plot(x_loss, display_energy, color='tab:orange', label='Energy', alpha=0.8, zorder=3)
+                    
+                    # 3. 画 -Entropy (蓝线)
+                    if full_entropy is not None:
+                        display_entropy = full_entropy[:current_idx + 1]
+                        ax5.plot(x_loss, -display_entropy, color='tab:blue', label='-Entropy', alpha=0.8, zorder=2)
+                    
+        # 注意：从文件名读取的 L 传递给 get_theory_min
+                    t_min = get_theory_min(T_target, L_target=32) 
+                    if t_min is not None:
+                        ax5.axhline(y=t_min, color='black', linestyle='--', linewidth=1.5, label=f'Exact Min ({t_min:.2f})', zorder=5)
+
+                    # --- 关键修改：添加图例 ---
+                    ax5.legend(loc='upper right', fontsize='x-small', framealpha=0.5)                     
                     # 核心修改：锁定全局范围
                     ax5.set_xlim(0, max_epoch) 
                     

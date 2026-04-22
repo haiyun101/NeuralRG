@@ -196,6 +196,8 @@ def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save = True, saveSt
     XACC = []
     ZOBS = []
     XOBS = []
+    ENERGY = []   # <--- 新增：记录能量
+    ENTROPY = []  # <--- 新增：记录微分熵
 
     z_ = flow.prior.sample(batchSize)
     x_ = flow.prior.sample(batchSize)
@@ -204,6 +206,10 @@ def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save = True, saveSt
 
     for epoch in range(epochs):
         x,sampleLogProbability = flow.sample(batchSize)
+ # --- 新增：分离并提取单轮的 Energy 和 Entropy 标量值 ---
+        energy_val = -source.logProbability(x).mean().item()
+        entropy_val = -sampleLogProbability.mean().item()
+
         lossorigin = (sampleLogProbability - source.logProbability(x))
         lossstd = lossorigin.std()
         # loss = lossorigin.mean()
@@ -221,8 +227,12 @@ def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save = True, saveSt
         del lossorigin
 
         LOSS.append([loss.item(),lossstd.item()])
+        ENERGY.append(energy_val)   # <--- 新增
+        ENTROPY.append(entropy_val) # <--- 新增      
 
-        if (epoch%saveSteps == 0 and epoch > 50) or epoch == epochs:
+        # if (epoch%saveSteps == 0 and epoch > 50) or epoch == epochs:
+        # 将 epoch > 50 改为 epoch > 0，这样如果 saveSteps=10，就会从 10 开始存
+        if (epoch > 0 and epoch % saveSteps == 0) or epoch == epochs:
             configuration = torch.sigmoid(2.*x[:100])
             save_image(configuration, savePath+'/proposals_{:04d}.png'.format(epoch), nrow=10, padding=1)
             if skipHMC:
@@ -271,13 +281,15 @@ def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save = True, saveSt
                 with h5py.File(savePath+"records/"+flow.name+"Record_epoch"+str(epoch)+".hdf5", "w") as f:
                     f.create_dataset("LOSS",data=np.array(LOSS)[:,0])
                     f.create_dataset("LOSSSTD",data=np.array(LOSS)[:,1])
+                    f.create_dataset("ENERGY",data=np.array(ENERGY))   # <--- 新增
+                    f.create_dataset("ENTROPY",data=np.array(ENTROPY)) # <--- 新增
                     f.create_dataset("ZACC",data=np.array(ZACC))
                     f.create_dataset("ZOBS",data=np.array(ZOBS))
                     f.create_dataset("XACC",data=np.array(XACC))
                     f.create_dataset("XOBS",data=np.array(XOBS))
                 d = flow.save()
                 torch.save(d,savePath+"savings/"+flow.name+"Saving_epoch"+str(epoch)+".saving")
-                cleanSaving(epoch)
+                # cleanSaving(epoch)
 
         del x
 

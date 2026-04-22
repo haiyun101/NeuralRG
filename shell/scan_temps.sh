@@ -46,7 +46,7 @@ do
     # Resulting order: T2.269_sym_WT_HP (depending on what you toggle)
     SUFFIX="${SYM_SUFFIX}${WT_SUFFIX}${HP_SUFFIX}"
     JOB_NAME="T${T}${SUFFIX}"
-    OUT_DIR="./data/32Ising_T${T}${SUFFIX}"
+    OUT_DIR="./data/32Ising_T${T}${SUFFIX}_longer"
 
     mkdir -p $OUT_DIR
     echo "Submitting: $JOB_NAME"
@@ -60,7 +60,7 @@ do
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=4G
-#SBATCH --time=2:00:00
+#SBATCH --time=3:00:00
 #SBATCH --output=${OUT_DIR}/${JOB_NAME}_%j.log
 
 module load miniforge
@@ -71,7 +71,7 @@ python ./main.py \\
     -T ${T} \\
     -folder ${OUT_DIR} \\
     -batch 128 \\
-    -epochs 1000 \\
+    -epochs 1600 \\
     -nlayers 10 \\
     -nmlp 3 \\
     -nhidden 64 \\
