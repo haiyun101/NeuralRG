@@ -153,15 +153,15 @@ do
 module load miniforge
 source activate neuralrg
 
-echo "=========================================================="
-echo "Phase 1: Generating MCMC Data (Wolff Algorithm)"
-echo "Lattice: 32 | Temp: ${T} | Samples: ${NUM_SAMPLES}"
-echo "=========================================================="
+# echo "=========================================================="
+# echo "Phase 1: Generating MCMC Data (Wolff Algorithm)"
+# echo "Lattice: 32 | Temp: ${T} | Samples: ${NUM_SAMPLES}"
+# echo "=========================================================="
 
-python generate_mcmc_data.py \\
-    -L 32 \\
-    -T ${T} \\
-    -N ${NUM_SAMPLES}
+# python generate_mcmc_data.py \\
+#     -L 32 \\
+#     -T ${T} \\
+#     -N ${NUM_SAMPLES}
 
 echo "=========================================================="
 echo "Phase 2: Starting Data-Driven Training (Forward KL)"

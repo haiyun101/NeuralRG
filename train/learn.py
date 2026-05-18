@@ -15,6 +15,7 @@ from flow import Flow
 
 import glob # Add for mcmc
 from torch.utils.data import DataLoader, TensorDataset # Add for mcmc
+import re
 
 class HaarRNVP(flow.Flow):
     def __init__(self, rnvp_block, prior=None, name="HaarRNVP"):
@@ -189,11 +190,22 @@ def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save=True, saveStep
     # ==============================================================
     # 1. DATA-DRIVEN DATA LOADING BLOCK
     # ==============================================================
-    L_dim = int(flow.prior.sample(1).shape[-1]**0.5)
+    L_dim = int(flow.prior.sample(1).shape[-1])
     if dataDriven:
         if dataPath is None:
-            search_pattern = f"mcmc_wolff_L{L_dim}_T{targetT:.4f}_N*.pt"
-            found_files = glob.glob(search_pattern)
+            search_pattern = f"./data/mcmc_data/mcmc_wolff_L{L_dim}_T*_N*.pt"
+            all_files = glob.glob(search_pattern)
+
+            found_files = []
+            for file in all_files:
+                # Extract the T value using regex
+                match = re.search(r'_T([\d\.]+)_N', file)
+                if match:
+                    file_T = float(match.group(1))
+                    # Use a small tolerance for floating point comparison (e.g., 1e-5)
+                    if abs(file_T - targetT) < 1e-5:
+                        found_files.append(file)
+
             if not found_files:
                 raise FileNotFoundError(f"Could not automatically find data matching {search_pattern}")
             dataPath = found_files[0]

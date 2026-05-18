@@ -1,0 +1,12 @@
+04.27.2026
+For MCMC sample, if we consider symmtry, we will easily expand 
+the size of the sample. eg, tranlation symmtry, vertical+ horizontal 
+32*32 - 1
+
+1. impose symmetry on data set 
+2. impose symmetry on infrastructure
+1=2?
+
+For 2, the structure has required all blocks to he same within the same
+level. But it certainly does not utilize fully the symmetry
+

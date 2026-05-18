@@ -5,8 +5,8 @@
 #SBATCH --gres=gpu:1                # Request 1 GPU
 #SBATCH --cpus-per-task=4           # CPU cores for data loading
 #SBATCH --mem=32G                   # Memory (adjust based on dataset size)
-#SBATCH --output=logs/train_L32_%j.out
-#SBATCH --error=logs/train_L32_%j.err
+#SBATCH --output=./data/32Ising_T2.269_sym_dataDriven_skipHMC/train_L32_%j.out
+#SBATCH --error=l./data/32Ising_T2.269_sym_dataDriven_skipHMC/train_L32_%j.err
 
 # 1. Load modules and activate environment
 # (Uncomment and adjust these based on your HPC environment setup)
@@ -18,7 +18,7 @@ mkdir -p logs
 
 echo "=========================================="
 echo "Starting NeuralRG Data-Driven Training"
-echo "Lattice: 32 | Temp: 2.269"
+echo "Lattice: 32 | Temp: 2.3"
 echo "Job ID: $SLURM_JOB_ID"
 echo "Node: $SLURMD_NODENAME"
 echo "=========================================="
@@ -28,17 +28,18 @@ echo "=========================================="
 python main.py \
     -L 32 \
     -T 2.269 \
-    -folder "./data/32Ising_T2.269_sym_dataDriven"
+    -folder "./data/32Ising_T2.269_sym_dataDriven_skipHMC_epoch500000" \
     -dataDriven \
     -cuda 0 \
-    -epochs 5000 \
-    -batch 512 \
+    -epochs 500000 \
+    -batch 128 \
     -nlayers 10 \
     -nmlp 3 \
     -nhidden 10 \
     -nrepeat 1 \
     -savePeriod 100 \
-    -symmetry
+    -symmetry \
+    -skipHMC
 
 echo "=========================================="
 echo "Training completed."

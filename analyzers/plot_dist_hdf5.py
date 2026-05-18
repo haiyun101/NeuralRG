@@ -14,7 +14,7 @@ matplotlib.use('Agg')  # Required for cluster environments to prevent GUI errors
 import matplotlib.pyplot as plt
 
 # Set this to True if you want to re-generate and overwrite existing plots
-force_overwrite = False
+force_overwrite = True
 
 # --- Physical Constants for 2D Ising Model ---
 T_C = 2.0 / math.log(1.0 + math.sqrt(2.0))  # Critical Temperature ~ 2.269185
@@ -400,36 +400,59 @@ def main():
                 display_loss = full_loss[:current_idx + 1]
                 
                 if len(display_loss) > 0:
-                    # X 轴刻度：每一个点对应一个 savePeriod (10)
-                    x_loss = np.arange(len(display_loss)) * 10
-                    # ax5.plot(x_loss, display_loss, color='orange', label='Loss')
-
-                    # 1. 画总 Loss (红线)
+                    # X axis scale: every point corresponds to a savePeriod (10)
+                    x_loss = np.arange(len(display_loss)) * 20
+                    
+                    # 1. Plot Total Loss (Red line)
                     ax5.plot(x_loss, display_loss, color='tab:red', label='Total Loss (F)', linewidth=2, zorder=4)
                     
-                    # 2. 画 Energy (橙线)
+                    # 2. Plot Energy (Orange line)
+                    display_energy = None
                     if full_energy is not None:
                         display_energy = full_energy[:current_idx + 1]
                         ax5.plot(x_loss, display_energy, color='tab:orange', label='Energy', alpha=0.8, zorder=3)
                     
-                    # 3. 画 -Entropy (蓝线)
+                    # 3. Plot -Entropy (Blue line)
+                    display_entropy = None
                     if full_entropy is not None:
-                        display_entropy = full_entropy[:current_idx + 1]
+                        display_entropy = -full_entropy[:current_idx + 1]
                         ax5.plot(x_loss, -display_entropy, color='tab:blue', label='-Entropy', alpha=0.8, zorder=2)
                     
-        # 注意：从文件名读取的 L 传递给 get_theory_min
+                    # Theory line
                     t_min = get_theory_min(T_target, L_target=32) 
                     if t_min is not None:
                         ax5.axhline(y=t_min, color='black', linestyle='--', linewidth=1.5, label=f'Exact Min ({t_min:.2f})', zorder=5)
 
-                    # --- 关键修改：添加图例 ---
-                    ax5.legend(loc='upper right', fontsize='x-small', framealpha=0.5)                     
-                    # 核心修改：锁定全局范围
+                    # --- NEW: Find and display values at minimum loss ---
+                    idx_min = np.argmin(display_loss)
+                    f_min_val = display_loss[idx_min]
+                    
+                    # Retrieve energy and entropy at the same index
+                    info_text = f"Min Loss: {f_min_val:.5f}"
+                    if display_energy is not None:
+                        e_at_min = display_energy[idx_min]
+                        info_text += f"\nE @ Min: {e_at_min:.5f}"
+                    if display_entropy is not None:
+                        s_at_min = display_entropy[idx_min]
+                        info_text += f"\n-S @ Min: {-s_at_min:.5f}"
+                    
+                    # Add a marker at the minimum point
+                    ax5.scatter(x_loss[idx_min], f_min_val, color='red', s=30, edgecolors='black', zorder=6)
+                    
+                    # Place a text box with the values in the lower-left of the plot
+                    ax5.text(0.05, 0.05, info_text, transform=ax5.transAxes, 
+                             fontsize='x-small', verticalalignment='bottom',
+                             bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
+                    # ----------------------------------------------------
+
+                    # Legend and limits
+                    ax5.legend(loc='upper right', fontsize='x-small', framealpha=0.5) 
                     ax5.set_xlim(0, max_epoch) 
                     
-                    # 保护性 Log Scale：只有存在正值时才开启
-                    if np.any(display_loss > 0):
-                        ax5.set_yscale('log')
+                    # Log Scale for visibility
+                    # if np.any(display_loss > 0):
+                    #     ax5.set_yscale('log')
+                    ax5.set_ylim(-2400, 100)
                         
                     ax5.set_title(f"Loss History (Epoch {epoch_num})")
                     ax5.set_xlabel("Epochs")

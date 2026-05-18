@@ -26,7 +26,7 @@ L = 32
 N = L**2
 
 # 测试你关心的几个关键温度
-temperatures = [3.0, 2.65, 2.269185, 2.0]
+temperatures = [3.0, 2.9, 2.8, 2.7, 2.6,2.5, 2.4, 2.3, 2.28, 2.269185, 2.0]
 
 print("-" * 70)
 # 修改表头，增加总 Loss 列
@@ -37,7 +37,7 @@ for T in temperatures:
     f_exact = exact_ising_free_energy_per_spin(T)
     
     # 每个自旋的理论 Loss 极小值
-    loss_per_spin = f_exact / T
+    loss_per_spin = f_exact 
     
     # 给定尺寸 L 的总 Loss 理论值
     # 总 Loss = N * (f / T)
