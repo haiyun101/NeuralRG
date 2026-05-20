@@ -171,7 +171,7 @@ def learn(source, flow, batchSize, epochs, lr=1e-3, save = True, saveSteps = 10,
     return LOSS,ACC,OBS
 
 
-def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save=True, saveSteps=10, savePath=None, keepSavings=3, weight_decay=0.001, adaptivelr=False, HMCsteps=10, HMCthermal=10, HMCepsilon=0.2, measureFn=None, alpha=1.0, skipHMC=True, dataDriven=False, dataPath=None, targetT=None):
+def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save=True, saveSteps=10, savePath=None, keepSavings=3, weight_decay=0.001, adaptivelr=False, HMCsteps=10, HMCthermal=10, HMCepsilon=0.2, measureFn=None, alpha=1.0, skipHMC=True, dataDriven=False, dataPath=None, targetT=None, noDeq=False):
 
     def cleanSaving(epoch):
         if epoch >= keepSavings*saveSteps:
@@ -213,6 +213,21 @@ def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save=True, saveStep
             
         print("Initializing Data-Driven MLE Training...")
         mcmc_data = torch.load(dataPath)
+        # HS samples have std ~3.5 (range ±11) while the RNVP coupling MLPs were
+        # designed for ~unit-scale inputs; large inputs make the log-Jacobian
+        # numerically unreliable (loss can fall below the entropy floor H(p_HS)).
+        # Standardize the flow input by a single global scalar σ and undo it
+        # exactly via the change-of-variables Jacobian:
+        #     log q_X(x) = log q(x/σ) - N·logσ
+        # The correction is constant in the flow parameters, so training
+        # dynamics are unchanged, but LOSS / ENTROPY stay directly comparable
+        # to the theory entropy. For discrete data σ≈1 → effectively a no-op.
+        data_std = float(mcmc_data.std())
+        n_dim = int(mcmc_data[0].numel())
+        log_jac_std = n_dim * float(np.log(data_std))
+        print(f"Data-driven input standardization: sigma={data_std:.6f}, "
+              f"N={n_dim}, N*log(sigma)={log_jac_std:.4f} "
+              f"(loss corrected to remain comparable to H(p_HS))")
         dataset = TensorDataset(mcmc_data)
         dataloader = DataLoader(dataset, batch_size=batchSize, shuffle=True, drop_last=True)
         data_iterator = iter(dataloader)
@@ -257,22 +272,33 @@ def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save=True, saveStep
                 
             x_real = x_real.to(device=x_.device, dtype=x_.dtype)
             
-            # Dequantization noise to smooth the discrete states
-            noise = (torch.rand_like(x_real) - 0.5) * 0.2
-            x = x_real + noise
+            if noDeq:
+                x = x_real
+            else:
+                # Dequantization noise to smooth the discrete states
+                noise = (torch.rand_like(x_real) - 0.5) * 0.2
+                x = x_real + noise
             
-            log_prob = flow.logProbability(x)
-            
+            # Feed the flow ~unit-scale inputs; recover the physical log-density
+            # on the original x via the standardization Jacobian (constant term,
+            # so gradients/training dynamics are identical to training on the
+            # standardized data, but the logged loss stays physical).
+            x_std = x / data_std
+            log_prob = flow.logProbability(x_std) - log_jac_std
+
             # Record Energy and Entropy for the MCMC dataset
+            # (source is defined on the original-scale x — do NOT standardize here)
             energy_val = -source.logProbability(x).mean().item()
             entropy_val = -log_prob.mean().item()
-            
+
             lossorigin = -log_prob
             lossstd = lossorigin.std()
             loss = lossorigin.mean()
-            
+
             if alpha > 0:
-                log_prob_sym = flow.logProbability(-x)
+                # -log_jac_std cancels in the difference, but keep it explicit
+                # so both terms are on the same (physical) scale.
+                log_prob_sym = flow.logProbability(-x_std) - log_jac_std
                 loss += alpha * (log_prob.mean() - log_prob_sym.mean())**2
                 
         else:

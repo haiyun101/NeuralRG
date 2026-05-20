@@ -42,6 +42,7 @@ group.add_argument("-haarPrior", action='store_true', help="Force majority vote 
 # add MCMC data drivin search toggle
 group.add_argument("-dataDriven", action='store_true', help="Use Data-Driven (Forward KL) training instead of Energy-Based")
 group.add_argument("-dataPath", default=None, type=str, help="Path to MCMC data. If None, auto-searches based on L and T")
+group.add_argument("-noDeq", action='store_true', help="Disable dequantization noise (use for pre-converted HS continuous samples)")
 
 group = parser.add_argument_group('Ising target parameters')
 #
@@ -169,9 +170,9 @@ def measure(x):
 
 # --- MODIFY THIS LINE ---
 LOSS,ZACC,ZOBS,XACC,XOBS = train.learnInterface(
-    target, fw, batch, epochs, save=True, saveSteps=savePeriod, 
-    savePath=rootFolder, measureFn=measure, alpha=args.alpha, 
-    skipHMC=args.skipHMC, dataDriven=args.dataDriven, 
-    dataPath=args.dataPath, targetT=args.T
+    target, fw, batch, epochs, save=True, saveSteps=savePeriod,
+    savePath=rootFolder, measureFn=measure, alpha=args.alpha,
+    skipHMC=args.skipHMC, dataDriven=args.dataDriven,
+    dataPath=args.dataPath, targetT=args.T, noDeq=args.noDeq
 )
 #LOSS,ZACC,ZOBS,XACC,XOBS = train.learnInterface(target,fw,batch,epochs,save=True,saveSteps = savePeriod,savePath=rootFolder,measureFn = measure)
