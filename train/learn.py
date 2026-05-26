@@ -1,6 +1,8 @@
 import torch
 from torch import nn
 import h5py
+import json
+import os
 import numpy as np
 import subprocess
 import utils
@@ -233,6 +235,16 @@ def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save=True, saveStep
         data_iterator = iter(dataloader)
     else:
         print("Initializing Energy-Based Reverse-KL Training...")
+        data_std = 1.0  # reverse-KL feeds physical x directly (no standardization)
+
+    # Record the flow-input scale so post-hoc tools (analyzers/flow_sample_diagnostic.py)
+    # know whether flow.sample() returns standardized u=x/sigma or physical x.
+    # sigma=1.0 for reverse-KL; sigma=std(data) for standardized data-driven runs.
+    try:
+        with open(os.path.join(savePath, "flow_input_sigma.json"), "w") as _f:
+            json.dump({"sigma": float(data_std), "dataDriven": bool(dataDriven)}, _f)
+    except Exception as _e:
+        print(f"Warning: could not write flow_input_sigma.json: {_e}")
     # ==============================================================
 
     params = list(flow.parameters())

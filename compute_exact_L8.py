@@ -5,7 +5,7 @@ via transfer matrix method, and append results to etc/exactz.md.
 lnZ convention matches exactz.md:
   - lnZ: discrete partition function ln Z_discrete
   - fix:  Hubbard-Stratonovich normalization constant
-          fix = (N/2)*(offset + ln π) + (1/2)*logdet(K)
+          fix = (N/2)*(offset + ln(π/2)) + (1/2)*logdet(K)
           where K = Adj/T + offset*I, offset = 0.1 - min_eigval(Adj/T)
   - The training target (loss*) = -(lnZ + fix) = -lnZ_continuous
 """
@@ -67,7 +67,13 @@ def compute_hs_fix(L, T, Adj):
     offset = 0.1 - w.min()          # same as source/ising.py
     K = K_raw + np.eye(N) * offset
     sign, logdet = np.linalg.slogdet(K)
-    fix = 0.5 * N * (offset + np.log(np.pi)) + 0.5 * logdet
+    # Derivation: with K = Adj/T + offset*I and s in {-1,+1}^N,
+    #   Z_d = sum_s exp((1/T) * (1/2) s^T Adj s)
+    #       = exp(-N*offset/2) * (det(2 pi K))^{-1/2} * 2^N * Z_c
+    # where Z_c = int dx exp(-(1/2) x^T K^{-1} x + sum log cosh x_i).
+    # Therefore lnZ_c - lnZ_d = (N/2)(offset + log(pi/2)) + (1/2) logdet(K).
+    # Matches author's commented-out expression at source/ising.py:74.
+    fix = 0.5 * N * (offset + np.log(np.pi / 2.0)) + 0.5 * logdet
     return fix
 
 
