@@ -10,3 +10,4 @@ data
 opt/*
 *.png
 *.log
+logs/
