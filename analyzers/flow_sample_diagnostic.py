@@ -125,6 +125,9 @@ def build_flow(folder, state):
         depthMERA = int(np.array(f["depthMERA"]))
         weightTying = bool(np.array(f["weightTying"])) if "weightTying" in f else False
         haarPrior = bool(np.array(f["haarPrior"])) if "haarPrior" in f else False
+        flowType = f["flowType"][()].decode() if "flowType" in f else "rnvp"
+        nsfBins  = int(np.array(f["nsfBins"]))  if "nsfBins"  in f else 8
+        nsfBound = float(np.array(f["nsfBound"])) if "nsfBound" in f else 5.0
     if depthMERA == -1:
         depthMERA = None
 
@@ -136,6 +139,7 @@ def build_flow(folder, state):
     fw = train.symmetryMERAInit(
         L, d, nlayers, nmlp, nhidden, nrepeat, sym, device, dtype, name,
         depthMERA=depthMERA, weightTying=weightTying, haarPrior=haarPrior,
+        flowType=flowType, nsfBins=nsfBins, nsfBound=nsfBound,
     )
     fw.load(state)
     fw.eval()

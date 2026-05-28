@@ -1,4 +1,6 @@
 from .rnvp import RNVP
+from .nsf import NSFCoupling
+from . import nsf
 from .hierarchy import *
 from .flow import Flow
 from .onebyoneConv import OnebyoneConv

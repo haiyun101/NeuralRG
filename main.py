@@ -43,6 +43,13 @@ group.add_argument("-haarPrior", action='store_true', help="Force majority vote 
 group.add_argument("-dataDriven", action='store_true', help="Use Data-Driven (Forward KL) training instead of Energy-Based")
 group.add_argument("-dataPath", default=None, type=str, help="Path to MCMC data. If None, auto-searches based on L and T")
 group.add_argument("-noDeq", action='store_true', help="Disable dequantization noise (use for pre-converted HS continuous samples)")
+group.add_argument("-jsLoss", action='store_true', help="Symmetrized-KL (JS-like) training: jsLambda*KL(q||p) + (1-jsLambda)*KL(p||q). Uses HS data + flow samples each step.")
+group.add_argument("-jsLambda", type=float, default=0.5, help="Mixing weight for jsLoss: 1.0 = pure reverse-KL, 0.0 = pure forward-KL, 0.5 = symmetric JS-like.")
+group.add_argument("-jsMemOpt", action='store_true', help="Memory-optimized JS: do two sequential backward passes (rev then fwd) instead of holding both graphs alive simultaneously. Halves peak GPU memory at ~5-10%% wall-clock cost.")
+group.add_argument("-entropyBeta", type=float, default=0.0, help="Forward-KL entropy regularizer: loss += -beta*H(q). Maximizes flow entropy to widen the bridge region. Only active with -dataDriven. ~doubles per-step cost (adds a sampling pass).")
+group.add_argument("-flowType", type=str, default="rnvp", choices=["rnvp", "nsf"], help="Coupling layer type: rnvp (affine) or nsf (rational-quadratic spline, more expressive for bridge regions).")
+group.add_argument("-nsfBins", type=int, default=8, help="Number of bins K in the NSF rational-quadratic spline (default 8). Only used with -flowType nsf.")
+group.add_argument("-nsfBound", type=float, default=5.0, help="Boundary B for the NSF spline: transform is identity outside [-B, B]. Should be > max|data| (e.g. 5*sigma for HS data).")
 
 group = parser.add_argument_group('Ising target parameters')
 #
@@ -80,6 +87,9 @@ if args.load:
         # 【新增读取】
         weightTying = bool(np.array(f["weightTying"])) if "weightTying" in f else False
         haarPrior = bool(np.array(f["haarPrior"])) if "haarPrior" in f else False
+        flowType = str(np.array(f["flowType"]).item().decode()) if "flowType" in f else "rnvp"
+        nsfBins  = int(np.array(f["nsfBins"]))  if "nsfBins"  in f else 8
+        nsfBound = float(np.array(f["nsfBound"])) if "nsfBound" in f else 5.0
 else:
     epochs = args.epochs
     batch = args.batch
@@ -98,6 +108,9 @@ else:
     # 【新增赋值】
     weightTying = args.weightTying
     haarPrior = args.haarPrior
+    flowType = args.flowType
+    nsfBins  = args.nsfBins
+    nsfBound = args.nsfBound
     
     with h5py.File(rootFolder+"parameters.hdf5","w") as f:
         f.create_dataset("epochs",data=args.epochs)
@@ -117,6 +130,9 @@ else:
         # 【新增保存】
         f.create_dataset("weightTying",data=weightTying)
         f.create_dataset("haarPrior",data=haarPrior)
+        f.create_dataset("flowType", data=np.string_(flowType))
+        f.create_dataset("nsfBins",  data=nsfBins)
+        f.create_dataset("nsfBound", data=nsfBound)
 
 device = torch.device("cpu" if cuda<0 else "cuda:"+str(cuda))
 
@@ -147,9 +163,10 @@ if depthMERA == -1:
 # fw = train.symmetryMERAInit(L,d,nlayers,nmlp,nhidden,nrepeat,sym,device,dtype,name,depthMERA=depthMERA)
 # 【修改为】：
 fw = train.symmetryMERAInit(L,d,nlayers,nmlp,nhidden,nrepeat,sym,device,dtype,name,
-                            depthMERA=depthMERA, 
-                            weightTying=weightTying, 
-                            haarPrior=haarPrior)
+                            depthMERA=depthMERA,
+                            weightTying=weightTying,
+                            haarPrior=haarPrior,
+                            flowType=flowType, nsfBins=nsfBins, nsfBound=nsfBound)
 
 #fw = train.symmetryMERAInit(L,d,nlayers,nmlp,nhidden,nrepeat,sym,device,dtype,name)
 
@@ -173,6 +190,8 @@ LOSS,ZACC,ZOBS,XACC,XOBS = train.learnInterface(
     target, fw, batch, epochs, save=True, saveSteps=savePeriod,
     savePath=rootFolder, measureFn=measure, alpha=args.alpha,
     skipHMC=args.skipHMC, dataDriven=args.dataDriven,
-    dataPath=args.dataPath, targetT=args.T, noDeq=args.noDeq
+    dataPath=args.dataPath, targetT=args.T, noDeq=args.noDeq,
+    jsLoss=args.jsLoss, jsLambda=args.jsLambda, jsMemOpt=args.jsMemOpt,
+    entropyBeta=args.entropyBeta
 )
 #LOSS,ZACC,ZOBS,XACC,XOBS = train.learnInterface(target,fw,batch,epochs,save=True,saveSteps = savePeriod,savePath=rootFolder,measureFn = measure)
