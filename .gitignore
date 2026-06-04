@@ -9,5 +9,9 @@ data
 *.saving
 opt/*
 *.png
+# Carve-outs: report-embedded figures committed alongside their .md files.
+!analyzers/*.png
 *.log
 logs/
+# AI chat history export
+HISTORY/
