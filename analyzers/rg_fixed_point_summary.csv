@@ -1,0 +1,37 @@
+label,folder,L,T,epoch,weightTying,n_scales,blocks_per_scale,scale_pair,mse_norm
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,False,5,2,f_1->f_2,0.9648552536964417
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,False,5,2,f_2->f_3,1.7411507368087769
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,False,5,2,f_3->f_4,0.5163550972938538
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,False,5,2,f_4->f_5,0.7918562293052673
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,False,5,2,f_1->f_2,0.882438063621521
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,False,5,2,f_2->f_3,0.3521917462348938
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,False,5,2,f_3->f_4,1.9182265996932983
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,False,5,2,f_4->f_5,1.9161068201065063
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,False,5,2,f_1->f_2,2.728597402572632
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,False,5,2,f_2->f_3,1.8640328645706177
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,False,5,2,f_3->f_4,0.586553156375885
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,False,5,2,f_4->f_5,1.9830864667892456
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,False,5,2,f_1->f_2,2.476968288421631
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,False,5,2,f_2->f_3,1.955304741859436
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,False,5,2,f_3->f_4,0.3435034155845642
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,False,5,2,f_4->f_5,0.15379931032657623
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,False,5,2,f_1->f_2,1.5956388711929321
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,False,5,2,f_2->f_3,0.3981400430202484
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,False,5,2,f_3->f_4,0.01902819611132145
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,False,5,2,f_4->f_5,3.402999209356494e-05
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,False,5,2,f_1->f_2,1.6762701272964478
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,False,5,2,f_2->f_3,0.490953654050827
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,False,5,2,f_3->f_4,0.017682572826743126
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,False,5,2,f_4->f_5,5.790176510345191e-05
+T_c jsLoss_bignet_long (mixed JS),data/32Ising_T2.269_jsLoss_bignet_long_lam0.5,32,2.269185314213022,7900,False,5,2,f_1->f_2,1.656842827796936
+T_c jsLoss_bignet_long (mixed JS),data/32Ising_T2.269_jsLoss_bignet_long_lam0.5,32,2.269185314213022,7900,False,5,2,f_2->f_3,0.21293845772743225
+T_c jsLoss_bignet_long (mixed JS),data/32Ising_T2.269_jsLoss_bignet_long_lam0.5,32,2.269185314213022,7900,False,5,2,f_3->f_4,0.5945977568626404
+T_c jsLoss_bignet_long (mixed JS),data/32Ising_T2.269_jsLoss_bignet_long_lam0.5,32,2.269185314213022,7900,False,5,2,f_4->f_5,1.1855723857879639
+T_c phase2_finetune (mixed 2-stage),data/32Ising_T2.269_phase2_finetune,32,2.269185314213022,1500,False,5,2,f_1->f_2,2.4112672805786133
+T_c phase2_finetune (mixed 2-stage),data/32Ising_T2.269_phase2_finetune,32,2.269185314213022,1500,False,5,2,f_2->f_3,1.1962617635726929
+T_c phase2_finetune (mixed 2-stage),data/32Ising_T2.269_phase2_finetune,32,2.269185314213022,1500,False,5,2,f_3->f_4,0.3523372709751129
+T_c phase2_finetune (mixed 2-stage),data/32Ising_T2.269_phase2_finetune,32,2.269185314213022,1500,False,5,2,f_4->f_5,0.9665741920471191
+T_c bridge_w5.0t0.5 (bridge-reweighted),data/32Ising_T2.269_hsBignet_bridge_w5.0t0.5,32,2.269185314213022,1800,False,5,2,f_1->f_2,0.86446613073349
+T_c bridge_w5.0t0.5 (bridge-reweighted),data/32Ising_T2.269_hsBignet_bridge_w5.0t0.5,32,2.269185314213022,1800,False,5,2,f_2->f_3,1.052777647972107
+T_c bridge_w5.0t0.5 (bridge-reweighted),data/32Ising_T2.269_hsBignet_bridge_w5.0t0.5,32,2.269185314213022,1800,False,5,2,f_3->f_4,2.183405637741089
+T_c bridge_w5.0t0.5 (bridge-reweighted),data/32Ising_T2.269_hsBignet_bridge_w5.0t0.5,32,2.269185314213022,1800,False,5,2,f_4->f_5,2.211911916732788
