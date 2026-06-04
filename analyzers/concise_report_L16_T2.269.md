@@ -54,11 +54,11 @@ _right = HS samples from the true target. Same sigmoid(2x) rendering._
 
 ### hs_dataDriven
 
-![hs_dataDriven flow samples](../data/16Ising_T2.269_hs_dataDriven/flow_samples.png)
+![hs_dataDriven flow samples](figures/16Ising_T2.269_hs_dataDriven__flow_samples.png)
 
 ### sym
 
-![sym flow samples](../data/16Ising_T2.269_sym/flow_samples.png)
+![sym flow samples](figures/16Ising_T2.269_sym__flow_samples.png)
 
 ## Flow correlations — magnetisation P(M) and two-point G(r)
 
@@ -67,9 +67,9 @@ _axial two-point correlation G(r)/G(0). Flow (q) vs HS data (p)._
 
 ### hs_dataDriven
 
-![hs_dataDriven flow correlations](../data/16Ising_T2.269_hs_dataDriven/flow_correlations.png)
+![hs_dataDriven flow correlations](figures/16Ising_T2.269_hs_dataDriven__flow_correlations.png)
 
 ### sym
 
-![sym flow correlations](../data/16Ising_T2.269_sym/flow_correlations.png)
+![sym flow correlations](figures/16Ising_T2.269_sym__flow_correlations.png)
 
