@@ -1,0 +1,307 @@
+label,folder,L,T,epoch,scale_s,metric,value
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,0,moment_mean,0.07170471549034119
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,0,moment_std,3.8077914714813232
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,0,moment_var,14.499276161193848
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,0,moment_kurtosis,-1.422247275224712
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,0,moment_skew,-0.03001022170228763
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,0,moment_L_s,32
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,1,moment_mean,-6.434778213500977
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,1,moment_std,13.858903884887695
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,1,moment_var,192.0692138671875
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,1,moment_kurtosis,-0.680001165313596
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,1,moment_skew,-0.1340079972011286
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,1,moment_L_s,16
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,2,moment_mean,-4.807034015655518
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,2,moment_std,13.083667755126953
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,2,moment_var,171.18235778808594
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,2,moment_kurtosis,-1.3312533748166537
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,2,moment_skew,-0.05426699493014816
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,2,moment_L_s,8
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,3,moment_mean,-0.8373194336891174
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,3,moment_std,7.11987829208374
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,3,moment_var,50.692665100097656
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,3,moment_kurtosis,-1.3764060220368526
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,3,moment_skew,-0.014845041372176928
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,3,moment_L_s,4
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,4,moment_mean,0.6714745759963989
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,4,moment_std,5.945944309234619
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,4,moment_var,35.354251861572266
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,4,moment_kurtosis,-1.2525780799956365
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,4,moment_skew,0.017363801378467665
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,4,moment_L_s,2
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,5,moment_mean,0.5226792097091675
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,5,moment_std,4.895700931549072
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,5,moment_var,23.9678897857666
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,5,moment_kurtosis,-1.0123550173790512
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,5,moment_skew,-0.012322529034006685
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,5,moment_L_s,1
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,0_to_1,adj_ks,0.11367000000000005
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,0_to_1,adj_w1,0.16642629389451466
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,0_to_1,adj_rms_g,0.05009622126817703
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,1_to_2,adj_ks,0.1289296875
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,1_to_2,adj_w1,0.14814354145101277
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,1_to_2,adj_rms_g,0.09339796751737595
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,2_to_3,adj_ks,0.039281250000000045
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,2_to_3,adj_w1,0.04942784541374276
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,2_to_3,adj_rms_g,0.01183244213461876
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,3_to_4,adj_ks,0.0255
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,3_to_4,adj_w1,0.024959136671546707
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,3_to_4,adj_rms_g,nan
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,4_to_5,adj_ks,0.029
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,4_to_5,adj_w1,0.04205307187154539
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,4_to_5,adj_rms_g,nan
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,0,moment_mean,-0.03459131717681885
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,0,moment_std,3.50704026222229
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,0,moment_var,12.299330711364746
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,0,moment_kurtosis,-1.333952273373866
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,0,moment_skew,0.015193538311129993
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,0,moment_L_s,32
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,1,moment_mean,-3.263361930847168
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,1,moment_std,8.347613334655762
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,1,moment_var,69.68264770507812
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,1,moment_kurtosis,-0.674766592232181
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,1,moment_skew,-0.5874693556529066
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,1,moment_L_s,16
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,2,moment_mean,-4.739835739135742
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,2,moment_std,14.32494831085205
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,2,moment_var,205.2041473388672
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,2,moment_kurtosis,-1.1593584200184885
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,2,moment_skew,-0.351670103939842
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,2,moment_L_s,8
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,3,moment_mean,-13.324358940124512
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,3,moment_std,28.941694259643555
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,3,moment_var,837.6216430664062
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,3,moment_kurtosis,-1.258003063664568
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,3,moment_skew,-0.35876475954187564
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,3,moment_L_s,4
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,4,moment_mean,12.697222709655762
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,4,moment_std,24.18898582458496
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,4,moment_var,585.1069946289062
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,4,moment_kurtosis,-1.4572525955549782
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,4,moment_skew,0.2672633283999135
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,4,moment_L_s,2
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,5,moment_mean,6.628767013549805
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,5,moment_std,11.135059356689453
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,5,moment_var,123.98954772949219
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,5,moment_kurtosis,-1.0591520520295532
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,5,moment_skew,0.43079579472682844
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,5,moment_L_s,1
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,0_to_1,adj_ks,0.09516999999999998
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,0_to_1,adj_w1,0.2072605458524966
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,0_to_1,adj_rms_g,0.07620188593864441
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,1_to_2,adj_ks,0.06637500000000007
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,1_to_2,adj_w1,0.0911825534827276
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,1_to_2,adj_rms_g,0.1013798639178276
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,2_to_3,adj_ks,0.026000000000000023
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,2_to_3,adj_w1,0.029951222241096545
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,2_to_3,adj_rms_g,0.061485618352890015
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,3_to_4,adj_ks,0.118
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,3_to_4,adj_w1,0.23855377829482316
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,3_to_4,adj_rms_g,nan
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,4_to_5,adj_ks,0.053
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,4_to_5,adj_w1,0.09296610267466167
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,4_to_5,adj_rms_g,nan
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,0,moment_mean,-0.03459131717681885
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,0,moment_std,3.50704026222229
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,0,moment_var,12.299330711364746
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,0,moment_kurtosis,-1.333952273373866
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,0,moment_skew,0.015193538311129993
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,0,moment_L_s,32
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,1,moment_mean,1.3132463693618774
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,1,moment_std,8.377580642700195
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,1,moment_var,70.1838607788086
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,1,moment_kurtosis,-1.0037132872870485
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,1,moment_skew,0.10434658770044478
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,1,moment_L_s,16
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,2,moment_mean,6.449704647064209
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,2,moment_std,15.921422004699707
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,2,moment_var,253.49166870117188
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,2,moment_kurtosis,-1.0578716230478329
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,2,moment_skew,0.367232812972177
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,2,moment_L_s,8
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,3,moment_mean,-6.942422389984131
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,3,moment_std,10.034053802490234
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,3,moment_var,100.68223571777344
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,3,moment_kurtosis,-1.2350607249552357
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,3,moment_skew,-0.36500631696916264
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,3,moment_L_s,4
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,4,moment_mean,5.550717353820801
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,4,moment_std,8.714001655578613
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,4,moment_var,75.93382263183594
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,4,moment_kurtosis,-1.4461139642359513
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,4,moment_skew,0.09223421172531576
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,4,moment_L_s,2
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,5,moment_mean,3.0002076625823975
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,5,moment_std,5.5031418800354
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,5,moment_var,30.284568786621094
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,5,moment_kurtosis,-1.1760358523833663
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,5,moment_skew,0.11603495298979113
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,5,moment_L_s,1
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,0_to_1,adj_ks,0.05903999999999998
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,0_to_1,adj_w1,0.08775278319012468
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,0_to_1,adj_rms_g,0.06682617962360382
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,1_to_2,adj_ks,0.051578124999999975
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,1_to_2,adj_w1,0.09730781892126578
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,1_to_2,adj_rms_g,0.11148621141910553
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,2_to_3,adj_ks,0.11978125000000006
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,2_to_3,adj_w1,0.2541033631594672
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,2_to_3,adj_rms_g,0.08406901359558105
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,3_to_4,adj_ks,0.08525
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,3_to_4,adj_w1,0.1870717304568061
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,3_to_4,adj_rms_g,nan
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,4_to_5,adj_ks,0.0555
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,4_to_5,adj_w1,0.06513449692484571
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,4_to_5,adj_rms_g,nan
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,0,moment_mean,-0.03459131717681885
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,0,moment_std,3.50704026222229
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,0,moment_var,12.299330711364746
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,0,moment_kurtosis,-1.333952273373866
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,0,moment_skew,0.015193538311129993
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,0,moment_L_s,32
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,1,moment_mean,-0.08266893774271011
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,1,moment_std,2.119558095932007
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,1,moment_var,4.492526054382324
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,1,moment_kurtosis,0.26511236695341767
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,1,moment_skew,0.07634031037265077
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,1,moment_L_s,16
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,2,moment_mean,-0.14570941030979156
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,2,moment_std,1.9047330617904663
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,2,moment_var,3.6280081272125244
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,2,moment_kurtosis,0.1176947957145793
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,2,moment_skew,0.09136395428609942
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,2,moment_L_s,8
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,3,moment_mean,-0.08214705437421799
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,3,moment_std,1.4894979000091553
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,3,moment_var,2.2186038494110107
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,3,moment_kurtosis,0.03628968073195171
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,3,moment_skew,0.09646631591116028
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,3,moment_L_s,4
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,4,moment_mean,-0.15854565799236298
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,4,moment_std,1.1665176153182983
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,4,moment_var,1.3607633113861084
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,4,moment_kurtosis,0.0713062813771197
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,4,moment_skew,0.04886075340116923
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,4,moment_L_s,2
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,5,moment_mean,-0.01651407591998577
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,5,moment_std,0.9377486109733582
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,5,moment_var,0.8793724179267883
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,5,moment_kurtosis,-0.1061637794322654
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,5,moment_skew,0.05606991883681154
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,5,moment_L_s,1
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,0_to_1,adj_ks,0.10999000000000003
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,0_to_1,adj_w1,0.2278783376155453
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,0_to_1,adj_rms_g,0.5772216320037842
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,1_to_2,adj_ks,0.005578124999999989
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,1_to_2,adj_w1,0.009503846452624705
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,1_to_2,adj_rms_g,0.026157371699810028
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,2_to_3,adj_ks,0.003968749999999965
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,2_to_3,adj_w1,0.013898052322020876
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,2_to_3,adj_rms_g,0.03405775502324104
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,3_to_4,adj_ks,0.010875
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,3_to_4,adj_w1,0.01066233944384657
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,3_to_4,adj_rms_g,nan
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,4_to_5,adj_ks,0.0135
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,4_to_5,adj_w1,0.024901532636868055
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,4_to_5,adj_rms_g,nan
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,0,moment_mean,-0.03459131717681885
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,0,moment_std,3.50704026222229
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,0,moment_var,12.299330711364746
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,0,moment_kurtosis,-1.333952273373866
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,0,moment_skew,0.015193538311129993
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,0,moment_L_s,32
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,1,moment_mean,0.1695084422826767
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,1,moment_std,2.4545705318450928
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,1,moment_var,6.024916648864746
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,1,moment_kurtosis,0.15937349112835975
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,1,moment_skew,-0.050043248304525556
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,1,moment_L_s,16
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,2,moment_mean,0.2151244729757309
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,2,moment_std,1.929931879043579
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,2,moment_var,3.724637031555176
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,2,moment_kurtosis,0.037778718422931234
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,2,moment_skew,-0.07897288044627737
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,2,moment_L_s,8
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,3,moment_mean,0.20265136659145355
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,3,moment_std,1.343180775642395
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,3,moment_var,1.804134726524353
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,3,moment_kurtosis,-0.024592560306484046
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,3,moment_skew,-0.08067455821015981
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,3,moment_L_s,4
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,4,moment_mean,0.06406731903553009
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,4,moment_std,0.9676679968833923
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,4,moment_var,0.9363813400268555
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,4,moment_kurtosis,-0.03310202027366138
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,4,moment_skew,-0.09286371343750274
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,4,moment_L_s,2
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,5,moment_mean,0.1815023124217987
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,5,moment_std,0.959120512008667
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,5,moment_var,0.9199120998382568
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,5,moment_kurtosis,-0.13170176925874566
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,5,moment_skew,-0.11230931945830828
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,5,moment_L_s,1
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,0_to_1,adj_ks,0.10958500000000004
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,0_to_1,adj_w1,0.21987822284129815
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,0_to_1,adj_rms_g,0.5714159607887268
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,1_to_2,adj_ks,0.0065078124999999876
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,1_to_2,adj_w1,0.016712136282132566
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,1_to_2,adj_rms_g,0.04176711291074753
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,2_to_3,adj_ks,0.0037500000000000033
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,2_to_3,adj_w1,0.013143121483857252
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,2_to_3,adj_rms_g,0.04471864178776741
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,3_to_4,adj_ks,0.013
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,3_to_4,adj_w1,0.013193008723388624
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,3_to_4,adj_rms_g,nan
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,4_to_5,adj_ks,0.015
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,4_to_5,adj_w1,0.02336507135816645
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,4_to_5,adj_rms_g,nan
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,0,moment_mean,0.0014502692501991987
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,0,moment_std,3.185211181640625
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,0,moment_var,10.145570755004883
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,0,moment_kurtosis,-1.2209148590956334
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,0,moment_skew,0.000264151239856686
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,0,moment_L_s,32
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,1,moment_mean,-0.5667105317115784
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,1,moment_std,9.226865768432617
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,1,moment_var,85.13504791259766
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,1,moment_kurtosis,-0.37473005904533796
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,1,moment_skew,-0.016432327222128614
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,1,moment_L_s,16
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,2,moment_mean,-1.4969122409820557
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,2,moment_std,7.926527976989746
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,2,moment_var,62.8298454284668
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,2,moment_kurtosis,-0.26318841969584295
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,2,moment_skew,-0.1682581339794842
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,2,moment_L_s,8
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,3,moment_mean,-1.1461936235427856
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,3,moment_std,6.7628631591796875
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,3,moment_var,45.7363166809082
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,3,moment_kurtosis,-0.32959510022332106
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,3,moment_skew,0.256724680735363
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,3,moment_L_s,4
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,4,moment_mean,-0.3575054705142975
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,4,moment_std,4.879273891448975
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,4,moment_var,23.807315826416016
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,4,moment_kurtosis,-0.40670842337741053
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,4,moment_skew,0.23846017893963814
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,4,moment_L_s,2
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,5,moment_mean,-0.14950351417064667
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,5,moment_std,3.4993340969085693
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,5,moment_var,12.245339393615723
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,5,moment_kurtosis,-0.37887607942127
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,5,moment_skew,0.20235632875605825
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,5,moment_L_s,1
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,0_to_1,adj_ks,0.08398500000000003
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,0_to_1,adj_w1,0.1547472108267433
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,0_to_1,adj_rms_g,0.1560552567243576
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,1_to_2,adj_ks,0.03608593750000011
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,1_to_2,adj_w1,0.04306559732052737
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,1_to_2,adj_rms_g,0.019009679555892944
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,2_to_3,adj_ks,0.05296875000000001
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,2_to_3,adj_w1,0.10464977159990439
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,2_to_3,adj_rms_g,0.03252972662448883
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,3_to_4,adj_ks,0.026375
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,3_to_4,adj_w1,0.021683440764687017
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,3_to_4,adj_rms_g,nan
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,4_to_5,adj_ks,0.0185
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,4_to_5,adj_w1,0.026958026388681763
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,4_to_5,adj_rms_g,nan

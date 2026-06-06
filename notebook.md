@@ -511,3 +511,170 @@ Slurm `--start` estimates for the L=16 + NSF bignet relaunch put them 1-14 hours
 ## Today's commits
 
 - (this session, pending push) Add NSF coupling + identity init, entropy regularizer, FSS sweep CSVs, bridge-trajectory diagnostic, L=32 concise-report updates, and the sbatch suite for NSF / entropy reg / JS loss / Phase-2 finetune / L=16 default-arch sweep / diagnostics.
+
+---
+
+# Session 2026-05-28 — bridge upweighting, plot/report polish, phase2 bug
+
+## Work done
+
+### 1. L=16 default-arch FSS rerun — confirms the criticality witness
+The 4 sweep points from 27th (jobs 38820889-92 on L40) preempted within minutes. Resubmitted with `--requeue`; tried T4 nodes first and hit "NVIDIA driver too old (found 10020)" — T4 has CUDA 10.2 driver, unusable for PyTorch CUDA 11+. Avoided T4, stayed on L40.
+
+New L=16 default-arch numbers (jobs 38838147/8/9, 20000 ep):
+
+| T   | midbig KL (old) | default KL (new) | per-site |
+|----:|----------------:|-----------------:|---------:|
+| 2.15 | 2.247 | 2.247 | 0.0088 |
+| 2.22 | 3.589 | 3.589 | 0.0140 |
+| 2.32 | **5.34** | **3.005** | **0.0117** |
+| 2.40 | 2.93 | 3.265 | 0.0128 |
+
+Substituted into `fss_sweep_KL_v2.csv`, re-ran fits. The T=2.32 anomaly disappears: per-site 0.021 → 0.012, into the off-critical band. T_c α holds at **2.20** with R²=1.000; off-critical α range 1.95–2.16 (was 1.93–2.16 with one R²=0.97 outlier; now all R² ≥ 0.994).
+
+### 2. FSS plot rendering — three iterations
+Built `analyzers/make_fss_plot.py` (v2 → v3 of the figure):
+- v2 had near-indistinguishable greens for the three off-critical temperatures and no red T_c marker despite the caption claiming one.
+- v3 fixes: T_c rendered in red across all four panels (curve + marker + vertical dashed line). Off-critical temperatures use viridis (purple→green→yellow), thicker stroke on T_c, larger marker. Panels (c)/(d) gained legend with α annotations.
+
+### 3. FSS sweep report — `analyzers/fss_sweep_report.md`
+First-pass full report with everything from session 27 + the cleaned L=16 data:
+- Data table (15 points)
+- α-fit table per T (R² column added)
+- Per-site KL discussion as second lens on the same finding
+- Plot description (one paragraph per panel)
+- Caveats: L=16 arch-substitution, late-training spikes, NSF instability
+- Reproduce-the-report snippet
+- 3 open questions: L=64 single point, NSF+gradClip closure, cosine LR for spikes
+
+Later in session added a "Network sizes" table — default 1.07M (L=8) / 1.42M (L=16); bignet 10.94M at L=32 — and the rule that default suffices for L≤16.
+
+### 4. Entropy reg post-mortem — `analyzers/entropy_reg_review.md`
+User asked "remind me why we did entropy reg" then "review the results." Wrote a short post-mortem:
+- Motivation: sym_bignet's reverse-KL win came with a collapsed bridge (mass at |M|<0.5 was ~0.0095 in data vs essentially 0 in phase2). Hypothesis: `−β·H(q)` would push the flow to widen its support and recover the bridge.
+- Results: β=0.005 within noise of baseline at matched epochs (1920 nat at ep 1800 vs hs_bignet 1917 nat). β=0.05 diverged to LOSS = −5×10²⁴ by ep 600.
+- Why it failed structurally: for continuous flows `H(q)` is unbounded above. `−β·H(q)` is unbounded below. Optimizer drives H(q) → ∞ in unphysical directions. Not a bug, a formulation problem.
+- Path closed unless reformulated (e.g. KL to a wide reference rather than raw entropy).
+
+Saved `project_entropy_reg_review` memory.
+
+### 5. Bridge-targeted upweighting — replacement for entropy reg
+Implemented `-bridgeWeight α -bridgeThresh M` in `main.py` + `train/learn.py`:
+- For each batch sample compute `M_i = mean spin field` on the fly.
+- Weight `w_i = 1 + α · 1[|M_i| < M]`.
+- Loss = `Σ w_i (−log q_i) / Σ w_i` (weighted MLE, magnitude preserved).
+- Critically: the `ENTROPY` column logged to HDF5 stays the *unweighted* MLE — so we can compare bridge-runs to baseline at matched epochs without the reweighting bias polluting the metric.
+
+Added `gradClip` flag in same patch (for NSF L=32 stability).
+
+First run `bridge_w5.0t0.5` (job 38839xxx → 38841300 after wall bump), 8000 ep, L40:
+- On-objective training MLE landed at 8.6 nat above baseline at matched ep (cost of putting weight on a rare event).
+- Diagnostic structural fit (within 1% of data on all three):
+  - `mag_abs_q` 2.39 vs data 2.38
+  - `xi_q` 8.6 vs data 8.57
+  - `G(L/2)/G(0)` matches data
+- Trade-off: ~6 nat KL in both directions for structural agreement on the three diagnostics that have so far been the failure mode.
+
+Bridge diagnostic job 38838836 TIMEOUT at 35 min (`diag_L32_bridge.sh` had 30 min wall). Bumped to 90 min; 38841300 completed cleanly.
+
+Saved `project_bridge_upweighting` memory.
+
+### 6. L=32 concise report — restructure (v1) then v2 fork
+User flagged the original report as hard to read. Restructured the single summary table:
+- Order: Reverse-KL methods → Forward-KL methods → Mixed-objective methods.
+- Tight grouping per method (training + diag rows adjacent); `═══` dividers between sections.
+- Dropped duplicate sym_bignet rows (kept best only).
+- Stripped epoch info from method names.
+- Narrowed the source column.
+- Reordered plot sections to match table order.
+
+Two follow-up edits:
+- `KL_qp` for sym_bignet diag → N/A (cannot evaluate `E_p[log p − log q]` because we don't have a reverse-KL p-sample diagnostic for sym_bignet's geometry).
+- Added a "How KL is obtained" mini-table explaining the four KL columns:
+  - training-row reverse-KL = on-objective `KL(q‖p)` from `E_q[log q − log p]`
+  - training-row forward-KL = on-objective `KL(p‖q)` from `−E_p[log q] − H(p)`
+  - diag-row uses N=8000 sample-based estimate for both directions
+  - sym_bignet diag KL_pq exists (sample from p) but KL_qp would need samples from sym_bignet evaluated at p, which we don't compute in the current diag script
+
+### 7. Visual-vs-KL puzzle resolved (new section in L=32 report)
+User: "mixed-objective methods look better than sym_bignet, but their KLs are worse — are the KL scores correct?" Answer: yes; they measure different things.
+- Eye reads typical samples → that's what *forward* KL penalizes.
+- sym_bignet wins reverse-KL (9.4 nat) because it puts mass where p has mass.
+- But its mass is concentrated on the two peaks; sym_bignet's *forward* KL is 64.6 nat (loses bridge + near-critical fluctuations).
+- jsLoss / phase2 at ~16-19 nat forward-KL; visually closer to real Ising configs.
+- mag_abs_q: data 2.38; sym_bignet 3.11 (overshoots); js/phase2 2.45–2.80.
+- xi_q: data 8.57; sym_bignet 12.0; js/phase2 8.9–10.4.
+
+Filed as a method-section in the L=32 report. Updated `project_loss_not_comparable_across_modes` framing.
+
+### 8. mag_abs_q / xi_q explanation
+User asked what these mean. Wrote in-report explanation:
+- `mag_abs_q` = sample-averaged |M_i| (per-configuration absolute magnetization). For p_HS at L=32 T_c = 2.38.
+- `xi_q` = effective correlation length from fitting `G(r) ∝ r^(−η) e^(−r/ξ)` to flow samples; data value 8.57.
+- `G(L/2)/G(0)` = ratio of mid-lattice to zero-distance connected correlator; tests whether long-distance correlations have the right magnitude.
+
+### 9. Phase2 anchor-confusion bug
+While revisiting phase2 numbers for the report, noticed phase2's diagnostic columns were *bit-identical* to hs_bignet's. md5sum on `phase2/savings/ep9500.saving` vs `hs_bignet/savings/ep9500.saving` matched. The diagnostic script grabs the highest-epoch checkpoint in `savings/`; phase2's training added checkpoints up to ep1500 (the actual phase2 refinement) on top of the anchor file at ep9500 — so highest-epoch logic was diagnosing the anchor, not phase2.
+
+Fix:
+- Moved the anchor file to `savings/_anchor_seed/ep9500.saving` so the highest-epoch heuristic now picks the real phase2 ep1500.
+- Resubmitted diag (job 38843546).
+- Phase2 row in v1 report and v2 report marked "(pending corrected re-diag)".
+
+Lesson: the diagnostic script's "use highest-epoch checkpoint" heuristic is fragile when training resumes from an external anchor. Either it needs to read the *true* final ep from a manifest, or training scripts must put the seed checkpoint outside `savings/`.
+
+### 10. L=32 concise report v2 — `concise_report_L32_T2.269_v2.md`
+User: "keep v1 intact, make v2 with all updates." Wrote v2 (mirrors v1 but adds):
+- Header note declaring v1 as canonical pre-2026-05-28 archive.
+- Architectures table now flags bridge_w5.0t0.5 as bignet-arch / reweighted-loss.
+- Two new rows in summary table: bridge_w5.0t0.5 training + diag, under a `═══ Bridge-reweighted ═══` divider.
+- New "Bridge-targeted upweighting — design and result" section with the mechanism + first results + 6-nat KL trade-off.
+- New "Phase2 anchor-confusion finding" section.
+- Structural diagnostics reading table updated — bridge now the best structural match among all methods (within 1% on the three statistics).
+- Plot sections add bridge_w5.0t0.5 entries; phase2 plot entries flagged as showing anchor visuals until corrected re-diag lands.
+
+### 11. Oral presentation draft — `analyzers/oral_presentation_draft.md`
+12–15 min talk with speaker notes in brackets. Seven sections:
+1. Opening (1 min) — two headline results
+2. Setup (2 min) — HS, RNVP, MERA, both KL directions
+3. FSS sweep (3 min) — α=2.20 at T_c as criticality witness; what α means
+4. L=32 methods don't agree (4 min) — KL_rev winners ≠ visually best; mag_abs_q / xi_q explanation
+5. What we tried and what didn't (2 min) — phase2, entropy reg, bridge upweighting in chronological order
+6. Open questions (2 min) — L=64 single point, late-training instability, bridge follow-ups
+7. Closing (30 sec)
+
+Includes an "Appendix — numbers to have ready for Q&A" with all the headline values pre-tabulated.
+
+## Discussions and insights
+
+### When the eye and KL disagree, both are right
+The visual-vs-KL puzzle isn't a flaw in KL — it's the structural difference between mode-seeking and mass-covering, made concrete on a real Ising problem. The "right" metric depends on what you want the flow *for*:
+- Sampling for visualization or downstream analysis → forward KL is the metric.
+- HMC proposal distribution → reverse KL is fine (we want concentration on high-density regions; bridge coverage is secondary).
+- Phase-diagram exploration → forward KL again (need to track bridge / minority phase).
+
+This is worth stating explicitly because the "KL" in our group's vocabulary has historically meant reverse-KL, and the visual feedback on samples is implicitly forward-KL-conditioned.
+
+### Anchor checkpoints inside the live savings folder are a bug
+The phase2 diagnostic was wrong for *days* before I noticed, because the bit-identical hs_bignet and phase2 columns in the diag table looked like "yes, phase2 didn't change much" rather than "yes, we are diagnosing the wrong file." The rule going forward: **anchors live outside `savings/`** (in `savings/_anchor_seed/` or `anchors/`), and the diagnostic script's "highest-epoch" heuristic should be replaced or supplemented with a manifest read.
+
+### Bridge upweighting works as designed — at a cost
+Within-1% structural match on mag_abs_q, xi_q, G(L/2)/G(0) is a real win. The 6-nat KL trade-off is consistent with how reweighting works: we're paying for putting MLE pressure on a rare event. Whether this is "worth it" depends on whether the structural match is what you care about (yes for phase-diagram and sampling work) or whether absolute KL is the primary metric.
+
+The open questions are sweeps: vary `bridgeWeight` ∈ {1, 2, 5, 10}; vary `bridgeThresh` ∈ {0.3, 0.5, 0.8}; verify bridge density directly rather than via the indirect structural diagnostics.
+
+### Light experiments first, then commit to the heavy ones
+Entropy reg's failure took 2 jobs and ~30 min of compute to diagnose; bridge upweighting's first result took one 8000-ep run. Both are vastly cheaper than the L=32 NSF bignet relaunch (still pending NaN/clip outcome). Order of operations: cheap-experiment failures first, then commit GPU time to the few that survive light testing.
+
+## Open threads
+
+1. **Phase2 corrected re-diag** (job 38843546, L40 90-min wall): re-running on the actual ep1500 phase2 checkpoint. Once landed, backfill `phase2_finetune — diag (ep1500, corrected)` row in both v1 (overwrite) and v2 (the pending row).
+2. **NSF L=32 bignet + gradClip 5.0** (job 38838150, still on d1cmp044 at session close): does clipping fix the NaN-at-ep5928 divergence while preserving the ~0.3 nat advantage over RNVP?
+3. **Bridge upweighting follow-ups**: W and thresh sweep; verify bridge density directly from samples (not just structural proxies); longer-training variant to see if KL trade-off narrows.
+4. **L=64 single point at T_c**: would test whether the α=2.20 excess saturates around 2.2 or keeps growing. ~36h on A100 bignet; defer until capacity opens.
+5. **Late-training instability fix**: still open. Cosine LR after ep 10k or AdamW. Combined with the Adam-state-on-resume issue (`-load` drops moments), this is the next training-loop improvement.
+6. **Z2-equivariant RNVP** (rnvp.py:33–106): the half-finished commented block from earlier in the project. If bridge upweighting + structural diagnostics are good but reverse-KL is still 6+ nat behind, this is the architectural fallback to revisit.
+
+## Today's commits
+
+- Pending push: bridge upweighting (`-bridgeWeight`, `-bridgeThresh`), gradient clipping (`-gradClip`) in `main.py` + `train/learn.py`. New shell scripts `shell/run_L32_hsBignet_bridge.sh` and `shell/diag_L32_bridge.sh`. Updated `analyzers/fss_sweep_KL_v2.csv` with L=16 default-arch numbers and `analyzers/make_fss_plot.py` for the v3 plot. New reports: `analyzers/fss_sweep_report.md`, `analyzers/entropy_reg_review.md`, `analyzers/concise_report_L32_T2.269_v2.md`, `analyzers/oral_presentation_draft.md`. Updated `analyzers/concise_report_L32_T2.269.md` (v1) in place per restructure request.

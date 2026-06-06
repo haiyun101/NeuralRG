@@ -201,7 +201,7 @@ def learn(source, flow, batchSize, epochs, lr=1e-3, save = True, saveSteps = 10,
     return LOSS,ACC,OBS
 
 
-def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save=True, saveSteps=10, savePath=None, keepSavings=3, weight_decay=0.001, adaptivelr=False, HMCsteps=10, HMCthermal=10, HMCepsilon=0.2, measureFn=None, alpha=1.0, skipHMC=True, dataDriven=False, dataPath=None, targetT=None, noDeq=False, jsLoss=False, jsLambda=0.5, jsMemOpt=False, entropyBeta=0.0):
+def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save=True, saveSteps=10, savePath=None, keepSavings=3, weight_decay=0.001, adaptivelr=False, HMCsteps=10, HMCthermal=10, HMCepsilon=0.2, measureFn=None, alpha=1.0, skipHMC=True, dataDriven=False, dataPath=None, targetT=None, noDeq=False, jsLoss=False, jsLambda=0.5, jsMemOpt=False, entropyBeta=0.0, gradClip=0.0, bridgeWeight=0.0, bridgeThresh=0.5, pathGrad=False):
 
     def cleanSaving(epoch):
         if epoch >= keepSavings*saveSteps:
@@ -326,6 +326,7 @@ def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save=True, saveStep
     ENTROPY = []  # <--- 记录微分熵
     MAG_ABS = []  # per-epoch <|M|>_q -- bridge integrity proxy
     MAG_VAR = []  # per-epoch Var(M)_q -- susceptibility proxy
+    BRIDGE_FRAC = []  # per-epoch fraction of batch with |M_i| < bridgeThresh (bridge upweighting diagnostic)
 
     z_ = flow.prior.sample(batchSize)
     x_ = flow.prior.sample(batchSize)
@@ -432,11 +433,24 @@ def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save=True, saveStep
             # Record Energy and Entropy for the MCMC dataset
             # (source is defined on the original-scale x — do NOT standardize here)
             energy_val = -source.logProbability(x).mean().item()
-            entropy_val = -log_prob.mean().item()
+            entropy_val = -log_prob.mean().item()  # pure unweighted MLE — comparable across runs
 
             lossorigin = -log_prob
             lossstd = lossorigin.std()
-            loss = lossorigin.mean()
+
+            if bridgeWeight > 0:
+                # Per-sample magnetization on physical x; bridge = |M_i| < bridgeThresh.
+                # w_i = 1 + bridgeWeight * 1[in bridge], normalized to sum=batch so the
+                # loss magnitude stays comparable to the unweighted case.
+                with torch.no_grad():
+                    _M_i = x.reshape(x.shape[0], -1).mean(dim=1)
+                    _in_bridge = (_M_i.abs() < bridgeThresh).to(lossorigin.dtype)
+                    _w = 1.0 + bridgeWeight * _in_bridge
+                    _bridge_frac = float(_in_bridge.mean().item())
+                loss = (_w * lossorigin).sum() / _w.sum()
+            else:
+                _bridge_frac = float('nan')
+                loss = lossorigin.mean()
 
             if alpha > 0:
                 # -log_jac_std cancels in the difference, but keep it explicit
@@ -462,6 +476,43 @@ def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save=True, saveStep
                 loss = mle_val + ent_term.detach()
                 loss_already_backward = True
                 
+        elif pathGrad:
+            # --- Reverse-KL Path Gradient (STL / Roeder 2017, Vaitl 2024) ---
+            # Standard reparam grad of E_q[log q - log p] has two routes through θ:
+            #   (a) implicit, through the sample path x = T_θ(z), and
+            #   (b) explicit, through the θ-dependence of log q_θ(·).
+            # At q=p the (b) term has mean 0 but variance > 0; dropping it gives
+            # the "sticking the landing" property (zero gradient variance at the
+            # optimum). Algebraic identity used here:
+            #
+            #   logq_full     = log q_θ(u)         # grad: (a) + (b)
+            #   logq_explicit = log q_θ(u.detach())# grad: (b) only
+            #   logq_for_bw   = logq_full - logq_explicit  # value=0, grad=(a) only
+            #
+            # Cost: one extra inverse pass per step (the second logProbability call).
+            u, _ = flow.sample(batchSize)
+            x = data_std * u if abs(data_std - 1.0) > 1e-6 else u
+
+            logq_full     = flow.logProbability(u)
+            logq_explicit = flow.logProbability(u.detach())
+            logq_for_bw   = logq_full - logq_explicit
+
+            logp_target = source.logProbability(x)
+
+            # Logged quantities are the same physical scalars as the standard branch
+            energy_val  = -logp_target.mean().item()
+            entropy_val = -logq_full.mean().item()
+            lossorigin  = (logq_full - logp_target).detach()  # F = ⟨log q - log p⟩, value only
+            lossstd     = lossorigin.std()
+
+            # Loss tensor whose .backward() yields the path-only gradient.
+            # Symmetry penalty same form as standard branch — STL applies the
+            # path-only filter to the main KL term; the alpha penalty keeps its
+            # standard form (it's a regularizer, not the estimator under study).
+            loss = (logq_for_bw - logp_target).mean()
+            if alpha > 0:
+                loss = loss + alpha * (logq_full.mean() - flow.logProbability(-u).mean())**2
+
         else:
             # --- Original Energy-Based Reverse KL ---
             # When data_std != 1.0 (Phase 2 finetune from a forward-KL flow),
@@ -490,12 +541,14 @@ def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save=True, saveStep
         if not skip_outer_backward:
             flow.zero_grad()
             loss.backward()
+        if gradClip > 0:
+            torch.nn.utils.clip_grad_norm_(flow.parameters(), gradClip)
         optimizer.step()
         
         if adaptivelr:
             scheduler.step()
 
-        if jsLoss or not dataDriven:
+        if jsLoss or (not dataDriven and not pathGrad):
             del sampleLogProbability
 
         if jsLoss:
@@ -518,6 +571,11 @@ def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save=True, saveStep
             _M = x.detach().reshape(x.shape[0], -1).mean(dim=1)
             MAG_ABS.append(float(_M.abs().mean().item()))
             MAG_VAR.append(float(_M.var().item()))
+            if dataDriven and bridgeWeight > 0:
+                BRIDGE_FRAC.append(_bridge_frac)
+            else:
+                # keep BRIDGE_FRAC aligned with MAG_ABS for downstream readers
+                BRIDGE_FRAC.append(float((_M.abs() < bridgeThresh).float().mean().item()))
 
         # 将 epoch > 50 改为 epoch > 0，这样如果 saveSteps=10，就会从 10 开始存
         if (epoch > 0 and epoch % saveSteps == 0) or epoch == epochs:
@@ -573,6 +631,7 @@ def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save=True, saveStep
                     f.create_dataset("ENTROPY",data=np.array(ENTROPY)) # <--- 存入hdf5
                     f.create_dataset("MAG_ABS",data=np.array(MAG_ABS))
                     f.create_dataset("MAG_VAR",data=np.array(MAG_VAR))
+                    f.create_dataset("BRIDGE_FRAC",data=np.array(BRIDGE_FRAC))
                     f.create_dataset("ZACC",data=np.array(ZACC))
                     f.create_dataset("ZOBS",data=np.array(ZOBS))
                     f.create_dataset("XACC",data=np.array(XACC))

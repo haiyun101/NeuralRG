@@ -27,6 +27,6 @@ echo "Bridge trajectory  |  folder: $FOLDER"
 echo "Job $SLURM_JOB_ID on $SLURMD_NODENAME"
 echo "=========================================="
 
-python analyzers/bridge_trajectory.py "$FOLDER" -n ${N_SAMPLES:-2000} ${FINAL_EPOCH:+--final-epoch $FINAL_EPOCH}
+python analyzers/bridge_entropy/bridge_trajectory.py "$FOLDER" -n ${N_SAMPLES:-2000} ${FINAL_EPOCH:+--final-epoch $FINAL_EPOCH}
 
 echo "Done."

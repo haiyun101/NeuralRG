@@ -31,6 +31,8 @@ N=200000
 HS_PT="data/mcmc_data/hs_L32_T${T}_N${N}.pt"
 ARCH="${ARCH:-default}"
 EPOCHS="${EPOCHS:-8000}"
+GRADCLIP="${GRADCLIP:-0}"
+FOLDER_SUFFIX="${FOLDER_SUFFIX:-}"
 
 if [ ! -f "$HS_PT" ]; then
     echo "ERROR: HS data missing: $HS_PT"
@@ -45,12 +47,12 @@ else
     echo "ERROR: ARCH must be 'default' or 'bignet'"; exit 1
 fi
 
-FOLDER="./data/32Ising_T2.269_hs_nsf_${ARCH}"
+FOLDER="./data/32Ising_T2.269_hs_nsf_${ARCH}${FOLDER_SUFFIX}"
 mkdir -p "$FOLDER"
 
 echo "=========================================="
 echo "L=32 hs NSF Stage-2  (arch=$ARCH, K=8, bound=20)"
-echo "nlayers=$NLAYERS nhidden=$NHIDDEN epochs=$EPOCHS"
+echo "nlayers=$NLAYERS nhidden=$NHIDDEN epochs=$EPOCHS gradClip=$GRADCLIP"
 echo "Job $SLURM_JOB_ID on $SLURMD_NODENAME"
 echo "folder: $FOLDER"
 echo "=========================================="
@@ -70,6 +72,7 @@ python main.py \
     -noDeq \
     -flowType nsf \
     -nsfBins 8 \
-    -nsfBound 20.0
+    -nsfBound 20.0 \
+    -gradClip "$GRADCLIP"
 
 echo "Done."

@@ -207,12 +207,17 @@ def save_flow_png(folder, x_q_vis, x_p_vis, epoch, label):
     return out
 
 
-def save_corr_png(folder, M_q, M_p, G_q, G_p, epoch, label):
+def save_corr_png(folder, M_q, M_p, G_q, G_p, epoch, label, T=None, L=None):
     """Two panels: per-config magnetisation histogram, and normalised G(r)/G(0).
 
     These resolve structure the scalar <A>/H/KL numbers cannot: the
     magnetisation spread (global order) and the correlation length (whether
     the flow reproduces critical large-scale domains, not just local noise).
+
+    Panel 2 is rendered on log-log axes. At T_c (within 0.01 of 2.269) a
+    dashed reference line `G ∝ r^(-η)` with η=1/4 (Onsager exact for the
+    2D Ising universality class) is overlaid, anchored at the r=1 point
+    of the HS data, so the slope match is visually direct.
     """
     try:
         import matplotlib
@@ -238,17 +243,39 @@ def save_corr_png(folder, M_q, M_p, G_q, G_p, epoch, label):
     ax1.set_title("per-config magnetisation")
     ax1.legend(fontsize=9)
 
-    # panel 2: normalised axial two-point correlation  G(r)/G(0)
-    ax2.plot(np.arange(len(G_q)), G_q / G_q[0], "o-", color="C0",
-             label="flow  x ~ q")
+    # panel 2: log-log normalised axial two-point correlation |G(r)| / G(0).
+    # r=0 dropped (1 by construction; log undefined). |G| keeps the
+    # plot well-defined when finite-L wrap-around drives G(r) slightly
+    # negative near r=L/2.
+    r_all = np.arange(len(G_q))
+    r_mask = r_all >= 1
+    r = r_all[r_mask]
+    Gq_norm = np.abs(G_q[r_mask] / G_q[0])
+    ax2.loglog(r, Gq_norm, "o-", color="C0", label="flow  x ~ q")
     if G_p is not None:
-        ax2.plot(np.arange(len(G_p)), G_p / G_p[0], "s-", color="C1",
-                 label="HS data  x ~ p")
+        Gp_norm = np.abs(G_p[r_mask] / G_p[0])
+        ax2.loglog(r, Gp_norm, "s-", color="C1", label="HS data  x ~ p")
+
+    # T_c reference line: G(r) ~ r^(-eta), eta=1/4 (Onsager).
+    # Only meaningful at criticality; off-critical G(r) decays
+    # exponentially, so the line would be misleading there.
+    if T is not None and abs(T - 2.269185314213022) < 0.01:
+        # anchor at r=1, prefer p (data) if available, else q (flow).
+        if G_p is not None:
+            y1 = float(np.abs(G_p[1] / G_p[0]))
+        else:
+            y1 = float(np.abs(G_q[1] / G_q[0]))
+        eta = 0.25
+        r_ref = np.array([1.0, float(r[-1])])
+        ax2.loglog(r_ref, y1 * (r_ref / 1.0) ** (-eta),
+                   "k--", linewidth=1.2, alpha=0.75,
+                   label=r"$T_c$ theory: $G\propto r^{-1/4}$ ($\eta=1/4$)")
+
     ax2.set_xlabel("lattice distance  r")
-    ax2.set_ylabel("G(r) / G(0)")
-    ax2.set_title("axial two-point correlation")
-    ax2.set_ylim(-0.02, 1.02)
-    ax2.grid(alpha=0.3)
+    ax2.set_ylabel("|G(r)| / G(0)")
+    title_suffix = f"  (T={T:.3f}{', T_c' if T is not None and abs(T-2.269185314213022)<0.01 else ''})" if T is not None else ""
+    ax2.set_title("axial two-point correlation (log-log)" + title_suffix)
+    ax2.grid(alpha=0.3, which="both")
     ax2.legend(fontsize=9)
 
     fig.suptitle(f"{label}    (checkpoint epoch {epoch})", fontsize=12)
@@ -390,7 +417,8 @@ def run_one(folder, n_samples, batch_size, seed, make_png=True):
         png = save_flow_png(folder, x_q_vis, x_p_vis, epoch, label)
         if png:
             out["flow_png"] = png
-        cpng = save_corr_png(folder, M_q, M_p, G_q, G_p, epoch, label)
+        cpng = save_corr_png(folder, M_q, M_p, G_q, G_p, epoch, label,
+                             T=T, L=L)
         if cpng:
             out["corr_png"] = cpng
 

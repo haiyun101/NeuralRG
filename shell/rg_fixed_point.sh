@@ -20,6 +20,6 @@ source activate neuralrg
 
 mkdir -p logs
 
-python analyzers/rg_fixed_point.py --N 10000
+python analyzers/rg_fixed_point/rg_fixed_point.py --N 10000
 
 echo "Done."

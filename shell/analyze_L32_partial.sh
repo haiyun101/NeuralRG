@@ -39,7 +39,7 @@ python analyzers/flow_sample_diagnostic.py "${FOLDERS[@]}" -n 8000 -b 512
 
 echo ""
 echo "--- Phase B: L=32 report (bignet excluded - still training) ---"
-python analyzers/loss_analyzer_fixT.py -L 32 -t 2.269 --exclude bignet
+python analyzers/loss/loss_analyzer_fixT.py -L 32 -t 2.269 --exclude bignet
 
 echo ""
 echo "Done. Report at analyzers/loss_report_L32_T2.269.md"

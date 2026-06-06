@@ -1,0 +1,1795 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>rg_fixed_point_report_zh.md</title>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+
+<style>
+/* https://github.com/microsoft/vscode/blob/master/extensions/markdown-language-features/media/markdown.css */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+body {
+	font-family: var(--vscode-markdown-font-family, -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif);
+	font-size: var(--vscode-markdown-font-size, 14px);
+	padding: 0 26px;
+	line-height: var(--vscode-markdown-line-height, 22px);
+	word-wrap: break-word;
+}
+
+#code-csp-warning {
+	position: fixed;
+	top: 0;
+	right: 0;
+	color: white;
+	margin: 16px;
+	text-align: center;
+	font-size: 12px;
+	font-family: sans-serif;
+	background-color:#444444;
+	cursor: pointer;
+	padding: 6px;
+	box-shadow: 1px 1px 1px rgba(0,0,0,.25);
+}
+
+#code-csp-warning:hover {
+	text-decoration: none;
+	background-color:#007acc;
+	box-shadow: 2px 2px 2px rgba(0,0,0,.25);
+}
+
+body.scrollBeyondLastLine {
+	margin-bottom: calc(100vh - 22px);
+}
+
+body.showEditorSelection .code-line {
+	position: relative;
+}
+
+body.showEditorSelection .code-active-line:before,
+body.showEditorSelection .code-line:hover:before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: -12px;
+	height: 100%;
+}
+
+body.showEditorSelection li.code-active-line:before,
+body.showEditorSelection li.code-line:hover:before {
+	left: -30px;
+}
+
+.vscode-light.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.15);
+}
+
+.vscode-light.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.40);
+}
+
+.vscode-light.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-dark.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+.vscode-dark.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.60);
+}
+
+.vscode-dark.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-high-contrast.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 160, 0, 0.7);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 160, 0, 1);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+img {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 1px solid -webkit-focus-ring-color;
+	outline-offset: -1px;
+}
+
+hr {
+	border: 0;
+	height: 2px;
+	border-bottom: 2px solid;
+}
+
+h1 {
+	padding-bottom: 0.3em;
+	line-height: 1.2;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+}
+
+h1, h2, h3 {
+	font-weight: normal;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table > thead > tr > th {
+	text-align: left;
+	border-bottom: 1px solid;
+}
+
+table > thead > tr > th,
+table > thead > tr > td,
+table > tbody > tr > th,
+table > tbody > tr > td {
+	padding: 5px 10px;
+}
+
+table > tbody > tr + tr > td {
+	border-top: 1px solid;
+}
+
+blockquote {
+	margin: 0 7px 0 5px;
+	padding: 0 16px 0 10px;
+	border-left-width: 5px;
+	border-left-style: solid;
+}
+
+code {
+	font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+	font-size: 1em;
+	line-height: 1.357em;
+}
+
+body.wordWrap pre {
+	white-space: pre-wrap;
+}
+
+pre:not(.hljs),
+pre.hljs code > div {
+	padding: 16px;
+	border-radius: 3px;
+	overflow: auto;
+}
+
+pre code {
+	color: var(--vscode-editor-foreground);
+	tab-size: 4;
+}
+
+/** Theming */
+
+.vscode-light pre {
+	background-color: rgba(220, 220, 220, 0.4);
+}
+
+.vscode-dark pre {
+	background-color: rgba(10, 10, 10, 0.4);
+}
+
+.vscode-high-contrast pre {
+	background-color: rgb(0, 0, 0);
+}
+
+.vscode-high-contrast h1 {
+	border-color: rgb(0, 0, 0);
+}
+
+.vscode-light table > thead > tr > th {
+	border-color: rgba(0, 0, 0, 0.69);
+}
+
+.vscode-dark table > thead > tr > th {
+	border-color: rgba(255, 255, 255, 0.69);
+}
+
+.vscode-light h1,
+.vscode-light hr,
+.vscode-light table > tbody > tr + tr > td {
+	border-color: rgba(0, 0, 0, 0.18);
+}
+
+.vscode-dark h1,
+.vscode-dark hr,
+.vscode-dark table > tbody > tr + tr > td {
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+</style>
+
+<style>
+/* Tomorrow Theme */
+/* http://jmblog.github.com/color-themes-for-google-code-highlightjs */
+/* Original theme - https://github.com/chriskempson/tomorrow-theme */
+
+/* Tomorrow Comment */
+.hljs-comment,
+.hljs-quote {
+	color: #8e908c;
+}
+
+/* Tomorrow Red */
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-regexp,
+.hljs-deletion {
+	color: #c82829;
+}
+
+/* Tomorrow Orange */
+.hljs-number,
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-literal,
+.hljs-type,
+.hljs-params,
+.hljs-meta,
+.hljs-link {
+	color: #f5871f;
+}
+
+/* Tomorrow Yellow */
+.hljs-attribute {
+	color: #eab700;
+}
+
+/* Tomorrow Green */
+.hljs-string,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition {
+	color: #718c00;
+}
+
+/* Tomorrow Blue */
+.hljs-title,
+.hljs-section {
+	color: #4271ae;
+}
+
+/* Tomorrow Purple */
+.hljs-keyword,
+.hljs-selector-tag {
+	color: #8959a8;
+}
+
+.hljs {
+	display: block;
+	overflow-x: auto;
+	color: #4d4d4c;
+	padding: 0.5em;
+}
+
+.hljs-emphasis {
+	font-style: italic;
+}
+
+.hljs-strong {
+	font-weight: bold;
+}
+</style>
+
+<style>
+/*
+ * Markdown PDF CSS
+ */
+
+ body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif, "Meiryo";
+	padding: 0 12px;
+}
+
+pre {
+	background-color: #f8f8f8;
+	border: 1px solid #cccccc;
+	border-radius: 3px;
+	overflow-x: auto;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+}
+
+pre:not(.hljs) {
+	padding: 23px;
+	line-height: 19px;
+}
+
+blockquote {
+	background: rgba(127, 127, 127, 0.1);
+	border-color: rgba(0, 122, 204, 0.5);
+}
+
+.emoji {
+	height: 1.4em;
+}
+
+code {
+	font-size: 14px;
+	line-height: 19px;
+}
+
+/* for inline code */
+:not(pre):not(.hljs) > code {
+	color: #C9AE75; /* Change the old color so it seems less like an error */
+	font-size: inherit;
+}
+
+/* Page Break : use <div class="page"/> to insert page break
+-------------------------------------------------------- */
+.page {
+	page-break-after: always;
+}
+
+</style>
+
+<script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast')
+          ? 'dark'
+          : 'default'
+    });
+  </script>
+<h1 id="l32-mera-%E6%B5%81%E7%9A%84-rg-%E4%B8%8D%E5%8A%A8%E7%82%B9%E6%8E%A2%E9%92%88">L=32 MERA 流的 RG 不动点探针</h1>
+<blockquote>
+<p><strong>状态(V3 鲁棒性检查之后)。</strong>
+原分析的主要结论 —— 即&quot;逆向 KL 流在 T_c 处满足我们的假设,因为 z-标准化输出上的
+<code>MSE(f_4, f_5) ≈ 10⁻⁵</code>&quot; —— 已经被 <strong>V3 恒等残差检查所推翻</strong>:
+逆向 KL 的深层 block 各自接近恒等映射(在 <code>N(0, I)</code> 上
+<code>f_4</code>、<code>f_5</code> 残差 ≈ 0.02–0.3),所以两个近似恒等的函数在同一探针上自然给出相匹配的输出。
+仅靠 z-标准化输出的 MSE 探针在构造上就无法区分&quot;学到的尺度不变不动点映射&quot;与
+&quot;优化器把这些 block 留作近似恒等映射&quot;这两种情况。前向 KL 的&quot;深层 MSE ≈ 2&quot;
+仍然是真实的功能性不对称(V3 残差在 <code>f_4</code> 上达 2.8–15.4 —— 数值很大,
+是非平凡工作)。</p>
+<p>下文中原始的 Motivation、Methodology、Numerical results 与 Interpretation
+章节作为<strong>历史记录</strong>保留;修正后的结论位于末尾的 <strong>&quot;Robustness checks
+(V1 / V2 / V3) — and the major reinterpretation they force&quot;</strong> 章节。
+两部分都需阅读:原始章节描述探针测到了什么;鲁棒性章节描述测量真正意味着什么。</p>
+<p><strong>V2b 补遗(单槽链式输入)。</strong> V2 的链式输入探针把上一个 block 的整个
+4 元素输出作为下一个 block 的 2×2 patch 输入。生产中 MERA 的组合方式只
+重用 patch 中 4 个位置里的 1 个(保留粗粒度槽 / kept-coarse slot);
+另外 3 个槽是新鲜的 <code>N(0, I)</code>。V2b 修正了这一点:它令
+<code>h_s[..., 0, 0] = o_{s+1}[..., 0, 0]</code>,并对剩下 3 个 patch 位置重新抽样。
+结果:逆向 KL 的 <code>MSE(f_4, f_5)</code> 从 V2 的 0.0000 跳到 V2b 的 <strong>1.489</strong>,
+与非临界温度对照组的值一致。因此原来&quot;逆向 KL 满足我们假设&quot;的读法
+是两个叠加的几何错配的产物(V3 的&quot;<code>N(0, I)</code> 上近似恒等&quot;发现,
+以及 V2 的&quot;4 元组完整链式&quot;几何)。原始的 V2 和原始的 V4 都没有
+经过几何修正这一关。</p>
+<p><strong>V4 补遗(数据正向方向,仅保留粗粒度子格点)。</strong> 一个补充探针把
+真实的 HS 数据通过 MERA 的正向(分析)方向,并在相邻中间场 <code>y_s</code>、<code>y_{s+1}</code>
+之间比较<strong>慢模子格点</strong>(在尺度 s 上跨度为 <code>2^s</code>)。先前一次在完整 L × L
+<code>y_s</code> 上做平均的版本被撤回 —— 它把慢模与 <code>1 − 1/4^s</code> 个被训练成
+<code>N(0, 1)</code> 的冻结潜在位置混在一起,因而所报告的&quot;深尺度上 rev-KL std ≈ 1.1&quot;
+实际上是这些冻结潜在位置的&quot;地板效应&quot;。</p>
+<p>在保留粗粒度子格点上,V4 的图像更清晰:
+逆向 KL 流的慢模 std 单调收缩 3.51 → 0.94,峰度 → 0
+(慢模被<strong>抹除</strong>而不是被粗粒度化),并且在粗格点上发展出<strong>反相关</strong>的最近邻
+(G(1)/G(0) 为负);前向 KL 流则把慢模 std 在中间尺度上吹大到输入的 8 倍
+(T_c hs_dataDriven:在 y_3 处 std 从 3.51 → 28.94),之后部分回落。
+分块 RG(V5)的&quot;真值&quot;给出 std 3.51 → 2.46 与双峰 kurt ≈ −1.84 ——
+两类流都不匹配这条曲线。因此修正后的 V4 一方面确认 V3
+(逆向 KL 深层 block 没在做物理上的事),另一方面又增添了两个新病理:
+逆向 KL 的慢模塌缩成高斯,以及逆向 KL 的反相关空间结构。</p>
+<p><strong>V5 补遗(Wilson–Kadanoff 分块 RG 真值)。</strong> 在与 V4 完全相同的 HS 输入上
+跑分块平均级联 <code>x_s = AvgPool2d(2)^s(x)</code>,并逐尺度与 MERA 子采样的慢模场
+进行比较。双轴判决:<strong>fwd-KL 把空间结构做对了但幅度搞错了</strong>
+(在 coarse 深度上 hs_bignet 的 G(r)/G(0) 的 RMS 偏差为 0.02–0.07,
+但边缘 std 比分块 RG 高 4–9 倍);<strong>rev-KL 把幅度压到接近先验,
+但空间结构完全错了</strong>(在每个粗尺度上 RMS-G ≈ 0.62–0.67,比任一 fwd-KL 行
+高一个数量级;KS 边缘距离从 0.13 单调增长到 0.20)。
+非临界温度的对照组 T = 2.40 在两个轴上都匹配分块 RG(深尺度 KS → 0.04,
+RMS-G → 0.07)。因此 V5 提供了 V4 所需的外部基准:
+在该架构上没有任何流在 T_c 处做 Wilson 风格的 RG,
+训练目标决定了在哪个轴上崩溃。</p>
+</blockquote>
+<h2 id="%E5%8A%A8%E6%9C%BA">动机</h2>
+<p>在传统物理中,当系统处于临界相变时,缩放视角(粗粒度化)不会改变物理。
+如果一个归一化流真的学到了 Ising 模型的物理,则其网络的中间层应反映出这一点:
+深层应施加的数学变换应趋同。</p>
+<p>这是 <strong>RG 不动点</strong>特征。我们设计一个探针,在受控的标准高斯输入下测量
+训练好的 MERA 流的逐尺度 block 变换随深度如何演化。</p>
+<p>如果 L=32 T_c 流真的内化了临界点的尺度不变物理,则其深层 scale-block
+应收敛到同一函数形式(相邻尺度 MSE 下降并平台)。非临界流没有尺度不变性,
+不应表现出这种收敛。</p>
+<blockquote>
+<p><strong>[V3 关于方法论前提的注释]</strong> 上述预言是必要条件但非充分:相邻 MSE → 0
+既可能是因为两个 block 实现了同一非平凡的尺度不变映射(预期解读),也可能
+是因为两个 block 都接近恒等(平凡)。下文 V3 利用 per-block 恒等残差
+<code>E[(f_s(z) − z)^2]</code> 来打破这一退化。本工作探测的所有流都没有通过
+&quot;低相邻 MSE 且高恒等残差&quot;的联合检验;rev-KL 流走的是平凡路径。</p>
+</blockquote>
+<h2 id="%E6%96%B9%E6%B3%95">方法</h2>
+<h3 id="%E7%AC%AC-1-%E6%AD%A5%E9%9A%94%E7%A6%BB%E5%8A%9F%E8%83%BD-block">第 1 步:隔离功能 block</h3>
+<p>比较的是 <em>函数</em>(神经网络 block)本身,而不是最终生成的图像。</p>
+<p>对于 L=32,MERA 架构有</p>
+<pre><code>depth = log2(L) * nrepeat * 2 = 5 * 1 * 2 = 10
+</code></pre>
+<p>个 RNVP 模块,组织为 <strong>5 个物理粗粒度尺度</strong>(每个尺度一个 offset-0 + 一个 offset-1 mask)。
+我们把每相邻两个 RNVP 模块组成一个 <em>scale-block</em> <code>f_s</code>,得到要比较的 5 个变换:</p>
+<pre><code>f_1, f_2, f_3, f_4, f_5
+</code></pre>
+<p>每个 block 内部含 <code>s(·)</code> 与 <code>t(·)</code> 子网络(<code>nlayers</code> 个耦合层 × 每个网络 <code>nmlp</code> 个 MLP 隐层)。</p>
+<p>探针把每个 block 应用在 <strong>逆向方向</strong>(潜变量 → 物理变量),与 MERA 的采样路径一致。</p>
+<h3 id="%E7%AC%AC-2-%E6%AD%A5%E6%A0%87%E5%87%86%E5%8C%96%E6%8E%A2%E9%92%88-batch">第 2 步:标准化探针 batch</h3>
+<p>不同层操作的潜变量边缘尺度可能漂移,所以用原始数据作输入并不公平。我们采用受控探针:</p>
+<ul>
+<li>抽样 <code>Z ~ N(0, I)</code>,形状为 <code>(N, 1, 2, 2)</code>,<code>N = 10000</code></li>
+<li>独立地把 <code>Z</code> 送过每个 scale-block(绕开 MERA 的空间 dispatch / collect,
+因为 block 本身就是 2×2 patch 上的纯函数)</li>
+</ul>
+<h3 id="%E7%AC%AC-3-%E6%AD%A5%E5%87%BD%E6%95%B0%E8%B7%9D%E7%A6%BB-mse">第 3 步:函数距离 MSE</h3>
+<p>定义</p>
+<pre><code>O_s = f_s(Z)               # 原始 block 输出
+O_s_norm = (O_s - mean(O_s)) / std(O_s)
+                           # batch 内逐元素 z-标准化
+</code></pre>
+<p>z-标准化剥除了平凡的逐 block 比例因子(若 block 3 乘以 2 而 block 4 乘以 0.5,
+那不算真正的功能差异;我们关心 <em>形状</em>,不是比例)。</p>
+<p>在 z-标准化输出上计算相邻尺度 MSE:</p>
+<pre><code>MSE(O_s, O_{s+1}) = mean[ (O_s_norm - O_{s+1}_norm)^2 ]
+                 for s = 1..4
+</code></pre>
+<h3 id="%E7%AC%AC-4-%E6%AD%A5%E9%A2%84%E6%9C%9F%E7%89%B9%E5%BE%81">第 4 步:预期特征</h3>
+<table>
+<thead>
+<tr>
+<th>区域</th>
+<th>预期</th>
+<th>原因</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>浅层尺度(f_1 → f_2)</td>
+<td>MSE 高</td>
+<td>第一个 scale-block 把先验转为主导阶场结构;&quot;容易&quot;的非高斯化主要发生在这里,所以这一函数本质上不同于其他</td>
+</tr>
+<tr>
+<td>T_c 深层尺度(f_3 → f_4, f_4 → f_5)</td>
+<td><strong>MSE 低且平台</strong></td>
+<td>RG 不动点特征 —— 各尺度上重复同一函数</td>
+</tr>
+<tr>
+<td>非临界(T=2.15 或 T=2.4)</td>
+<td><strong>无平台</strong></td>
+<td>系统有限相关长度,无尺度不变,各 block 不应趋同</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>[V4/V5 关于探针输入范围的注释]</strong> 第 1–3 步把每个 <code>f_s</code> 视为
+一个函数 <code>R⁴ → R⁴</code>,并在 <code>(N, 1, 2, 2)</code> 标准高斯 patch 上求值。
+这是一个 <strong>函数属性</strong>探针,不是生产输入探针。在生产正向 pass 中,
+<code>f_s</code> 接收的是由 dispatch 模式在尺度 <code>s</code> 上从 <em>慢模场</em>中切出的 patch;
+据 V5,该场的 std ≈ 3.5 → 6–29(fwd-KL)或 3.5 → 1(rev-KL),
+在任何中间尺度都不是 <code>N(0, I)</code>,只有到达逆向最深的潜端时才是。
+原始探针的&quot;深层 MSE 低 = rev-KL 学到了不动点&quot;的读法因此只是
+&quot;patch 上 <code>N(0, I)</code>&quot;的陈述;V4 与 V5(保留粗粒度场探针)
+才是真正检验生产慢模是否尺度不变。详细说明见下文鲁棒性章节的
+&quot;探针输入范围&quot;小节。</p>
+</blockquote>
+<h2 id="%E5%AE%9E%E7%8E%B0">实现</h2>
+<ul>
+<li>脚本:<code>analyzers/rg_fixed_point.py</code></li>
+<li>任务:<code>shell/rg_fixed_point.sh</code>(batch CPU,~30 min 预算;实际只需几秒,
+因为探针只是对每尺度 10000 个 2×2 patch 各做一次 forward)</li>
+<li>被探针的流(L=32 <code>hs_dataDriven</code>,默认架构,20000 epoch 前向 KL 训练):
+<ul>
+<li><code>data/32Ising_T2.15_hs_dataDriven</code> —— 低温,有序相</li>
+<li><code>data/32Ising_T2.269185314213022_hs_dataDriven</code> —— T_c</li>
+<li><code>data/32Ising_T2.4_hs_dataDriven</code> —— 高温,无序相</li>
+</ul>
+</li>
+<li>添加第二个 T_c 流作为鲁棒性检查:
+<ul>
+<li><code>data/32Ising_T2.269_hs_bignet</code> —— 独立的 T_c 训练,
+相同架构(<code>nlayers=16, nhidden=128, nmlp=3</code>),更短的训练表
+(10000 ep,最新存档在 ep 9500)。若深层 MSE 的 T_c 特征是真的且
+并非单种子伪影,该运行应能复现。</li>
+</ul>
+</li>
+<li>T_c 处的跨方法比较 —— <code>concise_report_L32_T2.269.md</code>
+比较表中的全部 5 种方法,外加 STL 路径梯度运行,用相同 bignet 架构探测:
+<ul>
+<li><code>sym_bignet</code>(rev-KL)</li>
+<li><code>pathgrad_bignet_long_ext</code>(STL —— 通过路径梯度的逆向 KL)</li>
+<li><code>hs_bignet</code>(fwd-KL,前向 KL 参考,复用自基线面板)</li>
+<li><code>jsLoss_bignet_long_lam0.5</code>(混合 JS = 0.5·rev + 0.5·fwd)</li>
+<li><code>phase2_finetune</code>(rev-KL 预热 → fwd-KL 第二阶段)</li>
+<li><code>hsBignet_bridge_w5.0t0.5</code>(bridge 加权的前向 KL)</li>
+</ul>
+</li>
+</ul>
+<p>脚本提取 <code>Symmetrized.flow.layerList</code>(10 个 RNVP 模块),每 2 个为一组分成
+5 个 scale-block,通过反复调用 <code>inverse()</code> 顺序施加。MERA 的空间 dispatch/collect
+被有意绕开 —— 我们想要的是每个 patch 上的原始变换,而不是空间编织后的组合。</p>
+<h2 id="%E6%95%B0%E5%80%BC%E7%BB%93%E6%9E%9C">数值结果</h2>
+<p>对 L=32 三个 <code>hs_dataDriven</code> checkpoint 各用 N=10000 个 N(0, 1) 的 2×2 patch
+做了探测。所有流相同架构(<code>nlayers=16, nhidden=128, nmlp=3, nrepeat=1</code>,
+不加 weightTying,RNVP 耦合,<code>-symmetry</code>)。checkpoint epoch 取自各文件夹中最新的存档
+(16500 / 16000 / 17000)。</p>
+<p>z-标准化输出上的相邻尺度 MSE:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">pair</th>
+<th style="text-align:right">T = 2.15(有序)</th>
+<th style="text-align:right">T = 2.269(T_c, hs_dataDriven, ep 16000)</th>
+<th style="text-align:right">T = 2.269(T_c, hs_bignet, ep 9500)</th>
+<th style="text-align:right">T = 2.40(无序)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">f_1 → f_2</td>
+<td style="text-align:right">0.96</td>
+<td style="text-align:right">0.88</td>
+<td style="text-align:right"><strong>2.73</strong></td>
+<td style="text-align:right"><strong>2.48</strong></td>
+</tr>
+<tr>
+<td style="text-align:left">f_2 → f_3</td>
+<td style="text-align:right">1.74</td>
+<td style="text-align:right">0.35</td>
+<td style="text-align:right">1.86</td>
+<td style="text-align:right">1.96</td>
+</tr>
+<tr>
+<td style="text-align:left">f_3 → f_4</td>
+<td style="text-align:right">0.52</td>
+<td style="text-align:right"><strong>1.92</strong></td>
+<td style="text-align:right">0.59</td>
+<td style="text-align:right">0.34</td>
+</tr>
+<tr>
+<td style="text-align:left">f_4 → f_5</td>
+<td style="text-align:right">0.79</td>
+<td style="text-align:right"><strong>1.92</strong></td>
+<td style="text-align:right"><strong>1.98</strong></td>
+<td style="text-align:right"><strong>0.15</strong></td>
+</tr>
+</tbody>
+</table>
+<p>下标约定:<code>f_1</code> 是生成方向(z → x)上 <strong>最后</strong> 施加的 scale-block,
+即最精细的物理尺度(粗尺度工作都做完后);<code>f_5</code> 是 <strong>最先</strong> 施加的 scale-block
+(最粗尺度,最接近潜在先验)。MERA 的 <code>inverse()</code> 按
+<code>for no in reversed(range(...))</code> 迭代,所以 layerList 索引 0–1(我们的 <code>f_1</code>)
+是生成栈的底部,索引 8–9(<code>f_5</code>)是顶部。</p>
+<h2 id="%E8%A7%A3%E8%AF%BB">解读</h2>
+<p>特征与方法论章节中&quot;T_c 时深层 MSE 平台&quot;的简单预言<strong>不相符</strong>。
+实际的 T_c 与 T=2.40 模式 <strong>恰好相反</strong>:</p>
+<ul>
+<li>
+<p><strong>T = 2.40(无序)</strong>:MSE 在深层显著下降(0.34 → 0.15)。
+最深的 scale-block 在探针上 <em>几乎相同地</em> 作用 —— 这是收敛到 <strong>平凡高斯不动点</strong>的特征。
+非临界时相关长度短(ξ ≈ 10 格点,&lt; L/2),最粗 MERA 尺度上场已基本去相关,
+流没什么非平凡工作可做。</p>
+</li>
+<li>
+<p><strong>T = 2.269(T_c)</strong>:MSE 在深层保持 <em>高位</em>(1.92, 1.92)。最深的 scale-block 在功能上仍不同。
+T_c 时 ξ → ∞ 意味着不存在&quot;超过该尺度后场不相关&quot;的尺度 ——
+每个尺度都承载真正的临界结构,流必须在每个尺度上做非平凡工作以处理长程相关。
+第二个 T_c 流(<code>hs_bignet</code>,ep 9500)在最深一对的高值上与之相符到 3%(1.98 vs 1.92),
+所以这是真实的 T_c 特征,而非单条轨迹的伪影 —— 见下方 <strong>鲁棒性检查</strong>。
+<em>(V3 更新:这条 fwd-KL 读法是经得起检验的 ——
+V3 在 f_3、f_4 上的残差为 2.6–15.4,确认 fwd-KL 的深层 block 做的是真正的非恒等工作。)</em></p>
+</li>
+<li>
+<p><strong>T = 2.15(有序)</strong>:非单调,MSE 振荡 0.96 → 1.74 → 0.52 → 0.79。
+也没有干净的平凡不动点平台。有序相有长程序(被有限 L 截断的相关长度),
+深尺度仍能看到结构,但结构比 T_c 处简单,因而 MSE 取中间值,
+既不像高温的平台,也不像 T_c 的发散。</p>
+</li>
+</ul>
+<p>这是 <strong>逆 RG 特征</strong>,而非我们假设所预言的&quot;具有相同 block 的 RG 不动点&quot;图像。
+两种解读得到同样的物理结论(临界点在质上不同于非临界),只是数值特征相反:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>方法论预言</th>
+<th>观察结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>T_c</td>
+<td>深层 MSE 低 / 平台</td>
+<td>深层 MSE <strong>高</strong></td>
+</tr>
+<tr>
+<td>非 T_c(T=2.40)</td>
+<td>各深度都有非平凡 block</td>
+<td>深层 MSE <strong>低</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="%E9%B2%81%E6%A3%92%E6%80%A7%E6%A3%80%E6%9F%A5--%E7%AC%AC%E4%BA%8C%E4%B8%AA-tc-%E6%B5%81hsbignet">鲁棒性检查 —— 第二个 T_c 流(<code>hs_bignet</code>)</h3>
+<p>我们在第二条独立训练的 T_c 流(<code>data/32Ising_T2.269_hs_bignet</code>,
+最新存档在 ep 9500)上重跑探针,使用相同 bignet 架构。
+动机:辨别四 MSE 剖面中哪些特征是稳健的临界性签名,哪些是单条训练轨迹的伪影。</p>
+<p>两条 T_c 运行的逐对比较:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">pair</th>
+<th style="text-align:right">hs_dataDriven(ep 16000)</th>
+<th style="text-align:right">hs_bignet(ep 9500)</th>
+<th style="text-align:right">Δ</th>
+<th style="text-align:center">稳健?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">f_1 → f_2</td>
+<td style="text-align:right">0.88</td>
+<td style="text-align:right">2.73</td>
+<td style="text-align:right">+1.85</td>
+<td style="text-align:center">否</td>
+</tr>
+<tr>
+<td style="text-align:left">f_2 → f_3</td>
+<td style="text-align:right">0.35</td>
+<td style="text-align:right">1.86</td>
+<td style="text-align:right">+1.51</td>
+<td style="text-align:center">否</td>
+</tr>
+<tr>
+<td style="text-align:left">f_3 → f_4</td>
+<td style="text-align:right">1.92</td>
+<td style="text-align:right">0.59</td>
+<td style="text-align:right">-1.33</td>
+<td style="text-align:center">否</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>f_4 → f_5</strong></td>
+<td style="text-align:right"><strong>1.92</strong></td>
+<td style="text-align:right"><strong>1.98</strong></td>
+<td style="text-align:right"><strong>+0.06</strong></td>
+<td style="text-align:center"><strong>是</strong></td>
+</tr>
+</tbody>
+</table>
+<p>最深一对的 MSE —— <strong>f_4 → f_5,最粗物理尺度,最接近潜在先验</strong> ——
+在两次运行中复现到 3%(1.92 vs 1.98),并比 T = 2.40(0.15)高一个数量级,
+比 T = 2.15(0.79)高约 2.5 倍。这是稳健的 T_c 特征:在最靠近先验的尺度上,
+两条 T_c 流都拒绝向平凡的恒等式映射收敛,而无序相流则锐利地收敛(最后两对 0.34 → 0.15)。</p>
+<p>浅层对(f_1 → f_4)在两条 T_c 运行间差异显著。可能原因:</p>
+<ul>
+<li>两次训练处于损失轨迹的不同位置(16000 vs 9500 ep)。浅尺度承担大部分&quot;容易&quot;的
+非高斯化,该处损失景观相对平坦,有许多近简并解 ——
+不同初始种子与优化器历史在容易的模式中找到不同路线。</li>
+<li>z-标准化去除了振幅,留下形状;但浅尺度的形状由 HS 场的残余局部结构驱动,
+两条流可以以不同方式编码这些结构,仍能匹配同一目标边缘分布。</li>
+</ul>
+<p>最深一对看到的是临界性的 <em>定义性</em> 特征(ξ → ∞)的长程结构,因而没有这种&quot;容易简并&quot;的逃逸 ——
+两条流都被迫在最粗尺度上做非平凡工作,MSE 落到同一高位。</p>
+<p>要点:<strong>f_4 → f_5 MSE</strong> 是从该探针抽出的最干净的单数字 T_c 见证。
+四对的整体 <em>形状</em> 不是稳健指纹,但最粗一对的 <em>数值</em> 是。</p>
+<h3 id="tc-%E5%A4%84%E7%9A%84%E8%B7%A8%E6%96%B9%E6%B3%95%E5%88%86%E6%9E%90concisereport-%E6%96%B9%E6%B3%95">T_c 处的跨方法分析(concise_report 方法)</h3>
+<p>上方&quot;最深一对 MSE&quot;鲁棒性检查使用的是两条 <strong>前向 KL</strong> T_c 流(<code>hs_dataDriven</code>, <code>hs_bignet</code>)。
+为检验&quot;T_c 时深层 MSE 高&quot;是 T_c 相的属性还是前向 KL 目标的属性,
+我们在 <code>concise_report_L32_T2.269.md</code> 比较表中的 5 种方法上(再加 STL 路径梯度运行;
+相同 bignet 架构,nlayers=16, nhidden=128,均在 T_c 处)运行了探针:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">方法</th>
+<th style="text-align:left">目标</th>
+<th style="text-align:right">f_1 → f_2</th>
+<th style="text-align:right">f_2 → f_3</th>
+<th style="text-align:right">f_3 → f_4</th>
+<th style="text-align:right">f_4 → f_5</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">sym_bignet(rev-KL)</td>
+<td style="text-align:left">逆向 KL <code>E_q[A + log q]</code></td>
+<td style="text-align:right">1.60</td>
+<td style="text-align:right">0.40</td>
+<td style="text-align:right"><strong>0.019</strong></td>
+<td style="text-align:right"><strong>3.4 × 10⁻⁵</strong></td>
+</tr>
+<tr>
+<td style="text-align:left">pathgrad_bignet_long_ext(STL)</td>
+<td style="text-align:left">通过路径梯度的逆向 KL</td>
+<td style="text-align:right">1.68</td>
+<td style="text-align:right">0.49</td>
+<td style="text-align:right"><strong>0.018</strong></td>
+<td style="text-align:right"><strong>5.8 × 10⁻⁵</strong></td>
+</tr>
+<tr>
+<td style="text-align:left">hs_bignet(fwd-KL,前向 KL 参考)</td>
+<td style="text-align:left">前向 KL <code>−E_data[log q]</code></td>
+<td style="text-align:right">2.73</td>
+<td style="text-align:right">1.86</td>
+<td style="text-align:right">0.59</td>
+<td style="text-align:right"><strong>1.98</strong></td>
+</tr>
+<tr>
+<td style="text-align:left">jsLoss_bignet_long(混合 JS, λ=0.5)</td>
+<td style="text-align:left">Jensen-Shannon = 0.5·rev-KL + 0.5·fwd-KL</td>
+<td style="text-align:right">1.66</td>
+<td style="text-align:right">0.21</td>
+<td style="text-align:right">0.59</td>
+<td style="text-align:right">1.19</td>
+</tr>
+<tr>
+<td style="text-align:left">phase2_finetune(rev-KL 预热 → fwd-KL)</td>
+<td style="text-align:left">两阶段目标切换</td>
+<td style="text-align:right">2.41</td>
+<td style="text-align:right">1.20</td>
+<td style="text-align:right">0.35</td>
+<td style="text-align:right">0.97</td>
+</tr>
+<tr>
+<td style="text-align:left">bridge_w5.0t0.5(bridge 加权 fwd-KL)</td>
+<td style="text-align:left">加权前向 KL</td>
+<td style="text-align:right">0.86</td>
+<td style="text-align:right">1.05</td>
+<td style="text-align:right">2.18</td>
+<td style="text-align:right">2.21</td>
+</tr>
+</tbody>
+</table>
+<p>按目标族排序,最深一对 MSE <strong>令人惊讶地干净</strong>:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">族</th>
+<th style="text-align:left">f_4 → f_5 范围</th>
+<th style="text-align:left">行为</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>逆向 KL</strong>(sym, STL)</td>
+<td style="text-align:left"><strong>~ 10⁻⁵</strong></td>
+<td style="text-align:left"><strong>相邻深层尺度的输出几乎一模一样</strong> —— 不动点特征</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>混合</strong>(jsLoss, phase2_finetune)</td>
+<td style="text-align:left">~ 1.0–1.2</td>
+<td style="text-align:left">介于 fwd 与 rev 之间</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>前向 KL</strong>(hs_bignet, bridge)</td>
+<td style="text-align:left">~ 1.9–2.2</td>
+<td style="text-align:left">高位、反转特征(本报告最初的意外)</td>
+</tr>
+</tbody>
+</table>
+<p>逆向 KL 流 —— <code>sym_bignet</code> 与 STL 路径梯度变种 —— <strong>确实</strong>满足我们的假设。
+它们最深两个 scale-block 在标准高斯探针上以 5–6 位有效数字相符。
+<strong>MSE(f_4, f_5) ≈ 3 × 10⁻⁵ 与 6 × 10⁻⁵</strong> 分别对应 sym 与 STL,
+而 MSE(f_3, f_4) ≈ 0.02 —— 即最粗的三个 scale-block 收敛到同一函数,
+正是方法论所预言的&quot;RG 不动点&quot;。</p>
+<blockquote>
+<p><strong>[V3 已修正]</strong> 上述&quot;收敛到同一函数&quot;的读法是错的。下文 V3 表明
+rev-KL 的 <code>f_4</code> 与 <code>f_5</code> 各自接近恒等映射
+(sym 残差 0.08–0.26;STL 残差 0.018–0.16)。
+两个近似恒等的函数对任意输入自然一致。这一发现的真实含义是
+&quot;rev-KL 优化器把最粗的 block 留作近似恒等映射&quot;,而不是
+&quot;该流学到了尺度不变的不动点映射&quot;。</p>
+</blockquote>
+<p>混合目标方法(<code>jsLoss</code>、<code>phase2_finetune</code>)落在两个极端 <strong>之间</strong> ——
+这与它们的损失是 fwd 与 rev KL 的字面插值相符。</p>
+<p>前向 KL 族(<code>hs_dataDriven</code>, <code>hs_bignet</code>, <code>bridge</code>)是与预言相违的一组;
+bridge 运行(对桥域样本上加权 MLE)在整个扫描中最深一对 MSE 最高(2.21)。</p>
+<h3 id="%E9%87%8D%E6%96%B0%E8%A7%A3%E8%AF%BB%E8%AF%A5%E6%8E%A2%E9%92%88%E5%8C%BA%E5%88%86%E7%9A%84%E6%98%AF%E8%AE%AD%E7%BB%83%E7%9B%AE%E6%A0%87%E8%80%8C%E9%9D%9E%E7%9B%B8">重新解读:该探针区分的是训练目标,而非相</h3>
+<blockquote>
+<p><strong>[V3 已修正]</strong> 本小节的&quot;目标指纹&quot;读法在 <em>描述层面</em> 仍正确 ——
+rev-KL 和 fwd-KL 流在 T_c 处确实产生质上不同的 per-block 行为。
+但下文给出的机制解释(&quot;rev-KL 最粗 block 无事可做,塌到一个共同的恒等式
+类映射&quot;)是 V3 <em>直接验证</em>的:那些 block 的确接近恒等。上一节&quot;这构成 RG 不动点&quot;
+的主张是 V3 推翻的。把下文的机制读法当作对 <em>优化器做了什么</em> 的描述,
+而不是已学到 RG 不动点的证据。</p>
+</blockquote>
+<p>把原始的四流基线面板与方法面板放在一起,最干净的数据摘要是:</p>
+<ul>
+<li>
+<p><strong>&quot;深层 MSE → 0&quot;的特征是逆向 KL 训练的属性</strong>,而不是 T_c 本身。
+两条 rev-KL 流即便在 T_c(场最相关之处)也把最粗 scale-block 塌到同一映射。</p>
+</li>
+<li>
+<p><strong>&quot;深层 MSE → ~2&quot;的特征是前向 KL 训练的属性</strong>,也不(只)是 T_c。
+hs_bignet 与 bridge 都坐在这一深层 MSE 高位的平台上。</p>
+</li>
+<li>
+<p>非临界的前向 KL 流(T = 2.15、T = 2.40)在最深一对上<strong>并不</strong>保持 MSE ≈ 2 ——
+T = 2.40 降到 0.15。所以&quot;前向 KL 训练 + T_c&quot;才会把深层 MSE 推高。
+前向 KL + 非临界让深层尺度变平凡;rev-KL + T_c 也把它们变平凡(相同)。</p>
+</li>
+</ul>
+<p>机制读法:</p>
+<ul>
+<li>
+<p><strong>逆向 KL</strong> 从 <code>q</code> 中抽样并匹配能量来训练流。优化器看到每个 scale-block
+对自身流采样的能量的贡献。最粗尺度 —— 最接近潜在先验之处 —— 看到的
+几乎是高斯输入(在 q-分布视角下,深 z 尚未被后续粗粒度化&quot;推远&quot;)。
+一旦流用浅层 block 拟合了主体类高斯结构,最粗 block 就&quot;无事可做&quot;,
+塌到一个共同的恒等式类映射。T_c 上最干净的 rev-KL 解恰好就是
+&quot;最深尺度上功能相同&quot;的那种。</p>
+</li>
+<li>
+<p><strong>前向 KL</strong> 通过给数据样本打分(<code>-log q(x_data)</code>)训练。优化器必须在
+每个尺度上解释 <em>真实</em> 的 HS 场配置,包括承载 T_c 临界相关的长波模式。
+最粗尺度看到最长程的场结构,必须每尺度做非平凡工作;不能塌到一个共同形式,
+否则会破坏长程拟合。因此深层 MSE 高。</p>
+</li>
+<li>
+<p><strong>混合目标</strong>(jsLoss、phase2)混合两种压力,落在中间。</p>
+</li>
+</ul>
+<p>回过头看,该探针其实是 <strong>T_c 处的训练目标指纹</strong>,而不是相指示。
+最初的四流基线面板恰好是两条前向 KL T_c 流对一条前向 KL 非临界流 ——
+所以它只捕捉到了前向 KL 特有的 T_c 抬升。方法面板才揭示完整的二维结构
+(目标 × 温度)。</p>
+<h3 id="%E4%B8%BA%E4%BD%95%E6%88%91%E4%BB%AC%E7%9A%84%E5%81%87%E8%AE%BE%E5%9C%A8%E8%BF%99%E9%87%8C%E5%8F%8D%E8%BD%AC">为何我们的假设在这里反转</h3>
+<blockquote>
+<p><strong>[V3 注释]</strong> 回顾原报告:&quot;fwd-KL 反转我们假设&quot;的框架是基于
+rev-KL 流产出预言中的 MSE ≈ 0。V3 表明 &quot;MSE ≈ 0&quot; 是近似恒等的平凡性,
+所以 rev-KL 与 fwd-KL 都没有处于学到的 RG 不动点。
+下文反转语言应读作&quot;fwd-KL 深层 block 做非平凡工作,rev-KL 深层 block 几乎什么都不做&quot;,
+而不是&quot;假设在一个方向上成立,在另一方向上不成立&quot;。</p>
+</blockquote>
+<p>我们的假设默认流 <em>显式</em> 学到一个尺度不变不动点映射并反复施加。
+那种情况会发生在 <strong>权重绑定</strong>(<code>-weightTying</code>,所有尺度共享参数)下。
+这些流的 <code>weightTying = False</code>,所以每个尺度有自己的参数,可在该尺度
+上选取任意所需的变换。</p>
+<p>无权重绑定时,临界特征翻转:临界流 <em>需要</em> 在不同尺度上使用不同变换
+(因为 T_c 涨落跨所有尺度),而非临界流可让深尺度变平凡(因为场在 ξ 之外已去相关)。</p>
+<h3 id="%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9%E4%B8%8E%E5%8F%AF%E5%A4%8D%E7%8E%B0%E6%80%A7">注意事项与可复现性</h3>
+<ol>
+<li>
+<p><strong>z-标准化移除尺度信息。</strong> 若两个 block 仅在全局重标度上不同,
+则它们在 z-标准化输出上 MSE = 0。这是有意的 —— 我们关心形状而非振幅 ——
+但也意味探针对振幅差异是盲的。若 T_c 处深层 block 主要在形状上不同
+(这里确实是这样),探针能看到。</p>
+</li>
+<li>
+<p><strong>2×2 patch 是自然单位。</strong> MERA 的 RNVP 模块通过 <code>kernelShape</code> 参数在 2×2 patch 上工作;
+在不同 patch 大小上探测会与模块训练时实际看到的不一致。</p>
+</li>
+<li>
+<p><strong>N(0, 1) 探针 vs 实际 scale-block 输入。</strong> 生产中深层 scale-block 看到的是
+浅层 scale-block 的输出,而非纯噪声。探针问的是&quot;如果 block s 收到标准化噪声,
+它会做什么?&quot; —— 这是受控压力测试,而非忠实再现。其解读是&quot;在同一受控输入上
+它们是否做同样的事&quot;,这是最干净的功能距离测量。</p>
+</li>
+<li>
+<p><strong><code>-weightTying</code> 实验</strong>会是最强的后续:在 T_c 训练一条 L=32 流加权重绑定先验
+并重新探测。权重在尺度间共享时,相邻 MSE 在每对上构造性地塌到 ~0
+(因为函数字面相同) —— 这给出一个完整性校验底线,并检验权重绑定在 T_c 是否真的有帮助。</p>
+</li>
+<li>
+<p><strong>L=8 / L=16 控制</strong> —— 在更小 L 上重复同样探针,看深层 MSE 响应如何随系统大小标度。
+若 T_c 时深层尺度的发散是真实的临界性特征(而非架构特有),则它应随 L 增大。</p>
+</li>
+<li>
+<p><strong>训练进度敏感性。</strong> <code>hs_bignet</code> 是在 ep 9500 处探测的(对 <code>hs_dataDriven</code> 是 ep 16000),
+所以浅对 MSE 值反映的是收敛尚不充分的状态。在匹配 epoch
+(例如取两者最新公共 checkpoint)上重复会让跨运行比较更锐利。
+在此 epoch 失配下最深一对已经一致到 3%,说明最粗 scale-block 在训练早期就被锁定。</p>
+</li>
+</ol>
+<h2 id="%E9%B2%81%E6%A3%92%E6%80%A7%E6%A3%80%E6%9F%A5v1--v2--v3-%E4%BB%A5%E5%8F%8A%E5%AE%83%E4%BB%AC%E5%B8%A6%E6%9D%A5%E7%9A%84%E9%87%8D%E5%A4%A7%E9%87%8D%E6%96%B0%E8%A7%A3%E8%AF%BB">鲁棒性检查(V1 / V2 / V3)—— 以及它们带来的重大重新解读</h2>
+<p>跨方法分析之后,我们在最具信息量的流子集上运行了三个鲁棒性检查
+(<code>analyzers/rg_fixed_point_robustness.py</code>,输出:<code>rg_fixed_point_robustness.csv</code> + 三张 PNG)。
+两个检查确认了原始定性模式;第三个 <strong>推翻了&quot;逆向 KL 满足我们假设&quot;的主要读法</strong>,
+表明那只是一个数值平凡性,而不是学到的尺度不变。</p>
+<h3 id="%E6%8E%A2%E9%92%88%E8%BE%93%E5%85%A5%E8%8C%83%E5%9B%B4v1--v2--v3-%E7%A9%B6%E7%AB%9F%E6%B5%8B%E7%9A%84%E6%98%AF%E4%BB%80%E4%B9%88">探针输入范围(V1 / V2 / V3 究竟测的是什么)</h3>
+<p>V1、V2、V3 共享原始探针的几何:输入是形状 <code>(N, 1, 2, 2)</code> 的 <code>z ~ N(0, I)</code> ——
+每个 batch 元素一个 2×2 patch —— 且每个 scale-block 的 RNVP 直接通过
+<code>layer.inverse(z)</code> 施加。dispatch / collect 管线完全被绕开。
+因此这些探针把每个 scale-block 测为 <strong><code>R⁴ → R⁴</code> 函数在标准高斯 patch 上的行为</strong>,
+而不是它在生产正向 / 逆向 pass 中对完整 <code>L × L</code> 场的作用。</p>
+<p>在生产中:</p>
+<ul>
+<li><strong>正向</strong>方向上,scale-block 接收的 2×2 patch 是由 dispatch 模式
+从该尺度的慢模场中切出。据 V5,慢模场的 std ≈ 3.5(输入) →
+在中间尺度上对 fwd-KL 增长至 std ≈ 6–29,或对 rev-KL 缩小至 std ≈ 1。
+在任何中间尺度都不是 <code>N(0, I)</code>。</li>
+<li><strong>逆向</strong>方向上,scale-block 接收的是潜在端:最深尺度上对训练良好的流
+确实接近 <code>N(0, I)</code>;较浅尺度上它是下一更深 block 产生的中间分布。</li>
+</ul>
+<p>对下表数值的含义:</p>
+<ul>
+<li>&quot;在 <code>N(0, I)</code> 上近似恒等&quot;(V3 对 rev-KL <code>f_4</code>、<code>f_5</code> 的发现)是 <strong>函数属性</strong>断言。
+对 <em>逆向</em> 方向上的 <code>f_5</code> 是有生产相关性的 —— <code>f_5</code> 在采样时确实
+接收潜在 <code>N(0, I)</code>,所以&quot;在潜端近似恒等&quot;匹配它实际做的事。</li>
+<li>对 <em>正向</em> 方向任何 block 没有生产相关性(慢模 std ≠ 1),
+对逆向方向上较浅的 <code>f_1..f_4</code> 也只是弱相关(<code>f_5</code> 跑完后它们的输入已不再是 <code>N(0, I)</code>)。</li>
+<li>&quot;在同一 z 上 <code>f_s</code> 与 <code>f_{s+1}</code> 之间的相邻 MSE&quot;(V1 / V2 发现)也是函数属性陈述:
+它告诉我们两条 RNVP 在来自 <code>N(0, I)</code> 的共同 2×2 patch 上如何比较,
+而不是它们组合后生产正向 / 逆向场的行为。</li>
+</ul>
+<p>V4(在真实 HS 样本上的数据正向方向,限制于保留粗粒度子格点)提供了
+互补的生产输入视角。把 V1–V3 当作 RNVP 函数测试;把 V4 / V5 当作生产场测试。</p>
+<h3 id="v1--%E5%85%A8%E5%B1%80-vs-%E9%80%90%E4%BD%8D%E7%BD%AE-z-%E6%A0%87%E5%87%86%E5%8C%96">V1 —— 全局 vs 逐位置 z-标准化</h3>
+<p>原始探针对 4 个单元在 batch 内各自独立 z-标准化。
+&quot;形状相同、逐位置尺度不同&quot;的两 block 功能差会被忽略。
+我们用 <strong>整个输出张量上的单一标量均值与 std</strong> 重跑。
+每对 MSE 在所有 pair 与流上,在两种归一化下符合度好于 0.1:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">pair</th>
+<th style="text-align:left">flow</th>
+<th style="text-align:right">global</th>
+<th style="text-align:right">per-position</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">f_4 → f_5</td>
+<td style="text-align:left">T_c hs_dataDriven</td>
+<td style="text-align:right">1.95</td>
+<td style="text-align:right">1.92</td>
+</tr>
+<tr>
+<td style="text-align:left">f_4 → f_5</td>
+<td style="text-align:left">T_c hs_bignet</td>
+<td style="text-align:right">1.98</td>
+<td style="text-align:right">1.98</td>
+</tr>
+<tr>
+<td style="text-align:left">f_4 → f_5</td>
+<td style="text-align:left">T_c sym_bignet</td>
+<td style="text-align:right">0.018</td>
+<td style="text-align:right">3 × 10⁻⁵</td>
+</tr>
+<tr>
+<td style="text-align:left">f_4 → f_5</td>
+<td style="text-align:left">T_c STL pathgrad</td>
+<td style="text-align:right">0.019</td>
+<td style="text-align:right">6 × 10⁻⁵</td>
+</tr>
+<tr>
+<td style="text-align:left">f_4 → f_5</td>
+<td style="text-align:left">T = 2.40</td>
+<td style="text-align:right">0.18</td>
+<td style="text-align:right">0.15</td>
+</tr>
+</tbody>
+</table>
+<p>判决:<strong>逐位置归一化不是问题</strong>。前向 KL 的&quot;深层 MSE 高&quot;与逆向 KL 的&quot;深层 MSE 近零&quot;
+两个特征在全局 z-标准化变体下都稳定。图:<code>rg_fixed_point_robustness_v1_global.png</code>。</p>
+<h3 id="v2--%E9%93%BE%E5%BC%8F%E8%BE%93%E5%85%A5%E7%94%9F%E4%BA%A7%E7%BB%84%E5%90%88">V2 —— 链式输入(生产组合)</h3>
+<p>对每个 block f_s,喂入它在生产中会看到的输入 <code>h_s = f_{s+1}(...(f_5(z)))</code>
+而非新鲜的 N(0, I)。在 z-标准化后比较 <code>f_s(h_s)</code> 与 <code>f_{s+1}(h_{s+1})</code>。</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">pair</th>
+<th style="text-align:left">flow</th>
+<th style="text-align:right">V1(相同 z)</th>
+<th style="text-align:right">V2(链式 h_s)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">f_4 → f_5</td>
+<td style="text-align:left">T_c hs_dataDriven</td>
+<td style="text-align:right">1.92</td>
+<td style="text-align:right">1.94</td>
+</tr>
+<tr>
+<td style="text-align:left">f_4 → f_5</td>
+<td style="text-align:left">T_c hs_bignet</td>
+<td style="text-align:right">1.98</td>
+<td style="text-align:right">1.94</td>
+</tr>
+<tr>
+<td style="text-align:left">f_4 → f_5</td>
+<td style="text-align:left">T_c sym_bignet</td>
+<td style="text-align:right">3 × 10⁻⁵</td>
+<td style="text-align:right">0.0000</td>
+</tr>
+<tr>
+<td style="text-align:left">f_4 → f_5</td>
+<td style="text-align:left">T_c STL pathgrad</td>
+<td style="text-align:right">6 × 10⁻⁵</td>
+<td style="text-align:right">0.0001</td>
+</tr>
+<tr>
+<td style="text-align:left">f_4 → f_5</td>
+<td style="text-align:left">T = 2.40</td>
+<td style="text-align:right">0.15</td>
+<td style="text-align:right">0.14</td>
+</tr>
+</tbody>
+</table>
+<p>浅对变化较大(如 T = 2.40 f_1 → f_2 从 2.48 → 0.58),
+但 <strong>深对特征稳健</strong> —— 链式组合没有改变 rev-KL 的&quot;近零&quot;与 fwd-KL 的&quot;近 2&quot;。
+图:<code>rg_fixed_point_robustness_v2_chain.png</code>。</p>
+<h3 id="v2b--%E5%B8%A6-mera-%E6%A7%BD%E5%87%A0%E4%BD%95%E7%9A%84%E9%93%BE%E5%BC%8F%E8%BE%93%E5%85%A53-%E6%96%B0--1-%E4%BF%9D%E7%95%99%E7%B2%97%E7%B2%92%E5%BA%A6">V2b —— 带 MERA 槽几何的链式输入(3 新 + 1 保留粗粒度)</h3>
+<p>上面的 V2 把 block f_{s+1} 的 <strong>整个 4 元素输出</strong> 当作 block f_s 的 2×2 patch 输入。
+这与 MERA 实际组合 scale-block 的方式不符。尺度 s 的 dispatch 模式
+在相对于跨度 <code>2^(s+1)</code> 的角的偏移 <code>{(0, 0), (0, 2^s), (2^s, 0), (2^s, 2^s)}</code> 上
+读取每个 2×2 patch。只有 (0, 0) 偏移位于下一更深尺度的跨度 <code>2^(s+1)</code> 子格点上;
+其他 3 个偏移是跨度 <code>2^s</code> 位置,没有更深 block 会再去读它们 ——
+它们携带新鲜的 N(0, I) 潜变量(逆向方向)或是冻结潜在位置(正向方向)。
+V2 的&quot;喂入整个 4 元组&quot;组合系统地重用了生产中不会再读的输出位置。</p>
+<p><strong>V2b</strong> 修正了槽几何。对每个 batch 元素:</p>
+<ul>
+<li>patch 位置 <code>(0, 0)</code> ← <code>o_{s+1}[..., 0, 0]</code>  <em>(从上一 block 的保留粗粒度)</em></li>
+<li>patch 位置 <code>(0, 1)</code>、<code>(1, 0)</code>、<code>(1, 1)</code> ← 新鲜的 <code>N(0, I)</code> 抽样</li>
+</ul>
+<p>随后把 <code>f_s</code> 施加到几何上正确的 <code>h_s</code> 上。比较度量
+(<code>f_s(h_s)</code> 与 <code>f_{s+1}(h_{s+1})</code> 在 z-标准化输出上的 MSE)与 V2 完全一致。</p>
+<p><strong>V2b 在 z-标准化输出上的相邻对 MSE:</strong></p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">pair</th>
+<th style="text-align:right">T = 2.15</th>
+<th style="text-align:right">T_c hs_dataDriven</th>
+<th style="text-align:right">T_c hs_bignet</th>
+<th style="text-align:right"><strong>T_c sym_bignet</strong></th>
+<th style="text-align:right"><strong>T_c STL pathgrad</strong></th>
+<th style="text-align:right">T = 2.40</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">f_1 → f_2</td>
+<td style="text-align:right">0.984</td>
+<td style="text-align:right">1.361</td>
+<td style="text-align:right">2.129</td>
+<td style="text-align:right">1.950</td>
+<td style="text-align:right">1.891</td>
+<td style="text-align:right">2.210</td>
+</tr>
+<tr>
+<td style="text-align:left">f_2 → f_3</td>
+<td style="text-align:right">1.723</td>
+<td style="text-align:right">1.307</td>
+<td style="text-align:right">1.537</td>
+<td style="text-align:right">1.533</td>
+<td style="text-align:right">1.563</td>
+<td style="text-align:right">1.452</td>
+</tr>
+<tr>
+<td style="text-align:left">f_3 → f_4</td>
+<td style="text-align:right">1.510</td>
+<td style="text-align:right">1.936</td>
+<td style="text-align:right">1.539</td>
+<td style="text-align:right">1.510</td>
+<td style="text-align:right">1.511</td>
+<td style="text-align:right">1.426</td>
+</tr>
+<tr>
+<td style="text-align:left">f_4 → f_5</td>
+<td style="text-align:right">1.645</td>
+<td style="text-align:right">2.611</td>
+<td style="text-align:right">1.774</td>
+<td style="text-align:right"><strong>1.489</strong></td>
+<td style="text-align:right"><strong>1.489</strong></td>
+<td style="text-align:right">1.508</td>
+</tr>
+</tbody>
+</table>
+<p>直接比较 V2 与 V2b 在 f_4 → f_5 上的差异:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">flow</th>
+<th style="text-align:right">V2(4 元组完整链式)</th>
+<th style="text-align:right">V2b(单槽链式)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">T_c sym_bignet(rev-KL)</td>
+<td style="text-align:right">0.0000</td>
+<td style="text-align:right"><strong>1.489</strong></td>
+</tr>
+<tr>
+<td style="text-align:left">T_c STL pathgrad(rev-KL)</td>
+<td style="text-align:right">0.0001</td>
+<td style="text-align:right"><strong>1.489</strong></td>
+</tr>
+<tr>
+<td style="text-align:left">T_c hs_dataDriven(fwd-KL)</td>
+<td style="text-align:right">1.9396</td>
+<td style="text-align:right">2.611</td>
+</tr>
+<tr>
+<td style="text-align:left">T_c hs_bignet     (fwd-KL)</td>
+<td style="text-align:right">1.9436</td>
+<td style="text-align:right">1.774</td>
+</tr>
+</tbody>
+</table>
+<p><strong>rev-KL 的深对&quot;平台&quot;在正确槽几何下消失。</strong> 在 V2b 下,
+rev-KL 的 <code>MSE(f_4, f_5) = 1.489</code> 与非临界对照(1.508 / 1.645)
+以及 fwd-KL T_c 运行(1.774 / 2.611)处于同一区间。
+V2 中&quot;rev-KL 深层相邻 MSE → 0&quot;的读法是把 4 元组完整输出
+而不是只把保留粗粒度槽再次注入的人工产物 ——
+一旦 4 个 patch 位置中的 3 个携带新鲜 N(0, I),rev-KL 完美平坦的&quot;平台&quot;就消失了。</p>
+<p>这是对 V3 重新解读的独立确认:V1 与 V2 中 rev-KL 深对的收敛是由于
+<strong>(a)</strong> 深层 block 在 N(0, I) 上近似恒等(V3),以及
+<strong>(b)</strong> V2 链式把一个近似恒等 block 的全部 4 个输出位置再次喂入另一个近似恒等 block
+(V2b 移除该混淆)。因此原&quot;rev-KL 满足我们假设&quot;的读法依赖于两个叠加的
+与生产不符的几何错配。图:<code>rg_fixed_point_robustness_v2b_chain_oneslot.png</code>。</p>
+<h3 id="v3--%E9%80%90-block-%E6%81%92%E7%AD%89%E6%AE%8B%E5%B7%AE%E5%86%B3%E5%AE%9A%E6%80%A7%E6%A3%80%E6%9F%A5">V3 —— 逐 block 恒等残差(决定性检查)</h3>
+<p>对每个 block f_s,计算 <code>z ~ N(0, I)</code> 上的残差 <code>r_s = E[(f_s(z) − z)^2]</code>。
+若 <code>r_s ≈ 0</code>,则 block 在标准化噪声上近似恒等映射 ——
+此情况下&quot;两 block 在同一输入上有相同输出&quot;是 <strong>平凡性</strong>(任意两个恒等映射都一致),
+而不是学到的尺度不变。</p>
+<p>各 scale-block 的相对残差 <code>r_s / E[z²]</code>:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">flow</th>
+<th style="text-align:right">f_1</th>
+<th style="text-align:right">f_2</th>
+<th style="text-align:right">f_3</th>
+<th style="text-align:right">f_4</th>
+<th style="text-align:right">f_5</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">T = 2.15</td>
+<td style="text-align:right">1.99</td>
+<td style="text-align:right">3.65</td>
+<td style="text-align:right">4.65</td>
+<td style="text-align:right">1.15</td>
+<td style="text-align:right"><strong>0.025</strong></td>
+</tr>
+<tr>
+<td style="text-align:left">T_c hs_dataDriven (fwd-KL)</td>
+<td style="text-align:right">1.34</td>
+<td style="text-align:right">5.19</td>
+<td style="text-align:right">2.61</td>
+<td style="text-align:right"><strong>15.42</strong></td>
+<td style="text-align:right">5.84</td>
+</tr>
+<tr>
+<td style="text-align:left">T_c hs_bignet (fwd-KL)</td>
+<td style="text-align:right">1.78</td>
+<td style="text-align:right">1.81</td>
+<td style="text-align:right">4.86</td>
+<td style="text-align:right">2.76</td>
+<td style="text-align:right">0.30</td>
+</tr>
+<tr>
+<td style="text-align:left">T_c sym_bignet (rev-KL)</td>
+<td style="text-align:right">13.42</td>
+<td style="text-align:right">2.66</td>
+<td style="text-align:right">0.91</td>
+<td style="text-align:right"><strong>0.26</strong></td>
+<td style="text-align:right"><strong>0.08</strong></td>
+</tr>
+<tr>
+<td style="text-align:left">T_c STL pathgrad</td>
+<td style="text-align:right">13.26</td>
+<td style="text-align:right">4.13</td>
+<td style="text-align:right">0.89</td>
+<td style="text-align:right"><strong>0.16</strong></td>
+<td style="text-align:right"><strong>0.018</strong></td>
+</tr>
+<tr>
+<td style="text-align:left">T = 2.40</td>
+<td style="text-align:right">0.94</td>
+<td style="text-align:right">5.45</td>
+<td style="text-align:right">4.82</td>
+<td style="text-align:right">1.60</td>
+<td style="text-align:right">0.13</td>
+</tr>
+</tbody>
+</table>
+<p>这是决定性证据。逐行解读:</p>
+<ul>
+<li>
+<p><strong>T = 2.15</strong> 与 <strong>T = 2.40</strong>(非临界,前向 KL):f_5 残差 ≈ 0.03 / 0.13 ——
+<strong>最粗尺度近似恒等</strong>。与&quot;非临界、ξ &lt; L/2、最深尺度看到去相关场 —— 不需要工作&quot;一致。</p>
+</li>
+<li>
+<p><strong>T_c hs_dataDriven(fwd-KL)</strong>:f_4 残差 = <strong>15.4</strong>,整次扫描中最大;f_5 残差 = 5.8。
+<strong>两个深层 block 都做实质性、非恒等工作</strong>。原始探针中 f_4 与 f_5 的 MSE = 1.92 是
+<em>真实</em> 的两个非平凡映射间的功能差异。</p>
+</li>
+<li>
+<p><strong>T_c hs_bignet(fwd-KL)</strong>:f_5 残差 0.30(近似恒等),f_4 残差 2.76(非)。
+它们在做不同的事 —— f_4→f_5 的高 MSE = 1.98 反映真实功能不对称。</p>
+</li>
+<li>
+<p><strong>T_c sym_bignet(rev-KL)</strong> 与 <strong>T_c STL pathgrad</strong>:
+f_5 与 f_4 都近似恒等(sym 的残差 0.08, 0.26;STL 的 0.018, 0.16)。
+<strong>因此原始探针中&quot;f_4 与 f_5 间 MSE ≈ 0&quot;的发现是平凡性:
+两个近似恒等的函数在同一高斯探针上自然产生匹配的输出</strong>。
+这不是学到的尺度不变不动点映射;这是&quot;逆向 KL 优化器把最粗的 scale-block
+留作近似恒等映射&quot;。</p>
+</li>
+</ul>
+<p>图:<code>rg_fixed_point_robustness_v3_identity.png</code>。</p>
+<h3 id="v4--%E6%95%B0%E6%8D%AE%E6%AD%A3%E5%90%91%E6%96%B9%E5%90%91%E4%BB%85%E4%BF%9D%E7%95%99%E7%B2%97%E7%B2%92%E5%BA%A6%E5%AD%90%E6%A0%BC%E7%82%B9">V4 —— 数据正向方向,仅保留粗粒度子格点</h3>
+<p>V1–V3 共享原始探针的&quot;逆向方向、孤立 block&quot;设置:每个 scale-block 喂入
+<code>z ~ N(0, I)</code> 并在 <code>inverse</code> 模式下作用于 (N, 1, 2, 2) patch。
+对 RG 指纹来说这是错的方向 —— 推理时流在正向(分析)方向上处理 <em>样本</em>,
+按 scale-block 一步步操作,索引模式同时粗粒度化。V4 复用同样 6 条流
+(两条非临界对照、T_c hs_dataDriven、T_c hs_bignet、T_c sym_bignet、
+T_c STL pathgrad_bignet_long_ext),并在真实路径上跑诊断:</p>
+<pre class="hljs"><code><div>x ~ p_HS  →  f_1.forward  → y_1  →  f_2.forward  → y_2  → … → y_S
+                (最精细)                                    (潜在)
+</div></code></pre>
+<p>其中 <code>f_s</code> 是第 s 个 scale-block(<code>layerList[2(s−1)..2s−1]</code>),
+<code>y_s</code> 是经过 <code>s</code> 个粗粒度 scale-block 后的场。</p>
+<p><strong>保留粗粒度限制(V4 修正)。</strong> MERA 正向方向上 s 个 scale-block 之后,
+<strong>只有跨度 2^s 子格点上的位置承载流入下一 scale-block 的慢模</strong>。
+其余 <code>(1 − 1/4^s)</code> 个位置是&quot;冻结潜在&quot;:优化器把它们推向 N(0, 1),
+而且任何更深 block 都不会再读它们。在完整 L × L <code>y_s</code> 上对矩、G(r)、
+KS、W1 等做平均,会以 <code>4^s</code> 倍稀释慢模信号,并被冻结潜在位置的&quot;地板&quot;
+所主导(例如 L=32、s=5 时,1024 个位置中只有 1 个是慢模)。因此 V4 限制到</p>
+<pre class="hljs"><code><div>y_s_coarse = y_s[..., ::2^s, ::2^s]      # shape (B, 1, L/2^s, L/2^s)
+</div></code></pre>
+<p>并只在这个慢模子场上计算各统计量。
+(V4 的前一版本在所有 L² 位置上平均,现已撤回 —— 它在最深尺度上报告的
+rev-KL &quot;std ≈ 1.09、kurt ≈ 0&quot; 实际上是 1023 个冻结位置的潜在地板,
+而非保留粗粒度信号。)</p>
+<p><strong>V4 在保留粗粒度子格点上测什么。</strong> 在真实 RG 不动点上,慢模在相邻尺度之间
+应分布上自相似(每个尺度都以其自身粗粒度单位测量)。对每相邻对计算:</p>
+<ul>
+<li>在标准化边缘 <code>(y_coarse − μ)/σ</code> 上的 KS / W1</li>
+<li>归一化轴向两点函数 <code>G_s(r) / G_s(0)</code> 的 RMS 偏差,
+定义在 L_s × L_s 粗格点上,r = 1..min(L_s, L_{s+1})/2</li>
+</ul>
+<p>慢模上的恒等平凡性不构成混淆:一个近似恒等 block 作用在非平凡慢模分布上
+会留下非平凡分布,所以相邻尺度的一致仍然要求流真正复现了粗粒度统计。</p>
+<p><strong>慢模 std 级联(V4 的关键测量)。</strong> 保留粗粒度子格点上 <code>y_s</code> 的 std
+(每尺度最具信息的单一数字之一):</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">flow</th>
+<th style="text-align:right">y_0</th>
+<th style="text-align:right">y_1</th>
+<th style="text-align:right">y_2</th>
+<th style="text-align:right">y_3</th>
+<th style="text-align:right">y_4</th>
+<th style="text-align:right">y_5</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">T = 2.15(低温)</td>
+<td style="text-align:right">3.81</td>
+<td style="text-align:right">13.86</td>
+<td style="text-align:right">13.08</td>
+<td style="text-align:right">7.12</td>
+<td style="text-align:right">5.95</td>
+<td style="text-align:right">4.90</td>
+</tr>
+<tr>
+<td style="text-align:left">T_c hs_dataDriven (fwd)</td>
+<td style="text-align:right">3.51</td>
+<td style="text-align:right">8.35</td>
+<td style="text-align:right">14.33</td>
+<td style="text-align:right"><strong>28.94</strong></td>
+<td style="text-align:right">24.19</td>
+<td style="text-align:right">11.14</td>
+</tr>
+<tr>
+<td style="text-align:left">T_c hs_bignet     (fwd)</td>
+<td style="text-align:right">3.51</td>
+<td style="text-align:right">8.38</td>
+<td style="text-align:right">15.92</td>
+<td style="text-align:right">10.03</td>
+<td style="text-align:right">8.71</td>
+<td style="text-align:right">5.50</td>
+</tr>
+<tr>
+<td style="text-align:left">T_c sym_bignet    (rev)</td>
+<td style="text-align:right">3.51</td>
+<td style="text-align:right">2.12</td>
+<td style="text-align:right">1.91</td>
+<td style="text-align:right">1.49</td>
+<td style="text-align:right">1.17</td>
+<td style="text-align:right"><strong>0.94</strong></td>
+</tr>
+<tr>
+<td style="text-align:left">T_c STL pathgrad  (rev)</td>
+<td style="text-align:right">3.51</td>
+<td style="text-align:right">2.46</td>
+<td style="text-align:right">1.93</td>
+<td style="text-align:right">1.34</td>
+<td style="text-align:right">0.97</td>
+<td style="text-align:right"><strong>0.96</strong></td>
+</tr>
+<tr>
+<td style="text-align:left">T = 2.40(高温)</td>
+<td style="text-align:right">3.19</td>
+<td style="text-align:right">9.23</td>
+<td style="text-align:right">7.93</td>
+<td style="text-align:right">6.76</td>
+<td style="text-align:right">4.88</td>
+<td style="text-align:right">3.50</td>
+</tr>
+</tbody>
+</table>
+<p>涌现出两种对照的病态:</p>
+<ul>
+<li><strong>逆向 KL 的慢模单调地缩向 N(0, 1)。</strong> std 级联 3.51 → 2.12 → 1.91
+→ 1.49 → 1.17 → 0.94(sym),峰度 -1.33 → +0.27 → +0.12 → +0.04 →
++0.07 → -0.11。对应粗粒度分辨率的分块 RG 真值(V5)给出
+std 3.51 → 3.18 → 2.90 → 2.69 → 2.54 → 2.46,
+峰度保持双峰在 -1.33 至 -1.84。<strong>rev-KL 的慢模被抹除,而不是粗粒度化</strong>。</li>
+<li><strong>前向 KL 的慢模先膨胀再部分回落。</strong> T_c hs_dataDriven 级联到 y_3 处
+的 std 28.94(比输入大 8 倍),然后回落到 y_5 的 11.14。
+分块 RG 真值预言 std <em>轻微下降</em>(3.51 → 2.46),因为平均会降低方差。
+前向 KL 走的方向相反。</li>
+</ul>
+<p><strong>标准化慢模边缘上的相邻 KS。</strong> 这隔离了 <em>形状</em>(而非振幅)自相似性:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">flow</th>
+<th style="text-align:right">0→1</th>
+<th style="text-align:right">1→2</th>
+<th style="text-align:right">2→3</th>
+<th style="text-align:right">3→4</th>
+<th style="text-align:right">4→5</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">T = 2.15</td>
+<td style="text-align:right">0.114</td>
+<td style="text-align:right">0.129</td>
+<td style="text-align:right">0.039</td>
+<td style="text-align:right">0.025</td>
+<td style="text-align:right">0.029</td>
+</tr>
+<tr>
+<td style="text-align:left">T_c hs_dataDriven (fwd-KL)</td>
+<td style="text-align:right">0.095</td>
+<td style="text-align:right">0.066</td>
+<td style="text-align:right">0.026</td>
+<td style="text-align:right">0.118</td>
+<td style="text-align:right">0.053</td>
+</tr>
+<tr>
+<td style="text-align:left">T_c hs_bignet     (fwd-KL)</td>
+<td style="text-align:right">0.059</td>
+<td style="text-align:right">0.052</td>
+<td style="text-align:right">0.120</td>
+<td style="text-align:right">0.085</td>
+<td style="text-align:right">0.056</td>
+</tr>
+<tr>
+<td style="text-align:left">T_c sym_bignet    (rev-KL)</td>
+<td style="text-align:right">0.110</td>
+<td style="text-align:right"><strong>0.006</strong></td>
+<td style="text-align:right"><strong>0.004</strong></td>
+<td style="text-align:right">0.011</td>
+<td style="text-align:right">0.014</td>
+</tr>
+<tr>
+<td style="text-align:left">T_c STL pathgrad  (rev-KL/STL)</td>
+<td style="text-align:right">0.110</td>
+<td style="text-align:right"><strong>0.007</strong></td>
+<td style="text-align:right"><strong>0.004</strong></td>
+<td style="text-align:right">0.013</td>
+<td style="text-align:right">0.015</td>
+</tr>
+<tr>
+<td style="text-align:left">T = 2.40</td>
+<td style="text-align:right">0.084</td>
+<td style="text-align:right">0.036</td>
+<td style="text-align:right">0.053</td>
+<td style="text-align:right">0.026</td>
+<td style="text-align:right">0.019</td>
+</tr>
+</tbody>
+</table>
+<p>从 <code>y_1</code> 起,rev-KL 的慢模在 KS 上自相似到 0.4 % 以内 —— 即
+<em>形状</em>(标准化后)在各尺度上基本相同。这与 &quot;rev-KL 流在每个深度上
+都把慢模送过同一标准高斯形状,然后渐进收缩其振幅&quot; 的图像一致。
+fwd-KL 的慢模在形状上 <em>不</em> 自相似 —— KS 在中间尺度上保持 5–12 %,
+在 <code>y_3</code> 出现非单调凸起。</p>
+<p><strong>rev-KL 慢模上的反相关。</strong> 对 rev-KL 流,保留粗粒度格点上 <code>y_1</code> 与 <code>y_2</code>
+的 G(r)/G(0) 显示 <em>负</em> 的最近邻相关(sym 在第一粗步为 −0.107,
+STL 为 −0.097) —— 一种 Néel 型的反相关慢模,
+<strong>不</strong>是分块 RG 所产生的铁磁短程正相关。fwd-KL 的 G(1)/G(0)
+保持在 0.62–0.79(物理上合理)。这是新增的诊断:即便 rev-KL 慢模很小
+(std ≈ 1),其空间结构也是错的。</p>
+<p>修正后的 V4 因此在 V3 图像基础上增添三个具体事实:</p>
+<ul>
+<li>rev-KL 流抹除慢模(std → 1,kurt → 0),而不是粗粒度化它
+(分块 RG 预言 std → 2.5, kurt → −1.84)。
+慢模在每个粗粒度位置上都被塌缩到潜在先验,而不只是在最深一处。</li>
+<li>fwd-KL 流做相反的病态:慢模 std 在中间尺度上吹大 8 倍,在最深尺度
+部分恢复,且各尺度上从未达到形状自相似。</li>
+<li>rev-KL 慢模在粗格点上具 <em>负</em> 最近邻相关 —— 这是 per-block 恒等残差探针
+(V3)看不到的结构性病态。</li>
+</ul>
+<p>图:<code>rg_v4_dataforward_ks.png</code>, <code>rg_v4_dataforward_w1.png</code>,
+<code>rg_v4_dataforward_rmsG.png</code>, <code>rg_v4_dataforward_Goverlay.png</code>。
+CSV:<code>analyzers/rg_v4_dataforward.csv</code>(由保留粗粒度版本重跑覆盖,任务 39551162)。</p>
+<h3 id="v5--wilson%E2%80%93kadanoff-%E5%88%86%E5%9D%97-rg-%E7%9C%9F%E5%80%BC">V5 —— Wilson–Kadanoff 分块 RG 真值</h3>
+<p>V4 测的是保留粗粒度子格点上 MERA 的正向级联,但没有外部参考来说明
+<em>慢模级联应该长什么样</em>。V5 通过在 <strong>相同的</strong> HS 场输入上跑经典 Wilson–Kadanoff
+分块平均级联,并在每个尺度上把 MERA 子采样的 <code>y_s_coarse</code> 与之进行
+分布间比较,来提供这一参考。</p>
+<p><strong>分块 RG 级联。</strong> 对每个 batch <code>x ~ p_HS</code> 计算</p>
+<pre class="hljs"><code><div>x_0 = x                                          (B, 1, L,   L)
+x_s = AvgPool2d(2)(x_{s−1})                       (B, 1, L/2^s, L/2^s)
+</div></code></pre>
+<p>即尺度 <code>s</code> 上的每个粗像素是原始 HS 场上一个 <code>2^s × 2^s</code> 块的无权平均。
+这是教科书上的块自旋变换(在 HS 对偶变量的连续场极限下),不含任何学习。
+在 T_c 处,分块平均场在 2D Ising 普适类下流向一个非高斯的不动点分布,
+其特征为幂律两点相关与双峰边缘 —— <em>不是</em>流向高斯。</p>
+<p><strong>跨比较。</strong> 对每个尺度 <code>s = 0..5</code>,在 <strong>同一输入 batch</strong> 上(因此二者是配对的)
+评估标准化 MERA 子采样慢模 <code>(y_s_coarse − μ)/σ</code> 与标准化分块 RG
+<code>(x_s − μ)/σ</code> 之间的三种距离:</p>
+<ul>
+<li><code>v5_ks</code> —— 标准化边缘上的 KS 距离</li>
+<li><code>v5_w1</code> —— 标准化边缘上的 Wasserstein-1</li>
+<li><code>v5_rms_g</code> —— 两者间 <code>G_s(r)/G_s(0)</code> 的 RMS 偏差</li>
+</ul>
+<p>在 <code>s = 0</code>(输入 HS 场)上,MERA 子采样与分块 RG 字面就是同一张量,
+所以三种距离都 ~0;有信息量的列是 <code>s = 1..5</code>。</p>
+<p><strong>分块 RG 真值矩(V4 引用过的那些数字)。</strong> <code>x_s</code> 的 std 与峰度,
+在 6 条被探流上都相同(因为输入相同):</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">scale s</th>
+<th style="text-align:center">L_s</th>
+<th style="text-align:center">std</th>
+<th style="text-align:center">kurt</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">0</td>
+<td style="text-align:center">32</td>
+<td style="text-align:center">3.51</td>
+<td style="text-align:center">−1.33</td>
+</tr>
+<tr>
+<td style="text-align:center">1</td>
+<td style="text-align:center">16</td>
+<td style="text-align:center">3.18</td>
+<td style="text-align:center">−1.53</td>
+</tr>
+<tr>
+<td style="text-align:center">2</td>
+<td style="text-align:center">8</td>
+<td style="text-align:center">2.90</td>
+<td style="text-align:center">−1.65</td>
+</tr>
+<tr>
+<td style="text-align:center">3</td>
+<td style="text-align:center">4</td>
+<td style="text-align:center">2.69</td>
+<td style="text-align:center">−1.72</td>
+</tr>
+<tr>
+<td style="text-align:center">4</td>
+<td style="text-align:center">2</td>
+<td style="text-align:center">2.54</td>
+<td style="text-align:center">−1.78</td>
+</tr>
+<tr>
+<td style="text-align:center">5</td>
+<td style="text-align:center">1</td>
+<td style="text-align:center">2.46</td>
+<td style="text-align:center">−1.84</td>
+</tr>
+</tbody>
+</table>
+<p>方差缓慢下降(平均导致),边缘保持强双峰(粗块包含越少、越对齐的自旋,
+峰度漂得越负)。这是一条真实 RG-不动点流的慢模应当复现的目标。</p>
+<p><strong>标准化慢模边缘上的 KS(MERA 子采样,分块 RG)。</strong> 越小越好;
+这是定量地读取&quot;训练好的流的慢模场在尺度 s 上是否匹配 Wilson&quot;:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">flow</th>
+<th style="text-align:right">s=1</th>
+<th style="text-align:right">s=2</th>
+<th style="text-align:right">s=3</th>
+<th style="text-align:right">s=4</th>
+<th style="text-align:right">s=5</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">T = 2.15</td>
+<td style="text-align:right">0.161</td>
+<td style="text-align:right">0.099</td>
+<td style="text-align:right">0.133</td>
+<td style="text-align:right">0.176</td>
+<td style="text-align:right">0.229</td>
+</tr>
+<tr>
+<td style="text-align:left">T_c hs_dataDriven (fwd-KL)</td>
+<td style="text-align:right">0.101</td>
+<td style="text-align:right">0.085</td>
+<td style="text-align:right">0.097</td>
+<td style="text-align:right">0.097</td>
+<td style="text-align:right">0.140</td>
+</tr>
+<tr>
+<td style="text-align:left">T_c hs_bignet     (fwd-KL)</td>
+<td style="text-align:right">0.080</td>
+<td style="text-align:right">0.085</td>
+<td style="text-align:right">0.121</td>
+<td style="text-align:right">0.081</td>
+<td style="text-align:right">0.128</td>
+</tr>
+<tr>
+<td style="text-align:left">T_c sym_bignet    (rev-KL)</td>
+<td style="text-align:right">0.132</td>
+<td style="text-align:right">0.147</td>
+<td style="text-align:right">0.160</td>
+<td style="text-align:right">0.181</td>
+<td style="text-align:right">0.201</td>
+</tr>
+<tr>
+<td style="text-align:left">T_c STL pathgrad  (rev-KL/STL)</td>
+<td style="text-align:right">0.133</td>
+<td style="text-align:right">0.147</td>
+<td style="text-align:right">0.159</td>
+<td style="text-align:right">0.177</td>
+<td style="text-align:right">0.202</td>
+</tr>
+<tr>
+<td style="text-align:left">T = 2.40</td>
+<td style="text-align:right">0.083</td>
+<td style="text-align:right">0.077</td>
+<td style="text-align:right">0.068</td>
+<td style="text-align:right">0.044</td>
+<td style="text-align:right">0.037</td>
+</tr>
+</tbody>
+</table>
+<p>两个干净的特征:</p>
+<ul>
+<li><strong>rev-KL 的边缘随深度稳步远离 Wilson。</strong> KS 在 <code>s = 1..5</code> 上单调
+增长 0.13 → 0.20。两条 rev-KL 流在每个尺度上给出几乎相同的 KS
+(s=1 处 0.132 vs 0.133;s=5 处 0.201 vs 0.202),与 V3 恒等残差的读法一致:
+两条流的深层 block 都塌缩到同一近似平凡的慢模映射。</li>
+<li><strong>fwd-KL T_c 边缘在每个尺度上都与 Wilson 相差 ~0.08–0.14。</strong>
+不完全匹配(KS ~0.10 意味着可见的形状错配 —— 见 <code>marg_s2</code>、<code>marg_s3</code> 叠图),
+但 fwd-KL 流比 rev-KL 更紧密地跟随 Wilson;
+非临界对照 T = 2.40(也是 fwd-KL)做得更好(s=5 处 KS 降到 0.04)——
+无序比临界更容易粗粒度化。</li>
+</ul>
+<p><strong>G(r)/G(0) 的 RMS 偏差(空间结构错配)。</strong> 保留粗粒度格点上的两点函数
+切中&quot;这是不是真正的粗粒度化&quot;这一问题的核心 —— KS 只看边缘,
+而 G(r) 检验在一次分块步骤后是否同一邻居仍保持相关:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">flow</th>
+<th style="text-align:right">s=1</th>
+<th style="text-align:right">s=2</th>
+<th style="text-align:right">s=3</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">T = 2.15</td>
+<td style="text-align:right">0.125</td>
+<td style="text-align:right">0.095</td>
+<td style="text-align:right">0.138</td>
+</tr>
+<tr>
+<td style="text-align:left">T_c hs_dataDriven (fwd-KL)</td>
+<td style="text-align:right">0.110</td>
+<td style="text-align:right">0.068</td>
+<td style="text-align:right">0.053</td>
+</tr>
+<tr>
+<td style="text-align:left">T_c hs_bignet     (fwd-KL)</td>
+<td style="text-align:right">0.106</td>
+<td style="text-align:right">0.049</td>
+<td style="text-align:right"><strong>0.016</strong></td>
+</tr>
+<tr>
+<td style="text-align:left">T_c sym_bignet    (rev-KL)</td>
+<td style="text-align:right"><strong>0.620</strong></td>
+<td style="text-align:right"><strong>0.669</strong></td>
+<td style="text-align:right"><strong>0.674</strong></td>
+</tr>
+<tr>
+<td style="text-align:left">T_c STL pathgrad  (rev-KL)</td>
+<td style="text-align:right"><strong>0.614</strong></td>
+<td style="text-align:right"><strong>0.646</strong></td>
+<td style="text-align:right"><strong>0.640</strong></td>
+</tr>
+<tr>
+<td style="text-align:left">T = 2.40</td>
+<td style="text-align:right">0.100</td>
+<td style="text-align:right">0.065</td>
+<td style="text-align:right">0.070</td>
+</tr>
+</tbody>
+</table>
+<p>(<code>s = 4, 5</code> 时 L_s &lt; 4,G(r) 的余弦网格塌缩,该行报告 <code>nan</code>;
+可靠的 G 比较在 <code>s = 1..3</code>。)</p>
+<p>rev-KL 那一行比其他每一行在每个尺度上都差一个数量级,而且错配 <em>随深度增长</em>。
+这是 V4 中 G(r) 旁注所指出的反相关最近邻病态的定量足迹 ——
+rev-KL 建出的慢模场,边缘缩向 <code>N(0, 1)</code> <strong>且</strong> 在短程上空间结构符号是错的。
+对比之下,fwd-KL hs_bignet 在尺度 3 处把慢模上的 G(r) 做对到 1.6 % 以内,
+是在空间结构这一轴上真正令人鼓舞的匹配(边缘轴仍然失败,见上方 KS 行
+与 V4 的 std 级联 —— y_2 处 std 15.92 对比分块 RG 的 2.90)。</p>
+<p><strong>V5 的读法。</strong> 跨比较用一个非学习的参考回答了 V4 的问题(&quot;和什么相比?&quot;)。
+判决:</p>
+<ul>
+<li><strong>扫描中没有任何流在每个尺度上都给出 Wilson 风格的慢模粗粒度化。</strong>
+fwd-KL 流在 coarse 深度上 G(r) 跟得不错但把边缘方差吹大 4–9 倍;
+rev-KL 流把边缘保持得小(并缓慢高斯化)但完全破坏了空间结构。</li>
+<li><strong>训练目标决定哪个轴上崩溃。</strong> fwd-KL 保留 <em>相关</em>但扭曲振幅;
+rev-KL 保留 <em>振幅</em>(更接近潜在先验)但摧毁相关。两者都不是 RG。</li>
+<li><strong>非临界对照各有不同的成功方式。</strong> T = 2.40(无序)在两个轴上都很好地
+复现 Wilson(深尺度 KS → 0.04,RMS-G → 0.07),因为目标分布本身就弱相关,
+容易推向高斯。T = 2.15(有序)的 RMS-G 与 T = 2.40 相当,但其 KS 随深度上升 ——
+破缺对称的磁化模在边缘轴上 <em>远</em> 难以粗粒度化。</li>
+</ul>
+<p>V5 因此提供了 V4 所需的外部基准:它用一个非学习参考确认了
+在该架构上没有任何目标族在 T_c 处做 Wilson 风格的 RG,
+并区分了每个族 <em>如何</em> 失败(fwd-KL 相关正确但振幅错;
+rev-KL 振幅接近先验但相关错)。</p>
+<p>图:<code>rg_v5_blockRG_std.png</code>, <code>rg_v5_blockRG_kurt.png</code>,
+<code>rg_v5_blockRG_ks.png</code>, <code>rg_v5_blockRG_w1.png</code>,
+<code>rg_v5_blockRG_rmsG.png</code>, <code>rg_v5_blockRG_marg_s2.png</code>,
+<code>rg_v5_blockRG_marg_s3.png</code>。
+CSV:<code>analyzers/rg_fixed_point/csv/rg_v5_blockRG_compare.csv</code>。</p>
+<h3 id="%E9%87%8D%E6%96%B0%E8%A7%A3%E8%AF%BB">重新解读</h3>
+<p>原报告的结论是 <strong>逆向 KL 流满足我们的假设</strong>(T_c 处深层 block 在功能上一致)。
+V3 表明这一结论在其自身条件下是错的:深层 block 不是&quot;同一非平凡的尺度不变变换&quot;,
+而是&quot;近似恒等&quot;。仅靠 z-标准化输出上的 MSE 在构造上就无法区分这两种情况。</p>
+<p>数据 <em>支持</em> 的结论:</p>
+<ul>
+<li><strong>T_c 处的前向 KL 流在每个 MERA 尺度上都做真正的工作。</strong>
+它们的 per-block 恒等残差在 f_3、f_4、f_5 上都很大
+(hs_dataDriven 在 f_4 上为 15.4,hs_bignet 在 f_3 上为 4.9),
+且 f_4 与 f_5 间的相邻 MSE 捕捉的是真正的功能差异,而不是冗余。
+这与&quot;前向 KL 必须在所有尺度上解释 HS 场数据的结构&quot;的物理图像一致。</li>
+<li><strong>T_c 处的逆向 KL 流把最粗尺度塌向恒等。</strong>
+浅 block 拟合主体后,优化器的压力把 f_4、f_5 推向近似恒等。
+最粗 block 实现的&quot;函数&quot;不是&quot;普适 RG 变换&quot;;而是&quot;什么都不做&quot;。</li>
+<li><strong>跨方法面板暴露的&quot;前向 KL / 逆向 KL 分裂&quot;因此是&quot;非平凡深层 block&quot;
+与&quot;平凡(恒等)深层 block&quot;的分裂</strong>,而不是两种不同的非平凡 RG 不动点实现。</li>
+</ul>
+<p>原方法论框架&quot;若深层 block 行为相同,则是 RG 不动点&quot;是必要而非充分。
+要把不动点映射与平凡恒等区分开,必须检查 V3 的恒等残差。
+缺了它,&quot;相邻 MSE 低&quot;是有歧义的。</p>
+<h3 id="%E5%8E%9F%E5%A7%8B%E6%A1%86%E6%9E%B6%E4%BB%8D%E9%9C%80%E6%BB%A1%E8%B6%B3%E7%9A%84%E6%9D%A1%E4%BB%B6%E4%BB%A5%E4%BD%BF%E5%85%B6%E5%8F%AF%E6%A3%80%E9%AA%8C">原始框架仍需满足的条件以使其可检验</h3>
+<p>该架构上一个真正意义上的 RG 不动点读法需要一条流:</p>
+<ul>
+<li>f_4 与 f_5 有 <strong>大</strong> 恒等残差(它们做非平凡工作),并且</li>
+<li>它们在同一输入上的相邻 MSE 小(它们的非平凡工作是 <em>同一</em> 变换)。</li>
+</ul>
+<p>扫描中没有任何流同时满足两个条件。最接近的是 <strong>T_c hs_bignet</strong>
+(f_3、f_4 残差大;f_5 中等;但其 f_4 → f_5 MSE = 1.98,
+即非平凡 block 之间不一致)。所以 <strong>目前所有流都不可能处于方法论严格意义下的 RG 不动点</strong>。</p>
+<h3 id="%E9%B2%81%E6%A3%92%E6%80%A7%E4%B9%8B%E5%90%8E%E7%9A%84%E5%8F%AF%E6%8E%A5%E5%8F%97%E7%BB%93%E8%AE%BA">鲁棒性之后的可接受结论</h3>
+<ul>
+<li>T_c 处前向 KL 在每个 MERA 尺度上做实质工作;逆向 KL 不做。
+这本身就是对两种训练目标的有用刻画。</li>
+<li>跨方法面板仍然干净地区分目标(rev-KL → 近似恒等的深层 block;
+fwd-KL → 非平凡的深层 block)。</li>
+<li>MERA 尺度分组与绕开 dispatch 的功能探针定义良好且可复现。</li>
+<li><strong>(来自修正后的 V4,保留粗粒度)</strong> 逆向 KL 流在慢模子格点上 std
+单调收缩 3.51 → 0.94,峰度 → 0,中间粗尺度上有 <em>负</em> 最近邻相关。
+慢模被抹除(塌缩到 N(0, 1) + 反相关噪声),而不是被粗粒度化。
+分块 RG 真值(V5)预言 std → 2.46,双峰 kurt ≈ −1.84。</li>
+<li><strong>(来自修正后的 V4)</strong> 前向 KL 慢模膨胀(T_c hs_dataDriven:
+y_3 处 std 3.51 → 28.94),之后部分回落,从未达到形状自相似
+(相邻标准化 KS 在每个粗对上都 ≥ 0.05),G(1)/G(0) 保持为正(物理),
+但没有任何流的粗级联真正匹配分块 RG。
+<strong>该架构上没有任何流在做 Wilson 风格的 RG</strong>,
+原始 V4 的&quot;rev-KL 在潜端平凡地接近尺度不变&quot;的框架是
+全 L² 平均的产物,不是慢模。</li>
+<li><strong>(来自 V5,与同输入上的 Wilson–Kadanoff 分块 RG 跨比较)</strong>
+训练目标决定&quot;真正粗粒度化&quot;的哪个轴上崩溃:fwd-KL 在 coarse 深度上保留 G(r)
+(hs_bignet 在 s = 2–3 上 RMS-G ≈ 0.02–0.07)但把边缘方差比分块 RG 高 4–9 倍;
+rev-KL 把边缘保持得小但完全破坏 G(r)(每个尺度上 RMS-G ≈ 0.62–0.67,
+比任何 fwd-KL 行高一个数量级)。两轴分解(KS 看边缘,RMS-G 看空间结构)
+使失败成为定量的,而非定性的。</li>
+</ul>
+<h3 id="%E5%8F%A6%E8%A7%81">另见</h3>
+<ul>
+<li><code>temp_sweep_L32.md</code> —— 更广的 L=32 前向 KL 温度扫描</li>
+<li><code>concise_report_L32_T2.269.md</code> —— 完整的 L=32 T_c 方法比较</li>
+<li><code>fss_sweep_report.md</code> —— 跨 L 的 KL ∝ L^α 临界性见证
+(T_c 处 α = 2.20,非临界 ~2.0 —— 该微观探针的宏观补充)</li>
+<li><code>criticality_analysis.py</code> / <code>criticality_flow.py</code> —— 数据侧与流侧
+的普适值检验(Binder 累积量交叉、χ FSS 指数、ξ_eff/L 交叉、P(M) 坍缩)</li>
+</ul>
+<h2 id="%E5%9B%BE">图</h2>
+<h3 id="%E5%9F%BA%E7%BA%BF%E9%9D%A2%E6%9D%BF%E6%B8%A9%E5%BA%A6%E5%AF%B9%E7%85%A7">基线面板(温度对照)</h3>
+<p><img src="file:///cluster/home/hhuang05/NeuralRG/analyzers/rg_fixed_point/figures/rg_fixed_point.png" alt="RG 不动点探针 —— 基线"></p>
+<h3 id="%E6%96%B9%E6%B3%95%E9%9D%A2%E6%9D%BFtc-%E5%A4%84-concisereport-%E7%9A%84%E5%90%84%E6%96%B9%E6%B3%95">方法面板(T_c 处 concise_report 的各方法)</h3>
+<p><img src="file:///cluster/home/hhuang05/NeuralRG/analyzers/rg_fixed_point/figures/rg_fixed_point_methods.png" alt="RG 探针 —— 训练方法比较"></p>
+<p>逆向 KL 方法(sym, STL)位于底部,f_4 → f_5 视觉上钉在 x 轴上的 ~10⁻⁵;
+前向 KL 方法(hs_bignet, bridge)位于顶部 MSE ≈ 2;
+混合目标(jsLoss, phase2_finetune)位于中间。包含非临界对照
+T = 2.15 与 T = 2.40,用来表明前向 KL 的深层 MSE 高平台是 T_c 现象
+(T = 2.40 锐利下降)。</p>
+<h3 id="v1--%E5%85%A8%E5%B1%80-vs-%E9%80%90%E4%BD%8D%E7%BD%AE-z-%E6%A0%87%E5%87%86%E5%8C%96">V1 —— 全局 vs 逐位置 z-标准化</h3>
+<p><img src="file:///cluster/home/hhuang05/NeuralRG/analyzers/rg_fixed_point/figures/rg_fixed_point_robustness_v1_global.png" alt="V1 鲁棒性 —— 全局 vs 逐位置 z-标准化"></p>
+<h3 id="v2--%E9%93%BE%E5%BC%8F%E8%BE%93%E5%85%A5%E7%94%9F%E4%BA%A7%E7%BB%84%E5%90%88">V2 —— 链式输入(生产组合)</h3>
+<p><img src="file:///cluster/home/hhuang05/NeuralRG/analyzers/rg_fixed_point/figures/rg_fixed_point_robustness_v2_chain.png" alt="V2 鲁棒性 —— 链式输入探针"></p>
+<h3 id="v2b--%E5%B8%A6-mera-%E6%A7%BD%E5%87%A0%E4%BD%95%E7%9A%84%E9%93%BE%E5%BC%8F%E8%BE%93%E5%85%A53-%E6%96%B0--1-%E4%BF%9D%E7%95%99%E7%B2%97%E7%B2%92%E5%BA%A6">V2b —— 带 MERA 槽几何的链式输入(3 新 + 1 保留粗粒度)</h3>
+<p><img src="file:///cluster/home/hhuang05/NeuralRG/analyzers/rg_fixed_point/figures/rg_fixed_point_robustness_v2b_chain_oneslot.png" alt="V2b 鲁棒性 —— 单槽链式"></p>
+<p>在生产正确的槽几何下,rev-KL 在深对上的&quot;平台&quot;消失 ——
+sym_bignet 与 STL pathgrad 的最深 MSE 都落在 1.489,
+与非临界对照不可区分。</p>
+<h3 id="v3--%E9%80%90-block-%E6%81%92%E7%AD%89%E6%AE%8B%E5%B7%AE">V3 —— 逐 block 恒等残差</h3>
+<p><img src="file:///cluster/home/hhuang05/NeuralRG/analyzers/rg_fixed_point/figures/rg_fixed_point_robustness_v3_identity.png" alt="V3 鲁棒性 —— 各 scale-block 的恒等残差"></p>
+<p>最右侧单元(f_5)对两条非临界流以及两条 rev-KL T_c 流都很小:
+6 条被探流里有 4 条的 f_5 在高斯噪声上近似恒等。
+只有前向 KL T_c 运行在每个尺度上都有非平凡的深层 block。</p>
+<h3 id="v4--%E6%95%B0%E6%8D%AE%E6%AD%A3%E5%90%91%E6%96%B9%E5%90%91hs-%E6%95%B0%E6%8D%AE%E5%AE%8C%E6%95%B4%E8%B7%AF%E5%BE%84">V4 —— 数据正向方向(HS 数据,完整路径)</h3>
+<p><img src="file:///cluster/home/hhuang05/NeuralRG/analyzers/rg_fixed_point/figures/rg_v4_dataforward_ks.png" alt="V4 —— 相邻 y_s, y_{s+1} 之间的 KS"></p>
+<p><img src="file:///cluster/home/hhuang05/NeuralRG/analyzers/rg_fixed_point/figures/rg_v4_dataforward_w1.png" alt="V4 —— 相邻 y_s, y_{s+1} 之间的 Wasserstein-1"></p>
+<p><img src="file:///cluster/home/hhuang05/NeuralRG/analyzers/rg_fixed_point/figures/rg_v4_dataforward_rmsG.png" alt="V4 —— 相邻 y_s, y_{s+1} 之间的 G(r)/G(0) 形状错配"></p>
+<p><img src="file:///cluster/home/hhuang05/NeuralRG/analyzers/rg_fixed_point/figures/rg_v4_dataforward_Goverlay.png" alt="V4 —— 逐尺度的 G_s(r)/G_s(0),每条流一图"></p>
+<p>KS / W1 / RMS-G 面板对每条流(包括两条非临界对照)在右边缘都衰减 ——
+即 §V4 中讨论的普适&quot;最深对匹配&quot;行为。逐流的 G_s(r)/G_s(0) 叠图
+(最后一张)让跨目标差异成为可视的:rev-KL 面板在深尺度上塌缩到
+一条近似平坦的曲线(与 N(0, 1) 潜端一致),而 fwd-KL 面板在每个尺度上都保留可见曲率。</p>
+<h3 id="v5--wilson%E2%80%93kadanoff-%E5%88%86%E5%9D%97-rg-%E7%9C%9F%E5%80%BC">V5 —— Wilson–Kadanoff 分块 RG 真值</h3>
+<p><img src="file:///cluster/home/hhuang05/NeuralRG/analyzers/rg_fixed_point/figures/rg_v5_blockRG_std.png" alt="V5 —— 逐尺度的慢模 std:MERA 子采样 vs 分块 RG"></p>
+<p><img src="file:///cluster/home/hhuang05/NeuralRG/analyzers/rg_fixed_point/figures/rg_v5_blockRG_kurt.png" alt="V5 —— 逐尺度的慢模峰度:MERA 子采样 vs 分块 RG"></p>
+<p>std 面板给出最干净的单数字摘要:分块 RG 曲线从 3.51 缓慢下降到 2.46
+(由平均所致),fwd-KL 流膨胀至其上方(hs_dataDriven 在 s = 3 处峰值 28.94),
+rev-KL 流则单调缩至其下方约 ~1(慢模抹除)。峰度上,分块 RG 边缘保持双峰
+(−1.33 → −1.84),而 rev-KL 边缘穿过零点(高斯化)。</p>
+<p><img src="file:///cluster/home/hhuang05/NeuralRG/analyzers/rg_fixed_point/figures/rg_v5_blockRG_ks.png" alt="V5 —— 逐尺度的 KS(MERA, 分块 RG)"></p>
+<p><img src="file:///cluster/home/hhuang05/NeuralRG/analyzers/rg_fixed_point/figures/rg_v5_blockRG_w1.png" alt="V5 —— 逐尺度的 W1(MERA, 分块 RG)"></p>
+<p><img src="file:///cluster/home/hhuang05/NeuralRG/analyzers/rg_fixed_point/figures/rg_v5_blockRG_rmsG.png" alt="V5 —— 逐尺度的 G(r)/G(0) RMS 偏差"></p>
+<p>RMS-G 面板是关键的点睛之笔:rev-KL 轨迹在每个粗深度上都在 0.62–0.67,
+比任一 fwd-KL 轨迹高一个数量级。这是 fwd-KL 做对、rev-KL 做反的空间结构轴。</p>
+<p><img src="file:///cluster/home/hhuang05/NeuralRG/analyzers/rg_fixed_point/figures/rg_v5_blockRG_marg_s2.png" alt="V5 —— s = 2 处的边缘叠图(逐流的 MERA 子采样 vs 分块 RG)"></p>
+<p><img src="file:///cluster/home/hhuang05/NeuralRG/analyzers/rg_fixed_point/figures/rg_v5_blockRG_marg_s3.png" alt="V5 —— s = 3 处的边缘叠图"></p>
+<p>边缘叠图让双峰故事成为可视的:分块 RG 在每个深度都保持两个瓣;
+rev-KL 慢模塌缩为单个近似高斯峰;fwd-KL 慢模有宽的、重尾的形状,
+能&quot;包住&quot;分块 RG 边缘,但尺度搞错了。</p>
+
+</body>
+</html>

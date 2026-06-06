@@ -25,6 +25,6 @@ source activate neuralrg
 
 # Run the plotting script
 # We add "|| true" so that if one folder fails, it doesn't affect others
-python analyzers/plot_dist_hdf5.py "$folder" || true
+python analyzers/mcmc_data/plot_dist_hdf5.py "$folder" || true
 EOT
 done

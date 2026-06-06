@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>temp_sweep_L32.md</title>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+
+<style>
+/* https://github.com/microsoft/vscode/blob/master/extensions/markdown-language-features/media/markdown.css */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+body {
+	font-family: var(--vscode-markdown-font-family, -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif);
+	font-size: var(--vscode-markdown-font-size, 14px);
+	padding: 0 26px;
+	line-height: var(--vscode-markdown-line-height, 22px);
+	word-wrap: break-word;
+}
+
+#code-csp-warning {
+	position: fixed;
+	top: 0;
+	right: 0;
+	color: white;
+	margin: 16px;
+	text-align: center;
+	font-size: 12px;
+	font-family: sans-serif;
+	background-color:#444444;
+	cursor: pointer;
+	padding: 6px;
+	box-shadow: 1px 1px 1px rgba(0,0,0,.25);
+}
+
+#code-csp-warning:hover {
+	text-decoration: none;
+	background-color:#007acc;
+	box-shadow: 2px 2px 2px rgba(0,0,0,.25);
+}
+
+body.scrollBeyondLastLine {
+	margin-bottom: calc(100vh - 22px);
+}
+
+body.showEditorSelection .code-line {
+	position: relative;
+}
+
+body.showEditorSelection .code-active-line:before,
+body.showEditorSelection .code-line:hover:before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: -12px;
+	height: 100%;
+}
+
+body.showEditorSelection li.code-active-line:before,
+body.showEditorSelection li.code-line:hover:before {
+	left: -30px;
+}
+
+.vscode-light.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.15);
+}
+
+.vscode-light.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.40);
+}
+
+.vscode-light.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-dark.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+.vscode-dark.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.60);
+}
+
+.vscode-dark.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-high-contrast.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 160, 0, 0.7);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 160, 0, 1);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+img {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 1px solid -webkit-focus-ring-color;
+	outline-offset: -1px;
+}
+
+hr {
+	border: 0;
+	height: 2px;
+	border-bottom: 2px solid;
+}
+
+h1 {
+	padding-bottom: 0.3em;
+	line-height: 1.2;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+}
+
+h1, h2, h3 {
+	font-weight: normal;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table > thead > tr > th {
+	text-align: left;
+	border-bottom: 1px solid;
+}
+
+table > thead > tr > th,
+table > thead > tr > td,
+table > tbody > tr > th,
+table > tbody > tr > td {
+	padding: 5px 10px;
+}
+
+table > tbody > tr + tr > td {
+	border-top: 1px solid;
+}
+
+blockquote {
+	margin: 0 7px 0 5px;
+	padding: 0 16px 0 10px;
+	border-left-width: 5px;
+	border-left-style: solid;
+}
+
+code {
+	font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+	font-size: 1em;
+	line-height: 1.357em;
+}
+
+body.wordWrap pre {
+	white-space: pre-wrap;
+}
+
+pre:not(.hljs),
+pre.hljs code > div {
+	padding: 16px;
+	border-radius: 3px;
+	overflow: auto;
+}
+
+pre code {
+	color: var(--vscode-editor-foreground);
+	tab-size: 4;
+}
+
+/** Theming */
+
+.vscode-light pre {
+	background-color: rgba(220, 220, 220, 0.4);
+}
+
+.vscode-dark pre {
+	background-color: rgba(10, 10, 10, 0.4);
+}
+
+.vscode-high-contrast pre {
+	background-color: rgb(0, 0, 0);
+}
+
+.vscode-high-contrast h1 {
+	border-color: rgb(0, 0, 0);
+}
+
+.vscode-light table > thead > tr > th {
+	border-color: rgba(0, 0, 0, 0.69);
+}
+
+.vscode-dark table > thead > tr > th {
+	border-color: rgba(255, 255, 255, 0.69);
+}
+
+.vscode-light h1,
+.vscode-light hr,
+.vscode-light table > tbody > tr + tr > td {
+	border-color: rgba(0, 0, 0, 0.18);
+}
+
+.vscode-dark h1,
+.vscode-dark hr,
+.vscode-dark table > tbody > tr + tr > td {
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+</style>
+
+<style>
+/* Tomorrow Theme */
+/* http://jmblog.github.com/color-themes-for-google-code-highlightjs */
+/* Original theme - https://github.com/chriskempson/tomorrow-theme */
+
+/* Tomorrow Comment */
+.hljs-comment,
+.hljs-quote {
+	color: #8e908c;
+}
+
+/* Tomorrow Red */
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-regexp,
+.hljs-deletion {
+	color: #c82829;
+}
+
+/* Tomorrow Orange */
+.hljs-number,
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-literal,
+.hljs-type,
+.hljs-params,
+.hljs-meta,
+.hljs-link {
+	color: #f5871f;
+}
+
+/* Tomorrow Yellow */
+.hljs-attribute {
+	color: #eab700;
+}
+
+/* Tomorrow Green */
+.hljs-string,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition {
+	color: #718c00;
+}
+
+/* Tomorrow Blue */
+.hljs-title,
+.hljs-section {
+	color: #4271ae;
+}
+
+/* Tomorrow Purple */
+.hljs-keyword,
+.hljs-selector-tag {
+	color: #8959a8;
+}
+
+.hljs {
+	display: block;
+	overflow-x: auto;
+	color: #4d4d4c;
+	padding: 0.5em;
+}
+
+.hljs-emphasis {
+	font-style: italic;
+}
+
+.hljs-strong {
+	font-weight: bold;
+}
+</style>
+
+<style>
+/*
+ * Markdown PDF CSS
+ */
+
+ body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif, "Meiryo";
+	padding: 0 12px;
+}
+
+pre {
+	background-color: #f8f8f8;
+	border: 1px solid #cccccc;
+	border-radius: 3px;
+	overflow-x: auto;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+}
+
+pre:not(.hljs) {
+	padding: 23px;
+	line-height: 19px;
+}
+
+blockquote {
+	background: rgba(127, 127, 127, 0.1);
+	border-color: rgba(0, 122, 204, 0.5);
+}
+
+.emoji {
+	height: 1.4em;
+}
+
+code {
+	font-size: 14px;
+	line-height: 19px;
+}
+
+/* for inline code */
+:not(pre):not(.hljs) > code {
+	color: #C9AE75; /* Change the old color so it seems less like an error */
+	font-size: inherit;
+}
+
+/* Page Break : use <div class="page"/> to insert page break
+-------------------------------------------------------- */
+.page {
+	page-break-after: always;
+}
+
+</style>
+
+<script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast')
+          ? 'dark'
+          : 'default'
+    });
+  </script>
+<h1 id="ising-l32--forward-kl-temperature-sweep">Ising L=32 — Forward-KL Temperature Sweep</h1>
+<p>Five-point temperature sweep at L=32 in the HS continuous-field
+forward-KL training mode. Each (T) run is independent — fresh init,
+20000 epochs, bignet arch, <code>-symmetry -noDeq -dataDriven</code>, batch=128,
+HS dataset N=200000 per T. Headline numbers from
+<code>analyzers/fss_sweep_KL_v2.csv</code>; the cross-L per-site / power-law
+analysis lives in <code>fss_sweep_report.md</code>.</p>
+<h2 id="architecture">Architecture</h2>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">Arch</th>
+<th style="text-align:right">nlayers</th>
+<th style="text-align:right">nhidden</th>
+<th style="text-align:right">trainable params</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">bignet</td>
+<td style="text-align:right">16</td>
+<td style="text-align:right">128</td>
+<td style="text-align:right">10,938,240</td>
+</tr>
+</tbody>
+</table>
+<p>Bignet was chosen for L=32 because the default arch leaves KL_fwd at
+≈27 nat instead of ≈15 nat at T_c — see <code>project_l32_bignet_fix</code>
+memory. L=32 default-arch sweep points were not produced because
+the same gap is expected across T.</p>
+<h2 id="summary-table">Summary table</h2>
+<p>Rows are grouped: <strong>reference (per T) → forward-KL training (per T) →
+forward-KL diagnostic (per T)</strong> with <code>══════</code> dividers.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">T</th>
+<th style="text-align:left">Source</th>
+<th style="text-align:center">F (−lnZ)</th>
+<th style="text-align:center">E</th>
+<th style="text-align:center">S</th>
+<th style="text-align:center">KL(q‖p)</th>
+<th style="text-align:center">KL(p‖q)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center"><strong>═══ Reference (HS continuous-field) ═══</strong></td>
+<td style="text-align:left">════════════</td>
+<td style="text-align:center">═══════════</td>
+<td style="text-align:center">═════════════</td>
+<td style="text-align:center">═══════</td>
+<td style="text-align:center">═══════</td>
+<td style="text-align:center"></td>
+</tr>
+<tr>
+<td style="text-align:center">2.150</td>
+<td style="text-align:left">HS dataset (sample, N=200k)</td>
+<td style="text-align:center">N/A</td>
+<td style="text-align:center">N/A</td>
+<td style="text-align:center">1870.002</td>
+<td style="text-align:center">—</td>
+<td style="text-align:center">—</td>
+</tr>
+<tr>
+<td style="text-align:center">2.220</td>
+<td style="text-align:left">HS dataset</td>
+<td style="text-align:center">N/A</td>
+<td style="text-align:center">N/A</td>
+<td style="text-align:center">1885.529</td>
+<td style="text-align:center">—</td>
+<td style="text-align:center">—</td>
+</tr>
+<tr>
+<td style="text-align:center">2.269</td>
+<td style="text-align:left"><strong>Exact (theory, continuous)</strong></td>
+<td style="text-align:center"><strong>−2369.587</strong></td>
+<td style="text-align:center"><strong>−466.61</strong></td>
+<td style="text-align:center"><strong>1902.98</strong></td>
+<td style="text-align:center"><strong>0</strong></td>
+<td style="text-align:center"><strong>0</strong></td>
+</tr>
+<tr>
+<td style="text-align:center">2.269</td>
+<td style="text-align:left">HS dataset</td>
+<td style="text-align:center">N/A</td>
+<td style="text-align:center">−466.61</td>
+<td style="text-align:center">1902.601</td>
+<td style="text-align:center">—</td>
+<td style="text-align:center">—</td>
+</tr>
+<tr>
+<td style="text-align:center">2.320</td>
+<td style="text-align:left">HS dataset</td>
+<td style="text-align:center">N/A</td>
+<td style="text-align:center">N/A</td>
+<td style="text-align:center">1924.562</td>
+<td style="text-align:center">—</td>
+<td style="text-align:center">—</td>
+</tr>
+<tr>
+<td style="text-align:center">2.400</td>
+<td style="text-align:left"><strong>Exact (theory, continuous)</strong></td>
+<td style="text-align:center"><strong>−2262.462</strong></td>
+<td style="text-align:center">N/A</td>
+<td style="text-align:center">N/A</td>
+<td style="text-align:center"><strong>0</strong></td>
+<td style="text-align:center"><strong>0</strong></td>
+</tr>
+<tr>
+<td style="text-align:center">2.400</td>
+<td style="text-align:left">HS dataset</td>
+<td style="text-align:center">N/A</td>
+<td style="text-align:center">N/A</td>
+<td style="text-align:center">1946.401</td>
+<td style="text-align:center">—</td>
+<td style="text-align:center">—</td>
+</tr>
+<tr>
+<td style="text-align:center"><strong>═══ Forward-KL training (hs_dataDriven, bignet) ═══</strong></td>
+<td style="text-align:left">════════════</td>
+<td style="text-align:center">═══════════</td>
+<td style="text-align:center">═════════════</td>
+<td style="text-align:center">═══════</td>
+<td style="text-align:center">═══════</td>
+<td style="text-align:center"></td>
+</tr>
+<tr>
+<td style="text-align:center">2.150</td>
+<td style="text-align:left"><em>hs_dataDriven — training (sm best ep 16301)</em></td>
+<td style="text-align:center">N/A</td>
+<td style="text-align:center">N/A</td>
+<td style="text-align:center"><em>1878.597</em></td>
+<td style="text-align:center">N/A</td>
+<td style="text-align:center"><em>8.594</em></td>
+</tr>
+<tr>
+<td style="text-align:center">2.220</td>
+<td style="text-align:left"><em>hs_dataDriven — training (ep 13210)</em></td>
+<td style="text-align:center">N/A</td>
+<td style="text-align:center">N/A</td>
+<td style="text-align:center"><em>1897.492</em></td>
+<td style="text-align:center">N/A</td>
+<td style="text-align:center"><em>11.962</em></td>
+</tr>
+<tr>
+<td style="text-align:center">2.269</td>
+<td style="text-align:left"><em>hs_dataDriven — training (ep 9496)</em></td>
+<td style="text-align:center">N/A</td>
+<td style="text-align:center">N/A</td>
+<td style="text-align:center"><em>1917.905</em></td>
+<td style="text-align:center">N/A</td>
+<td style="text-align:center"><em>15.304</em></td>
+</tr>
+<tr>
+<td style="text-align:center">2.320</td>
+<td style="text-align:left"><em>hs_dataDriven — training (ep 16674)</em></td>
+<td style="text-align:center">N/A</td>
+<td style="text-align:center">N/A</td>
+<td style="text-align:center"><em>1939.510</em></td>
+<td style="text-align:center">N/A</td>
+<td style="text-align:center"><em>14.948</em></td>
+</tr>
+<tr>
+<td style="text-align:center">2.400</td>
+<td style="text-align:left"><em>hs_dataDriven — training (ep 13815)</em></td>
+<td style="text-align:center">N/A</td>
+<td style="text-align:center">N/A</td>
+<td style="text-align:center"><em>1962.250</em></td>
+<td style="text-align:center">N/A</td>
+<td style="text-align:center"><em>15.849</em></td>
+</tr>
+<tr>
+<td style="text-align:center"><strong>═══ Forward-KL diagnostic (post-hoc x ~ q) ═══</strong></td>
+<td style="text-align:left">════════════</td>
+<td style="text-align:center">═══════════</td>
+<td style="text-align:center">═════════════</td>
+<td style="text-align:center">═══════</td>
+<td style="text-align:center">═══════</td>
+<td style="text-align:center"></td>
+</tr>
+<tr>
+<td style="text-align:center">2.150</td>
+<td style="text-align:left">hs_dataDriven — diag (ep 16500)</td>
+<td style="text-align:center">−2471.45</td>
+<td style="text-align:center">−589.50</td>
+<td style="text-align:center">1881.95</td>
+<td style="text-align:center">(post)</td>
+<td style="text-align:center">(post)</td>
+</tr>
+<tr>
+<td style="text-align:center">2.220</td>
+<td style="text-align:left">hs_dataDriven — diag (ep 17000)</td>
+<td style="text-align:center">−2336.58</td>
+<td style="text-align:center">−425.63</td>
+<td style="text-align:center">1910.95</td>
+<td style="text-align:center">(post)</td>
+<td style="text-align:center">(post)</td>
+</tr>
+<tr>
+<td style="text-align:center">2.269</td>
+<td style="text-align:left">hs_dataDriven — diag (ep 29500)</td>
+<td style="text-align:center">−2349.03</td>
+<td style="text-align:center">−398.65</td>
+<td style="text-align:center">1950.38</td>
+<td style="text-align:center">20.557</td>
+<td style="text-align:center">29.461</td>
+</tr>
+<tr>
+<td style="text-align:center">2.320</td>
+<td style="text-align:left">hs_dataDriven — diag (ep 17500)</td>
+<td style="text-align:center">−2303.15</td>
+<td style="text-align:center">−345.77</td>
+<td style="text-align:center">1957.38</td>
+<td style="text-align:center">(post)</td>
+<td style="text-align:center">(post)</td>
+</tr>
+<tr>
+<td style="text-align:center">2.400</td>
+<td style="text-align:left">hs_dataDriven — diag (pending)</td>
+<td style="text-align:center">(post)</td>
+<td style="text-align:center">(post)</td>
+<td style="text-align:center">(post)</td>
+<td style="text-align:center">(post)</td>
+<td style="text-align:center">(post)</td>
+</tr>
+</tbody>
+</table>
+<p>The T=2.400 row is fully pending because no <code>flow_diagnostic.json</code> exists
+for that folder yet; the regen job (39361308) creates it. <code>(post)</code>
+elsewhere = HS-data-side fields (<code>KL_qp</code>, <code>KL_pq</code>, <code>mag_abs_p</code>, <code>xi_p</code>)
+missing from the older JSONs.</p>
+<h2 id="how-to-read">How to read</h2>
+<p>Same convention as L=8 / L=16. Forward-KL trains only <code>S</code> (MLE
+entropy); flow-side <code>F^q</code> and <code>E^q</code> are from the post-hoc diagnostic.
+<code>KL(p‖q) training = LOSS − H(p_HS)</code>, on-objective; <code>KL(q‖p) diag</code>
+is the off-objective sanity check.</p>
+<p>The diagnostic-row <code>F</code> ranges from −2471 (T=2.15) to −2349 (T_c).
+Note T=2.15's −2471 sits <strong>below</strong> exactz's bound −2369.587 at T_c —
+expected because lnZ_c grows with temperature in the off-critical
+direction (more entropy, easier target). Compare against the per-T
+F_exact column above where available.</p>
+<h2 id="structural-diagnostics">Structural diagnostics</h2>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">T</th>
+<th style="text-align:right">mag_abs_q (flow)</th>
+<th style="text-align:right">mag_abs_p (data)</th>
+<th style="text-align:right">xi_q (flow)</th>
+<th style="text-align:right">xi_p (data)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">2.150</td>
+<td style="text-align:right">3.230</td>
+<td style="text-align:right">(post)</td>
+<td style="text-align:right">11.666</td>
+<td style="text-align:right">(post)</td>
+</tr>
+<tr>
+<td style="text-align:center">2.220</td>
+<td style="text-align:right">2.855</td>
+<td style="text-align:right">(post)</td>
+<td style="text-align:right">10.611</td>
+<td style="text-align:right">(post)</td>
+</tr>
+<tr>
+<td style="text-align:center">2.269</td>
+<td style="text-align:right">2.446</td>
+<td style="text-align:right">2.382</td>
+<td style="text-align:right">8.516</td>
+<td style="text-align:right">8.568</td>
+</tr>
+<tr>
+<td style="text-align:center">2.320</td>
+<td style="text-align:right">1.926</td>
+<td style="text-align:right">(post)</td>
+<td style="text-align:right">6.770</td>
+<td style="text-align:right">(post)</td>
+</tr>
+<tr>
+<td style="text-align:center">2.400</td>
+<td style="text-align:right">(post)</td>
+<td style="text-align:right">(post)</td>
+<td style="text-align:right">(post)</td>
+<td style="text-align:right">(post)</td>
+</tr>
+</tbody>
+</table>
+<p>At T_c the flow's <code>mag_abs_q</code> is 2.7% high and <code>xi_q</code> is 0.6% low —
+acceptable but the magnetization over-concentration is the
+forward-KL signature, mirroring what <code>hs_bignet</code> shows in the
+<code>concise_report_L32_T2.269.md</code> &quot;Method&quot; table. The forward-KL run is
+mass-covering relative to the reverse-KL <code>sym_bignet</code> (which has
+<code>mag_abs_q=3.11</code>, <code>xi_q=12.0</code> — far worse on both because reverse-KL
+collapses the bridge region).</p>
+<h2 id="notes">Notes</h2>
+<ul>
+<li><code>hs_dataDriven</code> here is the L=32 <em>bignet</em> run used in <code>fss_sweep_KL_v2.csv</code>,
+not the default-arch L=32 run (which was abandoned at ≈27 nat KL).
+Inside the CSV the folder is <code>32Ising_T*_hs_dataDriven</code> for all T.</li>
+<li>The L=32 late-training instability (LOSS spikes +10 to +90 nat in
+the final 10% of training) shows up across the sweep: best_eps
+cluster in 13–17k of 20k epochs, with the late tail discarded by
+the rolling-50 smoothing. See <code>project_l32_late_training_instability</code>.</li>
+<li>Diagnostic regeneration (job 39361308) refreshes every JSON and
+PNG referenced below.</li>
+</ul>
+<h2 id="hs-dataset-overview-across-temperature">HS dataset overview across temperature</h2>
+<p>The three panels below are computed directly from the HS dataset
+samples (<code>data/mcmc_data/hs_L32_T*_N200000.pt</code>) — no flow involved.
+They give the target the forward-KL run is trying to fit. Generated
+by <code>analyzers/make_data_panels.py --L 32</code>.</p>
+<h3 id="configurations-across-t-one-panel-per-t">Configurations across T (one panel per T)</h3>
+<p><img src="data_configs_L32.png" alt="L=32 HS configurations across T"></p>
+<p>16 random HS samples per T, sigmoid(2x) rendering. L=32 shows the
+most dramatic ordering / disordering progression: low-T panels
+(left) have a single-sign majority covering most of the lattice
+with thin domain walls; T_c (middle) shows fractal-like clusters at
+all scales — the hallmark of critical scale invariance — and
+high-T panels (right) are nearly featureless.</p>
+<h3 id="pm-overlay-across-t">P(M) overlay across T</h3>
+<p><img src="data_mag_overlay_L32.png" alt="L=32 HS magnetisation distribution"></p>
+<p><code>P(M)</code> across T. At L=32 the broken-symmetry peaks at low T are
+narrow and well-separated (the bridging region between ±M₀ basins
+is small in finite-size mixing terms); the T_c distribution is
+broad and flat-ish across [−M₀, +M₀] — that broad &quot;bridge mass&quot; is
+exactly what <code>bridge_w5.0t0.5</code> in <code>concise_report_L32_T2.269.md</code>
+re-weights the forward-KL loss to capture.</p>
+<h3 id="gr-overlay-across-t-log-log--tc-theory">G(r) overlay across T (log-log + T_c theory)</h3>
+<p><img src="data_corr_overlay_L32.png" alt="L=32 HS two-point correlation across T"></p>
+<p><code>|G(r)|/G(0)</code> log-log across T. Warm-to-cool palette with T_c
+emphasised in saturated magenta (thicker line, larger markers).
+Only T_c carries a theoretical dashed line — Onsager exact
+<code>G ∝ r^(−1/4)</code> (η=1/4) anchored at the r=1 data point. Off-T_c
+theory lines are omitted (HS-field correlator does not match
+<code>exp(−r/ξ)</code> directly at finite r — see analysis note). At L=32 the
+T_c data tracks <code>r^(−1/4)</code> cleanly through r ≈ 5 before bending
+into the plateau region; the off-T_c curves form a clean monotone
+fan with T (deep red/T=2.40 falls fastest, deep blue/T=2.15 stays
+highest), and T_c sits exactly between them — the contrast between
+critical power-law and off-critical exponential decay is sharpest
+at L=32.</p>
+<h2 id="criticality-witnesses-cross-l">Criticality witnesses (cross-L)</h2>
+<p>Five quantities computed from the HS dataset that change qualitatively
+at T_c — the universality-class fingerprints. L=32 is the largest L in
+the sweep and lands closest to the universal values at T_c.
+Generated by <code>analyzers/criticality_analysis.py</code>. The same plots
+appear in the L=8 / L=16 reports.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">Quantity (L=32 at T_c)</th>
+<th style="text-align:right">Measured</th>
+<th style="text-align:right">Universal 2D Ising</th>
+<th style="text-align:right">gap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">Binder $U_4$</td>
+<td style="text-align:right">0.6129</td>
+<td style="text-align:right">0.6107</td>
+<td style="text-align:right"><strong>+0.002</strong></td>
+</tr>
+<tr>
+<td style="text-align:left">$\xi_{eff}/L$</td>
+<td style="text-align:right">0.916</td>
+<td style="text-align:right">0.905</td>
+<td style="text-align:right">+0.011</td>
+</tr>
+<tr>
+<td style="text-align:left">$\chi(T_c, L)$</td>
+<td style="text-align:right">394.14</td>
+<td style="text-align:right">log-log slope 1.676 vs Onsager 1.75</td>
+<td style="text-align:right">—</td>
+</tr>
+</tbody>
+</table>
+<h3 id="binder-cumulant-u4">Binder cumulant U_4</h3>
+<p><img src="criticality_binder.png" alt="Binder cumulant crossings"></p>
+<p>Three L curves meet near T_c at U_4 ≈ 0.61. L=32 (red) hits
+U_4(T_c) = 0.6129, very close to the 2D-Ising universal 0.6107. Off
+T_c the L=32 curve fans away fastest of the three — the largest L
+has the sharpest distinction between phases.</p>
+<h3 id="susceptibility-%CF%87-fss">Susceptibility χ FSS</h3>
+<p><img src="criticality_chi.png" alt="Susceptibility FSS"></p>
+<p>Left panel: χ(T) per L; L=32 (red) has the highest peak (~590 at
+T=2.32, with the off-T_c peak shifted slightly above T_c by finite-L
+corrections). Right panel: log-log χ(T_c, L) fit gives slope =
+1.676, vs Onsager exact γ/ν = 1.75 — within 4%, consistent with
+finite-L corrections from only three points.</p>
+<h3 id="second-moment-%CE%BEeffl">Second-moment ξ_eff/L</h3>
+<p><img src="criticality_xi_over_L.png" alt="xi_eff/L crossings"></p>
+<p>Three L curves cross at T_c with ξ_eff/L ≈ 0.91. L=32 at T_c lands
+at 0.916 — closest of the three to (slightly above) the universal
+0.905.</p>
+<h3 id="order-parameter-rescaling-pml%CE%B2%CE%BD-at-tc">Order-parameter rescaling P(M·L^β/ν) at T_c</h3>
+<p><img src="criticality_PM_collapse.png" alt="PM collapse at Tc"></p>
+<p>L=32 (red) lies on the same universal scaling curve as L=8 and
+L=16. The rescaling factor L^(1/8) is the β/ν combination that
+makes the three histograms collapse at T_c; without rescaling, L=32
+would be more concentrated near zero (since ⟨|M|⟩ → 0 as L → ∞).</p>
+<h2 id="kl-vs-t">KL vs T</h2>
+<p>The L=32 line in the cross-L plot:</p>
+<p><img src="fss_sweep_KL_v3.png" alt="FSS forward-KL sweep"></p>
+<p>L=32 in panel (a) climbs from 8.59 (T=2.15) to 15.85 (T=2.40), with
+a clear hump centered at T_c (15.30). The hump is the criticality
+signature — long-range correlations at T_c force the flow to spread
+its capacity across many modes. In panel (b) (per-site), the L=32
+curve breaks above the L=8 / L=16 band specifically at T_c (0.0150
+vs ~0.012) — that's the α &gt; 2 excess for L=32 at T_c. Panel (d) puts
+the α=2.20 power-law fit at T_c (red) against the off-critical
+α≈1.95–2.16 fits.</p>
+<h2 id="flow-samples--per-t">Flow samples — per T</h2>
+<p><em>Left = configurations the trained flow generates, right = HS samples
+from the true target.</em></p>
+<h3 id="t--2150">T = 2.150</h3>
+<p><img src="figures/32Ising_T2.15_hs_dataDriven__flow_samples.png" alt="L=32 T=2.15 flow samples"></p>
+<h3 id="t--2220">T = 2.220</h3>
+<p><img src="figures/32Ising_T2.22_hs_dataDriven__flow_samples.png" alt="L=32 T=2.22 flow samples"></p>
+<h3 id="t--2269-tc">T = 2.269 (T_c)</h3>
+<p><img src="figures/32Ising_T2.269_hs_dataDriven__flow_samples.png" alt="L=32 T=2.269 flow samples"></p>
+<h3 id="t--2320">T = 2.320</h3>
+<p><img src="figures/32Ising_T2.32_hs_dataDriven__flow_samples.png" alt="L=32 T=2.32 flow samples"></p>
+<h3 id="t--2400">T = 2.400</h3>
+<p><img src="figures/32Ising_T2.4_hs_dataDriven__flow_samples.png" alt="L=32 T=2.4 flow samples"></p>
+<h2 id="flow-correlations--per-t">Flow correlations — per T</h2>
+<p><em>Left = per-config magnetisation distribution. Right = normalised
+axial two-point correlation <code>|G(r)|/G(0)</code> on <strong>log-log axes</strong>, with
+a dashed <code>G ∝ r^(−η)</code> reference line (η=1/4, Onsager) anchored at
+r=1 of the HS data at T_c only.</em></p>
+<h3 id="t--2150">T = 2.150</h3>
+<p><img src="figures/32Ising_T2.15_hs_dataDriven__flow_correlations.png" alt="L=32 T=2.15 flow correlations"></p>
+<h3 id="t--2220">T = 2.220</h3>
+<p><img src="figures/32Ising_T2.22_hs_dataDriven__flow_correlations.png" alt="L=32 T=2.22 flow correlations"></p>
+<h3 id="t--2269-tc">T = 2.269 (T_c)</h3>
+<p><img src="figures/32Ising_T2.269_hs_dataDriven__flow_correlations.png" alt="L=32 T=2.269 flow correlations"></p>
+<h3 id="t--2320">T = 2.320</h3>
+<p><img src="figures/32Ising_T2.32_hs_dataDriven__flow_correlations.png" alt="L=32 T=2.32 flow correlations"></p>
+<h3 id="t--2400">T = 2.400</h3>
+<p><img src="figures/32Ising_T2.4_hs_dataDriven__flow_correlations.png" alt="L=32 T=2.4 flow correlations"></p>
+
+</body>
+</html>

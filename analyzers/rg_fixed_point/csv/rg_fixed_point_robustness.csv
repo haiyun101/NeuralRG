@@ -1,0 +1,157 @@
+label,folder,L,T,epoch,variant,scale_pair_or_block,value
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,v1_global,f_1->f_2,1.0968587398529053
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,v1_perpos,f_1->f_2,0.9648552536964417
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,v1_global,f_2->f_3,1.5990155935287476
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,v1_perpos,f_2->f_3,1.7411507368087769
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,v1_global,f_3->f_4,0.5161340236663818
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,v1_perpos,f_3->f_4,0.5163550972938538
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,v1_global,f_4->f_5,0.7834444046020508
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,v1_perpos,f_4->f_5,0.7918562293052673
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,v1_global,f_1->f_2,0.6397037506103516
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,v1_perpos,f_1->f_2,0.882438063621521
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,v1_global,f_2->f_3,1.0697431564331055
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,v1_perpos,f_2->f_3,0.3521917462348938
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,v1_global,f_3->f_4,1.8517072200775146
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,v1_perpos,f_3->f_4,1.9182265996932983
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,v1_global,f_4->f_5,1.9517929553985596
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,v1_perpos,f_4->f_5,1.9161068201065063
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,v1_global,f_1->f_2,2.6584672927856445
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,v1_perpos,f_1->f_2,2.728597402572632
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,v1_global,f_2->f_3,1.8181970119476318
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,v1_perpos,f_2->f_3,1.8640328645706177
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,v1_global,f_3->f_4,0.6231495141983032
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,v1_perpos,f_3->f_4,0.586553156375885
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,v1_global,f_4->f_5,1.9844276905059814
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,v1_perpos,f_4->f_5,1.9830864667892456
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,v1_global,f_1->f_2,1.5788296461105347
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,v1_perpos,f_1->f_2,1.5956388711929321
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,v1_global,f_2->f_3,0.3493989109992981
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,v1_perpos,f_2->f_3,0.3981400430202484
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,v1_global,f_3->f_4,0.02984558790922165
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,v1_perpos,f_3->f_4,0.01902819611132145
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,v1_global,f_4->f_5,0.017493827268481255
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,v1_perpos,f_4->f_5,3.402999209356494e-05
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,v1_global,f_1->f_2,1.648181676864624
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,v1_perpos,f_1->f_2,1.6762701272964478
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,v1_global,f_2->f_3,0.43656298518180847
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,v1_perpos,f_2->f_3,0.490953654050827
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,v1_global,f_3->f_4,0.033327411860227585
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,v1_perpos,f_3->f_4,0.017682572826743126
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,v1_global,f_4->f_5,0.01876492239534855
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,v1_perpos,f_4->f_5,5.790176510345191e-05
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,v1_global,f_1->f_2,2.5042221546173096
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,v1_perpos,f_1->f_2,2.476968288421631
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,v1_global,f_2->f_3,1.9495140314102173
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,v1_perpos,f_2->f_3,1.955304741859436
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,v1_global,f_3->f_4,0.37398940324783325
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,v1_perpos,f_3->f_4,0.3435034155845642
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,v1_global,f_4->f_5,0.17892864346504211
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,v1_perpos,f_4->f_5,0.15379931032657623
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,v2_chain,f_1->f_2,0.7497854232788086
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,v2_chain,f_2->f_3,0.546021044254303
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,v2_chain,f_3->f_4,1.310133695602417
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,v2_chain,f_4->f_5,0.7507267594337463
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,v2_chain,f_1->f_2,0.620354175567627
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,v2_chain,f_2->f_3,0.6606189608573914
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,v2_chain,f_3->f_4,0.3451431095600128
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,v2_chain,f_4->f_5,1.9395593404769897
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,v2_chain,f_1->f_2,2.072535753250122
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,v2_chain,f_2->f_3,0.824191689491272
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,v2_chain,f_3->f_4,1.6542112827301025
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,v2_chain,f_4->f_5,1.943589687347412
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,v2_chain,f_1->f_2,1.4046504497528076
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,v2_chain,f_2->f_3,0.37649109959602356
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,v2_chain,f_3->f_4,0.018518026918172836
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,v2_chain,f_4->f_5,3.3793807233450934e-05
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,v2_chain,f_1->f_2,1.482614278793335
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,v2_chain,f_2->f_3,0.43994140625
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,v2_chain,f_3->f_4,0.018016168847680092
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,v2_chain,f_4->f_5,5.8388442994328216e-05
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,v2_chain,f_1->f_2,0.5752922296524048
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,v2_chain,f_2->f_3,1.9540523290634155
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,v2_chain,f_3->f_4,0.58553147315979
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,v2_chain,f_4->f_5,0.13942350447177887
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,v2b_chain_oneslot,f_1->f_2,0.9836803674697876
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,v2b_chain_oneslot,f_2->f_3,1.722880244255066
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,v2b_chain_oneslot,f_3->f_4,1.5099005699157715
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,v2b_chain_oneslot,f_4->f_5,1.6454273462295532
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,v2b_chain_oneslot,f_1->f_2,1.361160397529602
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,v2b_chain_oneslot,f_2->f_3,1.3070119619369507
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,v2b_chain_oneslot,f_3->f_4,1.9362882375717163
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,v2b_chain_oneslot,f_4->f_5,2.610992908477783
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,v2b_chain_oneslot,f_1->f_2,2.129317283630371
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,v2b_chain_oneslot,f_2->f_3,1.5369371175765991
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,v2b_chain_oneslot,f_3->f_4,1.5384801626205444
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,v2b_chain_oneslot,f_4->f_5,1.7737984657287598
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,v2b_chain_oneslot,f_1->f_2,1.9496020078659058
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,v2b_chain_oneslot,f_2->f_3,1.5332980155944824
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,v2b_chain_oneslot,f_3->f_4,1.5095670223236084
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,v2b_chain_oneslot,f_4->f_5,1.4890036582946777
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,v2b_chain_oneslot,f_1->f_2,1.8910796642303467
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,v2b_chain_oneslot,f_2->f_3,1.563171148300171
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,v2b_chain_oneslot,f_3->f_4,1.5112736225128174
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,v2b_chain_oneslot,f_4->f_5,1.4891488552093506
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,v2b_chain_oneslot,f_1->f_2,2.209778070449829
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,v2b_chain_oneslot,f_2->f_3,1.45206618309021
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,v2b_chain_oneslot,f_3->f_4,1.4262627363204956
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,v2b_chain_oneslot,f_4->f_5,1.5083569288253784
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,v3_identity_raw,f_1,2.001760482788086
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,v3_identity_rel,f_1,1.9936294502756262
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,v3_identity_raw,f_2,3.665483236312866
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,v3_identity_rel,f_2,3.6505942605215047
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,v3_identity_raw,f_3,4.6681013107299805
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,v3_identity_rel,f_3,4.649139759707585
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,v3_identity_raw,f_4,1.156898021697998
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,v3_identity_rel,f_4,1.1521987704594459
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,v3_identity_raw,f_5,0.025455066934227943
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,v3_identity_rel,f_5,0.025351669960100066
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,v3_identity_raw,f_1,1.3422476053237915
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,v3_identity_rel,f_1,1.33679547505521
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,v3_identity_raw,f_2,5.213289260864258
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,v3_identity_rel,f_2,5.192113188681084
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,v3_identity_raw,f_3,2.6250030994415283
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,v3_identity_rel,f_3,2.6143404923362374
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,v3_identity_raw,f_4,15.479881286621094
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,v3_identity_rel,f_4,15.417002925741862
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,v3_identity_raw,f_5,5.861388206481934
+"T = 2.269 (T_c, hs_dataDriven)",data/32Ising_T2.269185314213022_hs_dataDriven,32,2.269185314213022,16000,v3_identity_rel,f_5,5.837579594769971
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,v3_identity_raw,f_1,1.7841845750808716
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,v3_identity_rel,f_1,1.7769373230180245
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,v3_identity_raw,f_2,1.8150949478149414
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,v3_identity_rel,f_2,1.8077221396489371
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,v3_identity_raw,f_3,4.882716178894043
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,v3_identity_rel,f_3,4.86288287498927
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,v3_identity_raw,f_4,2.77020001411438
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,v3_identity_rel,f_4,2.758947625742017
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,v3_identity_raw,f_5,0.30122697353363037
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,v3_identity_rel,f_5,0.3000034074094653
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,v3_identity_raw,f_1,13.477987289428711
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,v3_identity_rel,f_1,13.423240503389541
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,v3_identity_raw,f_2,2.6660280227661133
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,v3_identity_rel,f_2,2.6551987748522734
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,v3_identity_raw,f_3,0.9092240929603577
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,v3_identity_rel,f_3,0.9055308785500725
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,v3_identity_raw,f_4,0.2566404938697815
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,v3_identity_rel,f_4,0.2555980353850569
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,v3_identity_raw,f_5,0.0797005221247673
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,v3_identity_rel,f_5,0.0793767833247317
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,v3_identity_raw,f_1,13.31257152557373
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,v3_identity_rel,f_1,13.258496648569405
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,v3_identity_raw,f_2,4.146980285644531
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,v3_identity_rel,f_2,4.130135497358902
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,v3_identity_raw,f_3,0.8928883075714111
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,v3_identity_rel,f_3,0.8892614481537717
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,v3_identity_raw,f_4,0.15722131729125977
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,v3_identity_rel,f_4,0.1565826936129831
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,v3_identity_raw,f_5,0.018140148371458054
+T_c pathgrad_bignet_long_ext (STL),data/32Ising_T2.269_pathgrad_bignet_long_ext,32,2.269,4950,v3_identity_rel,f_5,0.018066464163253616
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,v3_identity_raw,f_1,0.9356462955474854
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,v3_identity_rel,f_1,0.9318457557153358
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,v3_identity_raw,f_2,5.4769415855407715
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,v3_identity_rel,f_2,5.454694573231462
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,v3_identity_raw,f_3,4.841787338256836
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,v3_identity_rel,f_3,4.8221202848784275
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,v3_identity_raw,f_4,1.6042553186416626
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,v3_identity_rel,f_4,1.5977389285608705
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,v3_identity_raw,f_5,0.12992994487285614
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,v3_identity_rel,f_5,0.1294021771328157

@@ -50,6 +50,10 @@ group.add_argument("-entropyBeta", type=float, default=0.0, help="Forward-KL ent
 group.add_argument("-flowType", type=str, default="rnvp", choices=["rnvp", "nsf"], help="Coupling layer type: rnvp (affine) or nsf (rational-quadratic spline, more expressive for bridge regions).")
 group.add_argument("-nsfBins", type=int, default=8, help="Number of bins K in the NSF rational-quadratic spline (default 8). Only used with -flowType nsf.")
 group.add_argument("-nsfBound", type=float, default=5.0, help="Boundary B for the NSF spline: transform is identity outside [-B, B]. Should be > max|data| (e.g. 5*sigma for HS data).")
+group.add_argument("-gradClip", type=float, default=0.0, help="Max gradient norm (clip_grad_norm_); 0 disables. Recommended ~5.0 for NSF L=32 where unclipped runs NaN around ep 3-6k.")
+group.add_argument("-bridgeWeight", type=float, default=0.0, help="Bridge-targeted upweighting: each training sample with |M|<bridgeThresh gets weight (1+bridgeWeight) instead of 1. 0 disables.")
+group.add_argument("-bridgeThresh", type=float, default=0.5, help="Per-sample magnetization threshold for the bridge region (|M_i|<thresh -> upweighted). Only used with -bridgeWeight>0.")
+group.add_argument("-pathGrad", action='store_true', help="Reverse-KL path-gradient (STL) estimator: backward through path only, drop explicit-theta score-function term. Vaitl et al. 2024 (arxiv:2403.15881). Adds one inverse pass per step (~50%% wall-time overhead). Reverse-KL only for now.")
 
 group = parser.add_argument_group('Ising target parameters')
 #
@@ -133,6 +137,8 @@ else:
         f.create_dataset("flowType", data=np.string_(flowType))
         f.create_dataset("nsfBins",  data=nsfBins)
         f.create_dataset("nsfBound", data=nsfBound)
+        f.create_dataset("bridgeWeight", data=args.bridgeWeight)
+        f.create_dataset("bridgeThresh", data=args.bridgeThresh)
 
 device = torch.device("cpu" if cuda<0 else "cuda:"+str(cuda))
 
@@ -192,6 +198,8 @@ LOSS,ZACC,ZOBS,XACC,XOBS = train.learnInterface(
     skipHMC=args.skipHMC, dataDriven=args.dataDriven,
     dataPath=args.dataPath, targetT=args.T, noDeq=args.noDeq,
     jsLoss=args.jsLoss, jsLambda=args.jsLambda, jsMemOpt=args.jsMemOpt,
-    entropyBeta=args.entropyBeta
+    entropyBeta=args.entropyBeta, gradClip=args.gradClip,
+    bridgeWeight=args.bridgeWeight, bridgeThresh=args.bridgeThresh,
+    pathGrad=args.pathGrad,
 )
 #LOSS,ZACC,ZOBS,XACC,XOBS = train.learnInterface(target,fw,batch,epochs,save=True,saveSteps = savePeriod,savePath=rootFolder,measureFn = measure)
