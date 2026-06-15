@@ -1,4 +1,6 @@
 from .gaussian import Gaussian
+from .conditional_gaussian import ConditionalGaussian
+from .student_t import StudentT
 from .phi4complex import Phi4
 from .ringLike import Ring2d
 from .ising import Ising

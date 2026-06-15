@@ -18,7 +18,9 @@ class Symmetrized(Flow):
 
     def sample(self, batchSize, prior=None):
         x,logp = self.flow.sample(batchSize,prior)
-        noBatch = torch.LongTensor(batchSize).random_(0,len(self.symmetryList)+1)-1
+        # device-aware: noBatch must live on x.device or boolean-indexing
+        # `x[no]` fails with cpu/cuda mismatch when flow lives on CUDA.
+        noBatch = torch.randint(0, len(self.symmetryList)+1, (batchSize,), device=x.device) - 1
         for i in range(len(self.symmetryList)):
             no = (noBatch==i)
             x[no] = self.symmetryList[i](x[no])
@@ -35,7 +37,7 @@ class Symmetrized(Flow):
     def inverse(self,z):
         batchSize = z.shape[0]
         x,_ = self.flow.inverse(z)
-        noBatch = torch.LongTensor(batchSize).random_(0,len(self.symmetryList)+1)-1
+        noBatch = torch.randint(0, len(self.symmetryList)+1, (batchSize,), device=x.device) - 1
         for i in range(len(self.symmetryList)):
             no = (noBatch==i)
             x[no] = self.symmetryList[i](x[no])

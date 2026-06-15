@@ -53,8 +53,76 @@ class HaarRNVP(flow.Flow):
         x = x_flat.reshape(B, 1, 2, 2)
         return x, logp
 
-def symmetryMERAInit(L,d,nlayers,nmlp,nhidden,nrepeat,symmetryList,device,dtype,name = None, channel = 1, depthMERA = None,  weightTying=False, haarPrior=False, flowType="rnvp", nsfBins=8, nsfBound=5.0):
-    s = source.Gaussian([channel]+[L]*d)
+def _compute_scale_invariance_loss(intermediates):
+    """Multi-scale loss term: scale-invariance witness across MERA scales.
+
+    For each adjacent scale pair (s, s+1) we take the *same lattice
+    positions* under stride 2^(s+1) — these are the kept-coarse slots
+    of scale s+1. Their values at scale s come from y_s after the slow
+    mode has been processed at scales 0..s; at scale s+1 they've also
+    been touched by scale s+1's blocks. After per-sample z-scoring,
+    the two should match if the flow obeys approximate scale
+    invariance. Mismatch is penalized via MSE.
+
+    Per-sample z-scoring (not batch-wise) means the loss cannot be
+    minimised by simply rescaling the latent — the flow must produce
+    structurally similar fields at adjacent scales.
+
+    Returns a 0-d tensor (mean across all scale pairs). Backprop-safe.
+    """
+    if len(intermediates) < 2:
+        return intermediates[0].new_zeros(())
+    loss = intermediates[0].new_zeros(())
+    pair_count = 0
+    for s in range(len(intermediates) - 1):
+        y_s = intermediates[s]
+        y_sp1 = intermediates[s + 1]
+        stride = 2 ** (s + 1)  # kept-coarse slot stride at scale s+1
+        if y_s.shape[-1] % stride != 0 or y_s.shape[-2] % stride != 0:
+            # MERA depth bounds the strides we can probe; skip past it.
+            break
+        a = y_s[..., ::stride, ::stride]
+        b = y_sp1[..., ::stride, ::stride]
+        # per-sample z-score across the spatial dims; keep channel separate
+        a_mean = a.mean(dim=(-2, -1), keepdim=True)
+        b_mean = b.mean(dim=(-2, -1), keepdim=True)
+        a_std = a.std(dim=(-2, -1), keepdim=True).clamp(min=1e-4)
+        b_std = b.std(dim=(-2, -1), keepdim=True).clamp(min=1e-4)
+        a_z = (a - a_mean) / a_std
+        b_z = (b - b_mean) / b_std
+        loss = loss + (a_z - b_z).pow(2).mean()
+        pair_count += 1
+    if pair_count > 0:
+        loss = loss / pair_count
+    return loss
+
+
+def symmetryMERAInit(L,d,nlayers,nmlp,nhidden,nrepeat,symmetryList,device,dtype,name = None, channel = 1, depthMERA = None,  weightTying=False, haarPrior=False, flowType="rnvp", nsfBins=8, nsfBound=5.0, priorType="gaussian", condPriorSlowStride=-1, condPriorHidden=32, priorDf=4.0):
+    # Latent prior selection. The 'conditional_gaussian' option is
+    # scheme A from analyzers/rg_fixed_point/improvements_zh.md: relaxes
+    # the implicit demand that fast modes be marginally independent
+    # N(0,1), which is the Wilson-Gaussian-FP geometry incompatible with
+    # Ising T_c. Default 'gaussian' reproduces the original baseline.
+    if priorType == "gaussian":
+        s = source.Gaussian([channel]+[L]*d)
+    elif priorType == "conditional_gaussian":
+        # Default heuristic: stride = L//4 gives a 4x4 slow grid for L=16,
+        # 8x8 for L=32 etc. — enough slow sites for the CNN to learn a
+        # meaningful conditional, while leaving >75% of the field as
+        # genuine fast modes whose marginal can be widened by the prior.
+        slow_stride = condPriorSlowStride if condPriorSlowStride > 0 else max(2, L // 4)
+        print(f">>> Using Conditional Gaussian prior  "
+              f"(slow_stride={slow_stride}, slow grid {L//slow_stride}x{L//slow_stride}, "
+              f"cnn hidden={condPriorHidden})")
+        s = source.ConditionalGaussian([channel]+[L]*d,
+                                       slow_stride=slow_stride,
+                                       n_hidden=condPriorHidden)
+    elif priorType == "studentT":
+        print(f">>> Using Student-t prior  (df={priorDf}, "
+              f"marginal sigma so var=1)")
+        s = source.StudentT([channel]+[L]*d, df=priorDf)
+    else:
+        raise ValueError(f"unknown priorType: {priorType}")
 
     depth = int(math.log(L,2))*nrepeat*2
 
@@ -201,7 +269,7 @@ def learn(source, flow, batchSize, epochs, lr=1e-3, save = True, saveSteps = 10,
     return LOSS,ACC,OBS
 
 
-def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save=True, saveSteps=10, savePath=None, keepSavings=3, weight_decay=0.001, adaptivelr=False, HMCsteps=10, HMCthermal=10, HMCepsilon=0.2, measureFn=None, alpha=1.0, skipHMC=True, dataDriven=False, dataPath=None, targetT=None, noDeq=False, jsLoss=False, jsLambda=0.5, jsMemOpt=False, entropyBeta=0.0, gradClip=0.0, bridgeWeight=0.0, bridgeThresh=0.5, pathGrad=False):
+def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save=True, saveSteps=10, savePath=None, keepSavings=3, weight_decay=0.001, adaptivelr=False, HMCsteps=10, HMCthermal=10, HMCepsilon=0.2, measureFn=None, alpha=1.0, skipHMC=True, dataDriven=False, dataPath=None, targetT=None, noDeq=False, jsLoss=False, jsLambda=0.5, jsMemOpt=False, entropyBeta=0.0, gradClip=0.0, bridgeWeight=0.0, bridgeThresh=0.5, pathGrad=False, scaleLoss=0.0, cosineAnneal=False, cosineEtaMin=None):
 
     def cleanSaving(epoch):
         if epoch >= keepSavings*saveSteps:
@@ -316,6 +384,10 @@ def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save=True, saveStep
 
     if adaptivelr:
         scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=500, gamma=0.7)
+    elif cosineAnneal:
+        eta_min = cosineEtaMin if cosineEtaMin is not None else lr * 0.01
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs, eta_min=eta_min)
+        print(f"[cosineAnneal] T_max={epochs} eta_min={eta_min:.2e} (lr {lr:.2e} → {eta_min:.2e})")
 
     LOSS = []
     ZACC = []
@@ -327,6 +399,13 @@ def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save=True, saveStep
     MAG_ABS = []  # per-epoch <|M|>_q -- bridge integrity proxy
     MAG_VAR = []  # per-epoch Var(M)_q -- susceptibility proxy
     BRIDGE_FRAC = []  # per-epoch fraction of batch with |M_i| < bridgeThresh (bridge upweighting diagnostic)
+    SCALE_LOSS = []   # per-epoch raw multi-scale loss (BEFORE lambda_scale scaling) for ablation; nan when scaleLoss==0
+
+    # Resolve the inner MERA for multi-scale loss intermediates.
+    # When Symmetrized wraps the MERA, scale loss is computed on the
+    # un-symmetrized branch only (one extra forward pass per step). This
+    # keeps the cost predictable and the loss term interpretable.
+    _inner_mera = getattr(flow, "flow", flow) if scaleLoss > 0 else None
 
     z_ = flow.prior.sample(batchSize)
     x_ = flow.prior.sample(batchSize)
@@ -452,6 +531,19 @@ def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save=True, saveStep
                 _bridge_frac = float('nan')
                 loss = lossorigin.mean()
 
+            # Multi-scale loss (III.1 in improvements_zh.md). Calls the
+            # un-symmetrized MERA's forward_with_intermediates and
+            # penalizes mismatch between adjacent scales' kept-coarse
+            # subsets after per-sample z-scoring. Default coefficient
+            # 0 disables. Extra cost = one un-symmetrized forward.
+            if scaleLoss > 0:
+                _, _, _intermediates = _inner_mera.forward_with_intermediates(x_std)
+                _scale_loss_raw = _compute_scale_invariance_loss(_intermediates)
+                loss = loss + scaleLoss * _scale_loss_raw
+                _scale_loss_value = float(_scale_loss_raw.item())
+            else:
+                _scale_loss_value = float('nan')
+
             if alpha > 0:
                 # -log_jac_std cancels in the difference, but keep it explicit
                 # so both terms are on the same (physical) scale.
@@ -545,7 +637,7 @@ def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save=True, saveStep
             torch.nn.utils.clip_grad_norm_(flow.parameters(), gradClip)
         optimizer.step()
         
-        if adaptivelr:
+        if adaptivelr or cosineAnneal:
             scheduler.step()
 
         if jsLoss or (not dataDriven and not pathGrad):
@@ -556,7 +648,11 @@ def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save=True, saveStep
                   "L_rev:", rev_term.item(), "L_fwd:", fwd_term.item(),
                   "+/-", lossstd.item())
         else:
-            print("epoch:",epoch, "L:",loss.item(),"F:",lossorigin.mean().item(),"+/-",lossstd.item())
+            if scaleLoss > 0 and dataDriven:
+                print("epoch:",epoch, "L:",loss.item(),"F:",lossorigin.mean().item(),"+/-",lossstd.item(),
+                      "L_scale:",_scale_loss_value)
+            else:
+                print("epoch:",epoch, "L:",loss.item(),"F:",lossorigin.mean().item(),"+/-",lossstd.item())
         del lossorigin
 
         LOSS.append([loss.item(),lossstd.item()])
@@ -576,6 +672,12 @@ def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save=True, saveStep
             else:
                 # keep BRIDGE_FRAC aligned with MAG_ABS for downstream readers
                 BRIDGE_FRAC.append(float((_M.abs() < bridgeThresh).float().mean().item()))
+            # Per-epoch scale loss (nan when scaleLoss==0) — kept aligned
+            # with MAG_ABS so downstream readers can index it the same way.
+            if dataDriven and scaleLoss > 0:
+                SCALE_LOSS.append(_scale_loss_value)
+            else:
+                SCALE_LOSS.append(float('nan'))
 
         # 将 epoch > 50 改为 epoch > 0，这样如果 saveSteps=10，就会从 10 开始存
         if (epoch > 0 and epoch % saveSteps == 0) or epoch == epochs:
@@ -632,6 +734,7 @@ def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save=True, saveStep
                     f.create_dataset("MAG_ABS",data=np.array(MAG_ABS))
                     f.create_dataset("MAG_VAR",data=np.array(MAG_VAR))
                     f.create_dataset("BRIDGE_FRAC",data=np.array(BRIDGE_FRAC))
+                    f.create_dataset("SCALE_LOSS",data=np.array(SCALE_LOSS))
                     f.create_dataset("ZACC",data=np.array(ZACC))
                     f.create_dataset("ZOBS",data=np.array(ZOBS))
                     f.create_dataset("XACC",data=np.array(XACC))

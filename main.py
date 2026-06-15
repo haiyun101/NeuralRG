@@ -54,6 +54,13 @@ group.add_argument("-gradClip", type=float, default=0.0, help="Max gradient norm
 group.add_argument("-bridgeWeight", type=float, default=0.0, help="Bridge-targeted upweighting: each training sample with |M|<bridgeThresh gets weight (1+bridgeWeight) instead of 1. 0 disables.")
 group.add_argument("-bridgeThresh", type=float, default=0.5, help="Per-sample magnetization threshold for the bridge region (|M_i|<thresh -> upweighted). Only used with -bridgeWeight>0.")
 group.add_argument("-pathGrad", action='store_true', help="Reverse-KL path-gradient (STL) estimator: backward through path only, drop explicit-theta score-function term. Vaitl et al. 2024 (arxiv:2403.15881). Adds one inverse pass per step (~50%% wall-time overhead). Reverse-KL only for now.")
+group.add_argument("-scaleLoss", type=float, default=0.0, help="Multi-scale loss coefficient lambda_scale. Adds lambda_scale * sum_s MSE(zscore(y_s[::2,::2]), zscore(y_{s+1})) to the training loss. Penalizes deviation from scale invariance at every MERA scale; targets the rev-KL deep-block collapse and fwd-KL deep-block inflation diagnosed in rg_fixed_point_report.md. 0 disables. (forward-KL / dataDriven only for now.)")
+group.add_argument("-cosineAnneal", action='store_true', help="Use CosineAnnealingLR scheduler over full training: lr smoothly decays from -lr to cosineEtaMin (default lr*0.01) over -epochs. Off by default; opt-in only (existing runs unaffected). Mutually exclusive in effect with the legacy -adaptivelr StepLR (adaptivelr takes priority if both set).")
+group.add_argument("-cosineEtaMin", type=float, default=None, help="Floor LR for cosine schedule. Defaults to lr*0.01 (e.g. 5e-4 -> 5e-6). Only used with -cosineAnneal.")
+group.add_argument("-priorType", type=str, default="gaussian", choices=["gaussian", "conditional_gaussian", "studentT"], help="Latent prior. 'gaussian' is the isotropic N(0,I) baseline. 'conditional_gaussian' = scheme A of improvements_zh.md: P(z) = P(z_slow) * P(z_fast | z_slow) with mu/sigma at fast positions produced by a small CNN conditioned on z_slow. At init reproduces N(0,I) exactly (zero-init final conv), so the conditional structure has to be learned. 'studentT' = scheme I.1: diagonal heavy-tailed prior with marginal variance = 1; the negation experiment for Wilson-Gaussian-FP critique (heavy tails shift V5 KS but leave V5 RMS-G alone if the bottleneck is spatial structure).")
+group.add_argument("-priorDf", type=float, default=4.0, help="Degrees-of-freedom for -priorType studentT. Must be > 2 for finite variance. df=4 -> heavy tails with kurtosis at the boundary; df=5+ -> finite excess kurtosis.")
+group.add_argument("-condPriorSlowStride", type=int, default=-1, help="slow-grid stride for -priorType conditional_gaussian. Default -1 = max(2, L//4) (4x4 slow for L=16, 8x8 for L=32 etc.). Must divide L.")
+group.add_argument("-condPriorHidden", type=int, default=32, help="hidden channels of the conditional-prior CNN (-priorType conditional_gaussian).")
 
 group = parser.add_argument_group('Ising target parameters')
 #
@@ -94,6 +101,17 @@ if args.load:
         flowType = str(np.array(f["flowType"]).item().decode()) if "flowType" in f else "rnvp"
         nsfBins  = int(np.array(f["nsfBins"]))  if "nsfBins"  in f else 8
         nsfBound = float(np.array(f["nsfBound"])) if "nsfBound" in f else 5.0
+        # Architecture-relevant prior flags must be reloaded for -load to
+        # reconstruct the same network; CLI -priorType etc are ignored
+        # when -load is set.
+        _loaded_priorType = str(np.array(f["priorType"]).item().decode()) if "priorType" in f else "gaussian"
+        _loaded_condPriorSlowStride = int(np.array(f["condPriorSlowStride"])) if "condPriorSlowStride" in f else -1
+        _loaded_condPriorHidden = int(np.array(f["condPriorHidden"])) if "condPriorHidden" in f else 32
+        _loaded_priorDf = float(np.array(f["priorDf"])) if "priorDf" in f else 4.0
+        args.priorType = _loaded_priorType
+        args.condPriorSlowStride = _loaded_condPriorSlowStride
+        args.condPriorHidden = _loaded_condPriorHidden
+        args.priorDf = _loaded_priorDf
 else:
     epochs = args.epochs
     batch = args.batch
@@ -139,6 +157,11 @@ else:
         f.create_dataset("nsfBound", data=nsfBound)
         f.create_dataset("bridgeWeight", data=args.bridgeWeight)
         f.create_dataset("bridgeThresh", data=args.bridgeThresh)
+        f.create_dataset("scaleLoss", data=args.scaleLoss)
+        f.create_dataset("priorType", data=np.string_(args.priorType))
+        f.create_dataset("condPriorSlowStride", data=args.condPriorSlowStride)
+        f.create_dataset("condPriorHidden", data=args.condPriorHidden)
+        f.create_dataset("priorDf", data=args.priorDf)
 
 device = torch.device("cpu" if cuda<0 else "cuda:"+str(cuda))
 
@@ -172,7 +195,11 @@ fw = train.symmetryMERAInit(L,d,nlayers,nmlp,nhidden,nrepeat,sym,device,dtype,na
                             depthMERA=depthMERA,
                             weightTying=weightTying,
                             haarPrior=haarPrior,
-                            flowType=flowType, nsfBins=nsfBins, nsfBound=nsfBound)
+                            flowType=flowType, nsfBins=nsfBins, nsfBound=nsfBound,
+                            priorType=args.priorType,
+                            condPriorSlowStride=args.condPriorSlowStride,
+                            condPriorHidden=args.condPriorHidden,
+                            priorDf=args.priorDf)
 
 #fw = train.symmetryMERAInit(L,d,nlayers,nmlp,nhidden,nrepeat,sym,device,dtype,name)
 
@@ -201,5 +228,7 @@ LOSS,ZACC,ZOBS,XACC,XOBS = train.learnInterface(
     entropyBeta=args.entropyBeta, gradClip=args.gradClip,
     bridgeWeight=args.bridgeWeight, bridgeThresh=args.bridgeThresh,
     pathGrad=args.pathGrad,
+    scaleLoss=args.scaleLoss,
+    cosineAnneal=args.cosineAnneal, cosineEtaMin=args.cosineEtaMin,
 )
 #LOSS,ZACC,ZOBS,XACC,XOBS = train.learnInterface(target,fw,batch,epochs,save=True,saveSteps = savePeriod,savePath=rootFolder,measureFn = measure)
