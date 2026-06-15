@@ -115,6 +115,29 @@ STYLE = {
                                                 linewidth=2.0, markersize=9),
     "T_c bridge_w5.0t0.5 (bridge-reweighted)": dict(color="#0a8aa6", linestyle="-",  marker="h",
                                                 linewidth=2.0, markersize=9),
+    # ----- Phase-1 improvement ablation (L=32 b=64) -----
+    "L=32 baseline_b64":                        dict(color="#888888", linestyle="-",  marker="o"),
+    "L=32 iii1_lam1.0_b64 (+III.1)":            dict(color="#1565c0", linestyle="-",  marker="^"),
+    "L=32 i2_stride8h32_b64 (+I.2 cond)":       dict(color="#2e7d32", linestyle="-",  marker="s"),
+    "L=32 combined_lam1.0_b64 (I.2+III.1)":     dict(color="#6a1b9a", linestyle="-",  marker="D"),
+    # L=32 sweeps
+    "L=32 iii1_lam0.1_b64":                     dict(color="#90caf9", linestyle="--", marker="^"),
+    "L=32 iii1_lam10.0_b64":                    dict(color="#0d47a1", linestyle=":",  marker="^"),
+    "L=32 i2_stride4h32 (b128)":                dict(color="#1b5e20", linestyle="--", marker="s"),
+    "L=32 i2_stride16h32 (b128)":               dict(color="#a5d6a7", linestyle=":",  marker="s"),
+    "L=32 i1_df4.0 (Student-t b128)":           dict(color="#ef6c00", linestyle="-",  marker="v"),
+    # ----- Phase-1 improvement ablation (L=64 b=16) -----
+    "L=64 baseline_b16":                        dict(color="#bdbdbd", linestyle="-",  marker="o"),
+    "L=64 iii1_lam1.0_b16 (+III.1)":            dict(color="#42a5f5", linestyle="-",  marker="^"),
+    "L=64 i2_stride16h32_b16 (+I.2)":           dict(color="#66bb6a", linestyle="-",  marker="s"),
+    "L=64 i1_df4.0_b16 (Student-t)":            dict(color="#ffa726", linestyle="-",  marker="v"),
+    # ----- Phase-2 I.2 capacity scan -----
+    "L=32 i2_stride4h32_b64 (Phase-2)":          dict(color="#388e3c", linestyle="--", marker="s"),
+    "L=32 i2_stride8h64_b64 (Phase-2)":          dict(color="#1b5e20", linestyle=":",  marker="s"),
+    "L=64 i2_stride8h32_b16 (Phase-2)":          dict(color="#81c784", linestyle="-",  marker="s"),
+    "L=64 i2_stride4h32_b16 (Phase-2)":          dict(color="#43a047", linestyle="--", marker="s"),
+    "L=64 i2_stride8h64_b16 (Phase-2)":          dict(color="#2e7d32", linestyle="-",  marker="D"),
+    "L=64 i2_stride4h64_b16 (Phase-2)":          dict(color="#1b5e20", linestyle="--", marker="D"),
 }
 
 
@@ -132,7 +155,7 @@ def load_flow(folder, device="cpu"):
     ckpt = latest_saving(folder)
     epoch = int(re.search(r"epoch(\d+)", ckpt).group(1))
     state = torch.load(ckpt, weights_only=False, map_location=device)
-    fw, target, L, T, sym_used, wt, hp = build_flow(folder, state)
+    fw, target, L, T, sym_used, wt, hp = build_flow(folder, state, device=device)
     fw.eval()
     # Unwrap Symmetrized -> MERA
     mera = fw.flow if hasattr(fw, "flow") else fw

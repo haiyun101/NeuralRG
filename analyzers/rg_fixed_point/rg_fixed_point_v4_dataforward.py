@@ -114,6 +114,29 @@ FOLDERS = {
     "T_c sym_bignet (rev-KL)":          "data/32Ising_T2.269_sym_bignet",
     "T_c pathgrad_bignet_long_ext (STL)": "data/32Ising_T2.269_pathgrad_bignet_long_ext",
     "T = 2.40  (high T, disorder)":     "data/32Ising_T2.4_hs_dataDriven",
+    # ----- Phase-1 improvement ablation (L=32 b=64) -----
+    "L=32 baseline_b64":                 "data/32Ising_T2.269_hsBignet_baseline_b64",
+    "L=32 iii1_lam1.0_b64 (+III.1)":     "data/32Ising_T2.269_hsBignet_iii1_lam1.0_b64",
+    "L=32 i2_stride8h32_b64 (+I.2 cond)":"data/32Ising_T2.269_hsBignet_i2_stride8h32_b64",
+    "L=32 combined_lam1.0_b64 (I.2+III.1)": "data/32Ising_T2.269_hsBignet_combined_lam1.0_stride8h32_b64",
+    # L=32 sweeps (exclude broken i2_stride8h32 b=128 -- late-training divergence)
+    "L=32 iii1_lam0.1_b64":              "data/32Ising_T2.269_hsBignet_iii1_lam0.1_b64",
+    "L=32 iii1_lam10.0_b64":             "data/32Ising_T2.269_hsBignet_iii1_lam10.0_b64",
+    "L=32 i2_stride4h32 (b128)":         "data/32Ising_T2.269_hsBignet_i2_stride4h32",
+    "L=32 i2_stride16h32 (b128)":        "data/32Ising_T2.269_hsBignet_i2_stride16h32",
+    "L=32 i1_df4.0 (Student-t b128)":    "data/32Ising_T2.269_hsBignet_i1_df4.0",
+    # ----- Phase-1 improvement ablation (L=64 b=16) -----
+    "L=64 baseline_b16":                 "data/64Ising_T2.269_hsBignet_baseline_b16",
+    "L=64 iii1_lam1.0_b16 (+III.1)":     "data/64Ising_T2.269_hsBignet_iii1_lam1.0_b16",
+    "L=64 i2_stride16h32_b16 (+I.2)":    "data/64Ising_T2.269_hsBignet_i2_stride16h32_b16",
+    "L=64 i1_df4.0_b16 (Student-t)":     "data/64Ising_T2.269_hsBignet_i1_df4.0_b16",
+    # ----- Phase-2 I.2 capacity scan -----
+    "L=32 i2_stride4h32_b64 (Phase-2)":  "data/32Ising_T2.269_hsBignet_i2_stride4h32_b64",
+    "L=32 i2_stride8h64_b64 (Phase-2)":  "data/32Ising_T2.269_hsBignet_i2_stride8h64_b64",
+    "L=64 i2_stride8h32_b16 (Phase-2)":  "data/64Ising_T2.269_hsBignet_i2_stride8h32_b16",
+    "L=64 i2_stride4h32_b16 (Phase-2)":  "data/64Ising_T2.269_hsBignet_i2_stride4h32_b16",
+    "L=64 i2_stride8h64_b16 (Phase-2)":  "data/64Ising_T2.269_hsBignet_i2_stride8h64_b16",
+    "L=64 i2_stride4h64_b16 (Phase-2)":  "data/64Ising_T2.269_hsBignet_i2_stride4h64_b16",
 }
 STYLE = {k: ORIG_STYLE[k] for k in FOLDERS}
 
@@ -122,7 +145,7 @@ def load_flow(folder, device="cpu"):
     ckpt = latest_saving(folder)
     epoch = int(re.search(r"epoch(\d+)", ckpt).group(1))
     state = torch.load(ckpt, weights_only=False, map_location=device)
-    fw, target, L, T, sym_used, wt, hp = build_flow(folder, state)
+    fw, target, L, T, sym_used, wt, hp = build_flow(folder, state, device=device)
     fw.eval()
     # Unwrap Symmetrized -> MERA
     mera = fw.flow if hasattr(fw, "flow") else fw

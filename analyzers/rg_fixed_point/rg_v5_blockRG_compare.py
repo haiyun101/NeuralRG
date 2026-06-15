@@ -87,7 +87,7 @@ def load_flow(folder, device="cpu"):
     ckpt = latest_saving(folder)
     epoch = int(re.search(r"epoch(\d+)", ckpt).group(1))
     state = torch.load(ckpt, weights_only=False, map_location=device)
-    fw, target, L, T, sym_used, wt, hp = build_flow(folder, state)
+    fw, target, L, T, sym_used, wt, hp = build_flow(folder, state, device=device)
     fw.eval()
     mera = fw.flow if hasattr(fw, "flow") else fw
     return mera, L, T, epoch, wt
