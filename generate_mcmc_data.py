@@ -125,13 +125,23 @@ if __name__ == "__main__":
     parser.add_argument("-L", type=int, default=32)
     parser.add_argument("-T", type=float, default=2.2692)
     parser.add_argument("-N", type=int, default=50000)
+    # Parallel-chain extensions (default values preserve original behavior).
+    parser.add_argument("-seed", type=int, default=None,
+        help="RNG seed for Wolff chain. None = legacy unseeded (matches old runs).")
+    parser.add_argument("-outPath", type=str, default=None,
+        help="Override output path. Default = ./data/mcmc_data/mcmc_wolff_L{L}_T{T}_N{N}.pt")
     args = parser.parse_args()
+
+    if args.seed is not None:
+        # Numba's RNG uses NumPy's global state under @njit, so seeding np
+        # before the first numba call is enough for reproducibility.
+        np.random.seed(args.seed)
 
     # Run a tiny N=1 trial to trigger Numba compilation before timing
     numba_wolff_step(np.ones((args.L, args.L), dtype=np.int8), 1.0/args.T)
-    
+
     dataset = generate_dataset(args.L, 1.0/args.T, args.N)
-    
-    out_path = f"./data/mcmc_data/mcmc_wolff_L{args.L}_T{args.T}_N{args.N}.pt"
+
+    out_path = args.outPath or f"./data/mcmc_data/mcmc_wolff_L{args.L}_T{args.T}_N{args.N}.pt"
     torch.save(dataset, out_path)
     print(f"Saved to {out_path}")
