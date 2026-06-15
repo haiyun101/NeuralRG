@@ -54,6 +54,106 @@
 > RMS-G → 0.07)。因此 V5 提供了 V4 所需的外部基准:
 > 在该架构上没有任何流在 T_c 处做 Wilson 风格的 RG,
 > 训练目标决定了在哪个轴上崩溃。
+>
+> **L=64 + Phase-1/2 扩展补遗(2026-06-09 起,持续更新至 2026-06-14)。**
+> 本主报告的 V1/V2/V3/V4/V5 数值表只覆盖了 *L=32 原始 6 条流*
+> (3 个温度 hs_dataDriven + T_c sym_bignet/STL/hs_bignet)。
+> 自 Jun 9 起,所有 5 个探针已在 **L=64(13 个 fold)** 及
+> **Phase-1 改进 ablation(13 个 fold,iii1/i2/i1/combined 等)** 与
+> **Phase-2 capacity scan(6 个 fold,L=64 stride×hidden sweep + L=32 b=64 verification)**
+> 上重跑;真值表完整版见 `improvements_results_zh.md` 的
+> "V3 identity residual / V4 forward-direction / V5 KS / V5 RMS-G" 四节
+> (合计 25 fold × 5 probe 的数据,2026-06-13 升级)。**主要新发现**:
+>
+> 1. **跨 L 的 FSS scaling**:fwd-KL 的 per-site KL 在 T_c 处随 L 增长(α ≈ 2.20),
+>    显著高于非临界 α ≈ 2.0 —— 这说明 L=64 plateau 比 L=32 *本质上* 更难,
+>    并非单纯优化问题。详见 memory `project_fss_critical_scaling`。
+>
+> 2. **L=64 上 I.2 Conditional Gaussian 是 Phase-1 唯一稳定改善 V5 RMS-G 的方案**
+>    (s=2 改善 22%)。Phase-2 capacity scan 找到 (stride=8, hidden=32) sweet spot,
+>    V5 RMS-G s=2 进一步降到 0.024(比 baseline 0.042 改善 43%,
+>    比 Phase-1 winner stride=16 改善 27%)。其它 (stride, hidden) 组合都不如此 cell。
+>
+> 3. **I.1 Student-t prior 在两 L 上都 *主动恶化* V5 RMS-G**(L=32 3.5×,L=64 3.7–7.9×)。
+>    早期用单点 gL 代理读出"L=64 上 I.1 结构胜出"是误读 —— V5 RMS-G 反向。
+>    机制猜想:Student-t 把 marginal 推宽,但代价是远离 Wilson block-RG cascade。
+>
+> 4. **新诊断模式:"V4 adj 小 + V5 大"= 边际驱动塌缩**。L=64 i1 Student-t
+>    与 L=32 iii1 λ=10 都呈现此模式 —— MERA 内部相邻尺度高度自洽
+>    (adj_RMS-G ≈ 0.01–0.03),但与真物理 block-RG 完全脱钩(V5 RMS-G ≈ 0.2–0.5)。
+>    这是 *fwd-KL 路径上的塌缩*,机制类似 rev-KL 塌缩但驱动力是 marginal 而非梯度。
+>    **V4 / V5 必须联合才能识别 —— 单看 V4 或单看 V5 都会漏判**。
+>
+> 5. **III.1 scaleLoss 真实机制不是修正 fwd-KL 而是诱发 rev-KL 病态**:
+>    L=32 λ=10 的 V3 f_5 ≈ 0.007(比 sym_bignet 还塌)且 V5 RMS-G = 0.527
+>    (复刻 sym_bignet 的 0.67 灾难)。**III.1 路线下调**。
+>
+> 6. **gauge-fix 后处理工具(V.1,2026-06-12)** 已实现 per-site quantile transform
+>    (等价 1D Spline Flow),把 MERA y_s 的边际拉成 N(0,1) 以分离"边际形状 mismatch"
+>    与"空间结构 mismatch"。25 fold 的 gauge-fixed 真值待 `gauge_v5_compare`
+>    跑完后整合(job 40261906)。**用途**:判定 I.1 / I.2 的 V5 RMS-G 改变是
+>    真结构 win 还是 marginal-only artefact —— 关键 verdict 工具。
+
+## V0–V5 探针角色对比(2026-06-14 新增,平等并列)
+
+> **关于命名**:V0 是本报告 2026-06-14 起的回溯性标签,指原 "数值结果" 章节那次
+> z-标准化下的相邻 block MSE 探针。**原报告并未把该探针单独命名,也没明确说它是主体**;
+> 这里把它列为 V0 只是为了 6 个探针并列方便。后续 V1/V2/V2b/V3/V4/V5 与原报告一致。
+
+6 个探针 **各自测一个不同属性**,共同构成"MERA 流是否做物理 RG"的多维体检。
+任一探针单独都不充分;但任一探针 *失败* 都足以证伪"学到了 RG 不动点"。
+
+| 探针 | 输入 | 比较的两侧 | 测什么属性 | 失败 = 学到不动点假设被推翻 |
+|------|------|-----------|----------|---------------------------|
+| **V0** | `z ~ N(0,I)` per-position zscore | f_s(z) 与 f_{s+1}(z) 之间的形状 MSE | "相邻 block 的输出形状像不像" | f_4→f_5 MSE 不收敛 → 不是 fixed point;但 MSE ≈ 0 *并不充分*(可能两 block 都是恒等)|
+| **V1** | 同 V0,改 *global* vs *per-pos* zscore | 同 V0,两种归一化 | 排除"逐位置归一化掩盖差异"artefact | 两种归一化下结论不一致 → V0 的"MSE ≈ 0"是归一化伪影 |
+| **V2** | `z` 经 `f_{>s}` 全 4 元素 *链式* | f_s(h_s) 与 f_{s+1}(h_{s+1}) | "block 在 *生产组合下* 像不像" | V0 → V2 信号显著变化 → V0 的输入分布与生产严重失配 |
+| **V2b** | V2 但 (0,0) ← 链式,其它 3 槽新鲜 N(0,I) | 同 V2 | "在 MERA *真实槽几何* 下像不像" | V2 → V2b 差异巨大 → V2 的 4 元素链式是几何 artefact(rev-KL 上 0 → 1.489) |
+| **V3** | `z ~ N(0,I)` 单 block | f_s(z) 与 z(同一 block 内) | "block 是不是 *接近恒等*" | f_5 r ≈ 0 → V0 的 deep MSE ≈ 0 是"两个恒等函数"的平凡性,**不是** 学到不动点 |
+| **V4** | HS 数据 *正向* 通过 MERA | y_s[::2,::2] 与 y_{s+1}(MERA 自身) | "MERA 内部相邻尺度像不像"(在真数据上) | adj MSE 非零 → 不是尺度不变(但 *自洽 adj* 不充分,见 V5) |
+| **V5** | HS 数据 + 同输入跑 Wilson block-RG | y_s(MERA)与 x_s(Wilson 块平均) | "MERA 慢模是不是 *真物理 RG*" | RMS-G 大 → MERA 的"自相似"不匹配 *外部* 物理 RG(rev-KL 在此崩溃) |
+
+**逻辑链**:V3 + V2b 直接否决 "rev-KL 学到 fixed point" 解读 → V4 给出 "MERA 自洽性" 的真数据视图 → V5 给出 "对外真物理参照" → 联合得到 verdict。
+**任何 *单一* probe 都不够**,但任何 *单一* probe 失败都足以否定 fixed-point 假设。
+
+每个 probe 都有 **gauge-fixed 变体**(2026-06-14 加),把"边际形状 mismatch"从信号里剥离,只留 *copula(联合依赖)*。详见各 V_x 节末的 gauge 补遺。
+
+## fwd-KL hs_bignet 跨 probe 焦点(2026-06-14)
+
+目前所有训练目标里 **fwd-KL `hs_bignet`** 在 V5 上最接近 Wilson 真值(L=32 RMS-G ≈ 0.05,L=64 ≈ 0.04),是分析的核心对象。下表给出 hs_bignet 在 6 个 probe 上的 raw 与 gauge 表现,对照其他 5 流(原 6 流的 *相对位置*):
+
+| Probe                                | hs_bignet **gauge** | 其它流 gauge 参照                | hs_bignet 判断 |
+|--------------------------------------|--------------------:|----------------------------------|----------------|
+| **V0/V1**(f_4→f_5 perpos MSE)       | **1.99**             | rev-KL 0.000 / fwd-KL hsDD 1.91 / T=2.40 0.15 | 与 hsDD 同档,远高于 rev-KL → 深层做 copula 实事 |
+| **V2**(chain f_4→f_5)               | 1.94                 | rev-KL 0.00 / hsDD 1.93 / T=2.40 0.14 | 同 V0,链式 / 隔离结论一致 |
+| **V2b**(one-slot f_4→f_5)           | **1.75**             | rev-KL **1.52** / hsDD 2.62 | rev-KL 在 V2b 上"塌缩消失" —— hs_bignet 在产生几何下仍做实事 |
+| **V3**(rel residual r_5)             | **0.022**            | rev-KL 0.001 / hsDD 0.079 / T=2.40 0.011 | **22× rev-KL** —— 深层 *不是* 恒等,做真 copula 工作 |
+| **V4**(adj zscore MSE,f_3→f_4)      | **1.787**            | rev-KL 0.000 / hsDD 1.527 / T=2.40 0.087 | hs_bignet 自尺度间 copula 差异 *实存*,不是边际 |
+| **V5 RMS-G**(s=2)                    | **0.029**            | rev-KL 0.54 / T=2.40 0.068 | **全表次低**,跟 Wilson 真物理 copula 匹配最好 |
+
+**hs_bignet 综合画像**(从 6 probe gauge 真值联合推出):
+
+1. **深层 block 做实事**(V0/V1/V2/V2b/V3 同向证明):f_4→f_5 在所有探针下信号都强,V3 gauge r_5 = 0.022 比 rev-KL 大 22 倍 ⇒ 不是恒等。
+2. **空间结构在 gauge 下与 Wilson 最接近**(V5 gauge s=2 = 0.029):比 rev-KL 低 18 倍,比 T=2.40 控制低 ~2.4 倍。
+3. **V0–V3 与 V4 / V5 在 hs_bignet 上 *互相佐证*** —— V3 说"做工作",V5 说"工作做对了一半(结构对,marginal 错)"。
+
+**hs_bignet 失败模式(V5 raw 显示)**:边际 std 在中间尺度被吹大 4–9 倍(主报告 V5 章节)。
+gauge-fix 已经定量隔离这是 **marginal 形状 artefact** 而非空间结构错位。
+**fwd-KL hs_bignet 的剩余 plateau 全部来自 marginal 工作量**,Phase-2 优化方向应**专门控制 marginal 形状**(I.4 物理先验、II.1 学习 kept-fraction)而非动空间结构。
+
+### 跨 probe 矩阵图(6 流 × 6 probe,gauge-fixed 值)
+
+下图把 6 个 flow 与 6 个 probe 的 **gauge-fixed 值** 画在 6×6 heatmap 里(每格点已用 per-site quantile transform 拉成 N(0,1) 边际,只测 copula 层面)。颜色 log 标度。**红框 = fwd-KL hs_bignet 焦点行**。
+
+![V0-V5 probe panel](figures/v0_v5_probe_panel.png)
+
+读图要点:
+
+1. **hs_bignet(红框)在 V0/V1/V2/V2b/V3/V4 上都"做实事"**:V0/V1 = 1.99,V2 = 1.94,V2b = 1.75,V3 r_5 = 0.022,V4 = 1.79。**只有 V5 RMS-G = 0.029 是低值,说明它的 copula 跟 Wilson 真物理已经匹配**。
+2. **rev-KL(sym/STL)行在 V0/V1/V2 上都 ≈ 0**:深层 block 在 copula 层面也是 *严格恒等*(深蓝)。**唯一 V2b 强信号**(1.52)—— V2b 暴露的是 *真几何* 失配,不是边际,所以 gauge 救不了。
+3. **V5 RMS-G 列**:hs_bignet **0.029 是全图次低**(T=2.40 控制 0.068),比 rev-KL 阵营低 18×。**hs_bignet 在 *真物理参照(Wilson)*下的 copula 匹配是最好的**,这是当前训练目标里 *唯一在 V5 列 *上突出表现的。
+
+图生成脚本:`analyzers/rg_fixed_point/plot_v0_v5_comparison.py`。
 
 ## 动机
 
@@ -162,6 +262,26 @@ z-标准化剥除了平凡的逐 block 比例因子(若 block 3 乘以 2 而 blo
 脚本提取 `Symmetrized.flow.layerList`(10 个 RNVP 模块),每 2 个为一组分成
 5 个 scale-block,通过反复调用 `inverse()` 顺序施加。MERA 的空间 dispatch/collect
 被有意绕开 —— 我们想要的是每个 patch 上的原始变换,而不是空间编织后的组合。
+
+> **被探针 folder 集扩展记录(2026-06-09 至 2026-06-13)。**
+> 自 Jun 9 起,V1/V2/V3/V4/V5 探针在 FOLDERS dict
+> (`analyzers/rg_fixed_point/rg_fixed_point_robustness.py`,
+> `analyzers/rg_fixed_point/rg_fixed_point_v4_dataforward.py`)被扩展到 **25 fold**:
+>
+> - 原始 6 fold(本节正文已覆盖):3 温度 hs_dataDriven + T_c hs_bignet + T_c sym_bignet + T_c STL pathgrad_long_ext
+> - **L=64 baseline + Phase-1 ablation(6 fold)**:`64Ising_T2.269_hsBignet_baseline_b16`,
+>   `_iii1_lam1.0_b16`(III.1 scaleLoss),`_i2_stride16h32_b16`(I.2 cond Gaussian),
+>   `_i1_df4.0_b16`(I.1 Student-t),+ 2 余项
+> - **L=32 b=64 Phase-1 ablation(6 fold)**:`32Ising_T2.269_hsBignet_baseline_b64`,
+>   `_iii1_lam{0.1,1.0,10.0}_b64`,`_i2_stride8h32_b64`,`_combined_lam1.0_stride8h32_b64`
+> - **L=32 b=128 Phase-1 sweep(3 fold)**:`_i2_stride{4,16}h32`,`_i1_df4.0`
+> - **L=64 Phase-2 capacity scan(4 fold)**:`_i2_stride{4,8}h{32,64}_b16`
+> - **L=32 Phase-2 verification(2 fold)**:`_i2_stride{4,8}h{32,64}_b64`
+>
+> 25 fold 的 V3/V4/V5 真值表见 `improvements_results_zh.md` 的相应章节
+> (上方 status 块已总结主要新发现)。本节正文仍只展示原始 6 条流的 V1/V2/V3 数值,
+> 以保留作为 *方法 → 数值结果 → 解读* 链条的最小可读样例;扩展数据
+> 不重复在此,以免冗余。
 
 ## 数值结果
 
@@ -451,6 +571,23 @@ V4(在真实 HS 样本上的数据正向方向,限制于保留粗粒度子格点
 但 **深对特征稳健** —— 链式组合没有改变 rev-KL 的"近零"与 fwd-KL 的"近 2"。
 图:`rg_fixed_point_robustness_v2_chain.png`。
 
+#### V2 gauge-fixed 补遺(2026-06-14)
+
+把 V2 的链式 block 输出做 *逐位置* quantile transform 拉成 N(0,1) 边际再算 MSE:
+
+| pair      | flow                          | V2 raw   | **V2 gauge** | 解读 |
+|-----------|-------------------------------|---------:|-------------:|------|
+| f_4 → f_5 | T_c hs_dataDriven (fwd-KL)    | 1.94     | **1.93**     | 几乎不变 → 信号是真结构 |
+| f_4 → f_5 | **T_c hs_bignet (fwd-KL)**    | 1.94     | **1.94**     | **同上,hs_bignet 链式深层信号 100% 是真结构** |
+| f_4 → f_5 | T_c sym_bignet (rev-KL)       | 0.0000   | **0.000**    | 仍 0(恒等下 gauge 是恒等)|
+| f_4 → f_5 | T_c STL pathgrad              | 0.0001   | **0.000**    | 同上 |
+| f_4 → f_5 | T = 2.40                       | 0.14     | **0.14**     | 不变 |
+
+**关键**:**fwd-KL hs_bignet 在 V2 链式下的"deep MSE ≈ 2" raw 与 gauge 完全一致** ⇒
+不是边际形状伪影,**是真实的功能性非对称**。这跟 V0/V1 同向。
+
+CSV:`analyzers/csv/rg_v0_v3_gauge.csv`。
+
 ### V2b —— 带 MERA 槽几何的链式输入(3 新 + 1 保留粗粒度)
 
 上面的 V2 把 block f_{s+1} 的 **整个 4 元素输出** 当作 block f_s 的 2×2 patch 输入。
@@ -500,6 +637,32 @@ V2 中"rev-KL 深层相邻 MSE → 0"的读法是把 4 元组完整输出
 (V2b 移除该混淆)。因此原"rev-KL 满足我们假设"的读法依赖于两个叠加的
 与生产不符的几何错配。图:`rg_fixed_point_robustness_v2b_chain_oneslot.png`。
 
+#### V1 / V2b gauge-fixed 补遗(2026-06-14)
+
+把每个 block 的 N(0, I) 探针输出 `f_s(z)` 用 *逐位置* quantile transform 拉成 N(0, 1)
+边际后重算 MSE。**V1 / V2b 在 gauge 下整体趋势保持**(因为 N(0, I) 输入已经是 Gaussian,
+gauge-fix 主要改变非平凡 block 的输出 marginal,不改变恒等块):
+
+| flow                       | V1 raw f_4→f_5 | **V1 gauge** | V2b raw f_4→f_5 | **V2b gauge** | 解读 |
+|----------------------------|---------------:|-------------:|----------------:|--------------:|------|
+| T_c sym_bignet(rev-KL)     | 3 × 10⁻⁵       | **0.000**    | **1.489**       | **1.517**     | V1 仍 ≈ 0,V2b 仍 ≈ 1.5 → **两侧 verdict gauge 下都保持** |
+| T_c STL pathgrad           | 6 × 10⁻⁵       | **0.000**    | **1.489**       | **1.517**     | 同上                                                       |
+| T_c hs_dataDriven (fwd-KL) | 1.92           | **1.911**    | 2.611           | **2.624**     | gauge 后基本不变                                            |
+| T_c hs_bignet     (fwd-KL) | 1.98           | **1.991**    | 1.774           | **1.750**     | 同上                                                        |
+| T = 2.15                    | 1.92           | 0.789         | 1.508           | 1.636          | V1 略减但同向                                              |
+| T = 2.40                    | 0.15           | 0.152         | 1.645           | 1.557          | 与 raw 一致                                                |
+
+**两个非平凡观察**:
+
+1. **V2b 在 gauge 下完整保留 rev-KL 的 1.5 bombshell** —— V2b raw 与 gauge 数字误差 < 2%。
+   **几何错配(V2 → V2b)与 marginal 形状错配(raw → gauge)是 *独立* 的两个 artefact**;
+   gauge 救不了 V2b 的几何修正。**这是"几何修正必须做 + gauge 不能替代"的实证确认**
+   (与早先的理论论证一致)。
+2. **rev-KL V1 在 gauge 下从 10⁻⁵ 砍到几乎严格 0** —— 印证 V3 gauge 的发现:rev-KL 深层 block
+   在 *copula* 层面也是恒等(而不只是"marginal 拉直后变恒等")。
+
+CSV:`analyzers/csv/rg_v0_v3_gauge.csv`(25 folder 完整版 job 40267229 在跑)。
+
 ### V3 —— 逐 block 恒等残差(决定性检查)
 
 对每个 block f_s,计算 `z ~ N(0, I)` 上的残差 `r_s = E[(f_s(z) − z)^2]`。
@@ -538,6 +701,33 @@ V2 中"rev-KL 深层相邻 MSE → 0"的读法是把 4 元组完整输出
   留作近似恒等映射"。
 
 图:`rg_fixed_point_robustness_v3_identity.png`。
+
+#### V3 gauge-fixed 补遗(2026-06-14)
+
+把每个 block 输出 `f_s(z)` 在 *逐位置* 经验分位变换(per-site quantile transform)
+拉成 N(0,1) 边际,再算残差 `E[(T_s(f_s(z)) − z)²]`。这剔除了"边际形状"的贡献,
+**只留 copula(联合依赖)层面的恒等偏离**。
+
+| flow                       | raw r_4 | **gauge r_4** | raw r_5 | **gauge r_5** | 解读 |
+|----------------------------|--------:|--------------:|--------:|--------------:|------|
+| T = 2.15                    | 1.15    | 0.750         | 0.025   | 0.007         | 略减,与 raw 同向 |
+| T_c hs_dataDriven (fwd-KL) | 15.42   | **1.994**      | 5.84    | **0.079**     | r_4 砍 **8×**,r_5 砍 **74×** —— 大部分 raw 残差是 *marginal 重塑* 工作;copula 工作量仍可观 |
+| T_c hs_bignet (fwd-KL)     | 2.76    | **1.894**      | 0.30    | **0.022**     | r_5 砍 **14×** —— fwd-KL 第二条流同向 |
+| **T_c sym_bignet (rev-KL)**| **0.26** | **0.002**     | **0.08** | **0.001**    | **r 砍 80–130×** —— **gauge 下深层 *更* 像恒等**;原结论 *加强* |
+| **T_c STL pathgrad**       | **0.16** | **0.002**     | **0.018**| **0.001**    | **同上**,STL 与 sym 一致 |
+| T = 2.40                    | 1.60    | 0.167         | 0.13    | 0.011         | 大幅减,与 raw 同向 |
+
+**关键诠释(顺序很重要)**:
+
+1. **rev-KL 深层 r_5 在 raw 下 ≈ 0.08,在 gauge 下 ≈ 0.001 —— 砍 80×**。这说明 raw 残差里 *仅 1%* 是 copula(结构)项,*99%* 是边际形状项。换言之,rev-KL 深层 block 不是单纯恒等,而是 **"恒等 + 一个无害的边际微调"** —— 但这个边际微调被 gauge 完全消除后,余下的纯结构变换确实 *几乎严格是恒等*。**V3 raw 的"深层接近恒等"结论被 V3 gauge 加强**。
+
+2. **fwd-KL 深层 r_5 在 raw 下 ≈ 0.3,在 gauge 下 ≈ 0.022 —— 砍 14×**。fwd-KL 同样有大量边际工作,但 copula 余项 0.022 ≠ 0 —— **fwd-KL 在 copula 上确实做了非平凡变换**,只是没有 raw 数字看起来那么"忙"(raw 0.3 暗示大工作量,gauge 0.022 是真实工作量)。
+
+3. **rev-KL vs fwd-KL 在 gauge 下的差距 = 0.022 vs 0.001 = 22 倍** —— **比 raw 下的 0.3 vs 0.08 = 3.75 倍更悬殊**。Gauge 让两阵营的差异 *更清晰*。
+
+4. **新诊断规则**(主体报告外的派生): r_s_raw 不小但 r_s_gauge ≈ 0 ⇒ block 是 *边际驱动* 的恒等;r_s_gauge 也大 ⇒ block 在 copula 上做实事。fwd-KL 深层是后者,rev-KL 深层是前者。
+
+数据 CSV:`analyzers/csv/rg_v0_v3_gauge.csv`(25 folder 完整版 job 40267229 在跑)。
 
 ### V4 —— 数据正向方向,仅保留粗粒度子格点
 
@@ -643,6 +833,32 @@ STL 为 −0.097) —— 一种 Néel 型的反相关慢模,
 图:`rg_v4_dataforward_ks.png`, `rg_v4_dataforward_w1.png`,
 `rg_v4_dataforward_rmsG.png`, `rg_v4_dataforward_Goverlay.png`。
 CSV:`analyzers/rg_v4_dataforward.csv`(由保留粗粒度版本重跑覆盖,任务 39551162)。
+
+#### V4 gauge-fixed 补遺(2026-06-14)
+
+把 MERA 正向中间场 `y_s` 做 *逐位置* quantile transform 拉成 N(0,1),再算
+相邻尺度子采样 MSE(`gauge_fix.py` demo 模式直接产出,25 folder 的真值表在
+`analyzers/csv/rg_v4_gauge_demo.csv`)。**比值 = gauge_mse / zscore_mse**:
+*比值 ≪ 1* ⇒ raw 数字主要是边际形状差异,真结构其实更相似;*比值 ≈ 1* ⇒ raw 是真结构。
+
+| pair      | flow                          | zscore MSE | **gauge MSE** | ratio | 解读 |
+|-----------|-------------------------------|-----------:|--------------:|------:|------|
+| f_3 → f_4 | T = 2.15                       | 1.039      | 0.781         | 0.752 | 边际占 25% |
+| f_3 → f_4 | T_c hs_dataDriven (fwd-KL)    | 2.257      | 1.527         | 0.676 | 边际占 32%,真结构 1.5 nat |
+| f_3 → f_4 | **T_c hs_bignet (fwd-KL)**     | **2.066**  | **1.787**     | **0.865** | **边际占仅 13%** —— hs_bignet adj-scale 差异 *主要是真结构* |
+| f_3 → f_4 | T_c sym_bignet (rev-KL)       | 0.011      | 0.000         | 0.002 | **rev-KL adj 几乎 0(恒等下塌缩)**;少量 raw 信号是边际伪影 |
+| f_3 → f_4 | T_c STL pathgrad              | 0.002      | 0.000         | 0.046 | 同上 |
+| f_3 → f_4 | T = 2.40                       | 0.144      | 0.087         | 0.605 | 边际占 40% |
+| f_4 → f_5 | T_c hs_bignet                  | 0.029      | 0.025         | 0.843 | hs_bignet 最深对 adj MSE 已很小,gauge 后 14% 边际剥离 |
+| f_4 → f_5 | T_c sym_bignet                 | 0.000      | 0.000         | 0.000 | rev-KL 在最深 adj 上完全塌缩 |
+
+**hs_bignet 焦点**:V4 raw adj MSE 在 f_3→f_4 上 = 2.066,**比值 0.87** ⇒
+hs_bignet 在 MERA *自身相邻尺度* 之间是 *真结构* 差异,**不是 z-标准化伪影**。
+结合 V5(hs_bignet 与 *外部 Wilson* 的差异在 gauge 下 = 0.029,**绝对值最小**),
+说明 hs_bignet 在 V4 / V5 上 *一致表明*:**MERA 内部的尺度变换是真的非平凡且
+匹配 Wilson 慢模结构** —— V4 / V5 在 hs_bignet 上是 **互相佐证** 的好信号。
+
+CSV:`analyzers/csv/rg_v4_gauge_demo.csv`(25 folder 完整版,包括 Phase-1 / Phase-2)。
 
 ### V5 —— Wilson–Kadanoff 分块 RG 真值
 
@@ -760,6 +976,34 @@ rev-KL 振幅接近先验但相关错)。
 `rg_v5_blockRG_marg_s3.png`。
 CSV:`analyzers/rg_fixed_point/csv/rg_v5_blockRG_compare.csv`。
 
+#### V5 gauge-fixed 补遗(2026-06-14)
+
+把 MERA y_s 和 block-RG x_s 各自做 *逐位置* quantile transform 拉成 N(0,1) 边际,
+再算 V5 三种距离。KS、W1 在 gauge 下 collapse 到 ~10⁻³(by construction);
+**RMS-G 留下的是 *纯空间结构* mismatch**。原始 6 流的对比:
+
+| flow                       | raw RMS-G s=2 | **gauge s=2** | Δ      | raw s=3 | **gauge s=3** | Δ      |
+|----------------------------|---------------:|--------------:|-------:|--------:|--------------:|-------:|
+| T = 2.15                    | 0.095          | 0.046          | −0.049 | 0.138   | 0.025          | −0.113 |
+| T_c hs_dataDriven (fwd-KL) | 0.068          | 0.043          | −0.026 | 0.053   | 0.031          | −0.022 |
+| T_c hs_bignet (fwd-KL)     | 0.049          | 0.029          | −0.020 | 0.016   | 0.037          | +0.021 |
+| **T_c sym_bignet (rev-KL)**| **0.669**      | **0.539**      | −0.130 | **0.674** | **0.485**     | −0.189 |
+| **T_c STL pathgrad**       | **0.646**      | **0.522**      | −0.125 | **0.640** | **0.464**     | −0.176 |
+| T = 2.40                    | 0.065          | 0.068          | +0.003 | 0.070   | 0.074          | +0.004 |
+
+**关键诠释**:
+
+1. **rev-KL 灾难是真的**:gauge 下 sym/STL RMS-G 仍 0.5±,**仍比 fwd-KL 高一个数量级**(0.5 vs 0.03)。
+   "rev-KL 把空间结构搞错"的原结论 **完整成立**,gauge-fix 只小幅压低数字(19% 是边际,81% 是真空间结构错位)。
+2. **fwd-KL 结构其实更好**:hs_bignet gauge s=2 = 0.029 比 raw 0.049 *改善 41%* —— raw 数字里
+   ~40% 是边际伪影(MERA 把 marginal 推宽,但空间结构其实更接近 Wilson)。**主报告原来用 raw
+   读出的"fwd-KL coarse 深度 G(r) 在 1.6 % 内"在 gauge 下其实更好**。
+3. **非临界 T=2.40 控制**:raw ≈ gauge ≈ 0.07 —— 没有边际污染,空间结构对照 baseline 直接成立。
+
+数据 CSV:`analyzers/csv/rg_v5_gauge_compare.csv`(25 folder 完整版)。
+**Phase-1 改进 ablation 的 V5 gauge 真值表 + verdict 翻转**(I.1 Student-t / I.2 stride=16)
+见 `improvements_results_zh.md` 对应章节,该处给出最终 actionable verdict。
+
 ### 重新解读
 
 原报告的结论是 **逆向 KL 流满足我们的假设**(T_c 处深层 block 在功能上一致)。
@@ -818,6 +1062,50 @@ V3 表明这一结论在其自身条件下是错的:深层 block 不是"同一�
   rev-KL 把边缘保持得小但完全破坏 G(r)(每个尺度上 RMS-G ≈ 0.62–0.67,
   比任何 fwd-KL 行高一个数量级)。两轴分解(KS 看边缘,RMS-G 看空间结构)
   使失败成为定量的,而非定性的。
+
+### 为什么 T_c 在此架构上难:结构性失配
+
+MERA 的 dispatch 几何隐含地在每个尺度上强制了 **Wilson 风格的
+1/4 慢模 + 3/4 快模分解**:在尺度 s 上,kept-coarse 槽
+`y[..., ::2^s, ::2^s]` 承载慢模继续前向,其余 3/4 位置脱离 dispatch
+索引,其分布由 N(0, I) prior 评估。Prior 是可分离高斯,所以架构在
+**要求每个尺度上 3/4 的场边缘独立 N(0, 1)**。
+
+这恰是 **平凡高斯不动点(trivial Gaussian fixed point)** 的结构:
+一个无反常维数的 Wilson RG —— 一旦尺度高于 ξ,高动量模就被积成
+相互独立的高斯。非临界相(T = 2.15 铁磁、T = 2.40 顺磁)上 ξ
+有限,这个假设大致成立 —— 这也是为什么 fwd-KL 在 T = 2.40 上
+V5 表现合理(深尺度 KS ≈ 0.04,RMS-G ≈ 0.07)。
+
+**T_c 上这个假设错了。** 2D Ising 临界不动点是 Wilson–Fisher CFT
+(c = 1/2 极小模型),反常维数 η = 1/4,算子谱非高斯。ξ → ∞
+意味着 **没有任何尺度上存在干净的快/慢分离** —— 每个尺度上
+3/4 的场仍带着长程非高斯关联,而架构却要把它们推向独立
+N(0, 1)。架构的隐含 Wilson-Gaussian FP 目标与 Ising 真实的
+Wilson–Fisher FP **在结构上不兼容**。
+
+这一失配是 V3/V4/V5 在 T_c 上观察到的所有病态的统一物理解释:
+
+- **rev-KL 深层 block 塌缩**(V3 `f_4`、`f_5` 残差 ≈ 0.02–0.3):
+  优化器从 q ~ N(0, I) 出发,看到的输入(q-视角下)已经接近高斯,
+  因此判定"无事可做"—— q 漂向一个低 Wilson–Fisher 结构的 sym
+  状态,在那里架构的假设内部自洽,代价是 G(r) 整个被破坏
+  (V5 RMS-G ≈ 0.62–0.67)。
+- **fwd-KL 深层 block 膨胀**(V3 `f_4` 残差 2.8–15.4;V5 std
+  膨胀 4–9 倍):流看到真实 Ising 数据,每尺度 3/4 的场是非高斯的,
+  拒绝塌缩;但又无法把那些模压成 N(0, 1) 而不膨胀方差 —— 这是
+  架构留给它的唯一泄压阀。
+- **KS 与 RMS-G 的两轴分裂**(V5):两个目标各自选择了不可能任务
+  里的不同子轴失败。Rev-KL 保住边缘但破坏空间结构;fwd-KL 保住
+  空间结构但破坏边缘。没有一个能同时满足两轴,因为架构的
+  快/慢假设把这条路堵死了。
+
+框架层面的推论:**Gaussian-prior 的 MERA 流是为非临界相设计的。**
+要严格处理 T_c,需要 (a) 换一个在 latent 端就承载 Wilson–Fisher
+谱的非高斯 prior,或 (b) 换一个 dispatch 几何不预设 1/4 慢 + 3/4
+快分割的架构(让流在不同区域自主选择尺度分离),或 (c) 接受:
+这个架构上的 T_c 结果应被读作"在 Gaussian-FP 的容器里能多大
+程度伪装 Wilson–Fisher",而不是字面意义上的 RG 不动点探针。
 
 ### 另见
 

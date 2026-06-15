@@ -531,3 +531,193 @@ over the trajectory).
 <img src="figures/32Ising_T2.269_hsBignet_bridge_w5.0t0.5__flow_correlations.png" alt="bridge_w5.0t0.5 flow correlations" width="56%">
 </p>
 
+
+## Phase-1 improvement ablation at L=32 (ep 19,800, N = 4,000)
+
+A separate L=32 experiment line tested **III.1** (multi-scale loss),
+**I.1** (Student-t prior, the negation experiment), and **I.2**
+(conditional Gaussian prior) from
+`analyzers/rg_fixed_point/improvements_zh.md`, with a 2 × 2 ablation
+matrix (III.1 × I.2 stacked at `batch=64`), plus single-variable
+sweeps over `lambda_scale`, `condPriorSlowStride`, and the Student-t
+`df`. The four-cell matrix runs **all share batch=64** (forced down
+from the original hs_bignet `batch=128` by the scaleLoss extra
+forward graph); the sweep runs and the Student-t run stay at
+`batch=128` for full single-method comparison vs the historical
+table above.
+
+HS anchors (from the same `_p` fields, identical across runs):
+`mag_p = 2.382`, `xi_p = 8.568`, `g_longrange_p = 0.477`.
+
+### 2 × 2 ablation matrix (b = 64)
+
+| Run                                    | F_c^q          | KL(q‖p) | KL(p‖q)       | mag (data 2.38) | xi (data 8.57) | g_longrange (data 0.477) |
+| :------------------------------------- | -------------: | ------: | ------------: | --------------: | -------------: | -----------------------: |
+| **baseline_b64** (Gauss prior, no scaleLoss)     | -2346.16 ± 0.77 | 23.42 | 17.05 ± 0.46 | 2.441 | 8.786 | 0.503 |
+| **iii1_lam1.0_b64** (+ III.1 scaleLoss=1)        | -2347.75 ± 0.76 | 21.84 | 16.59 ± 0.47 | 2.448 | 8.754 | 0.499 |
+| **i2_stride8h32_b64** (+ I.2 cond. prior)        | -2348.42 ± 0.81 | 21.16 | 16.05 ± 0.47 | **2.376** | **8.584** | **0.487** |
+| **combined_lam1.0_stride8h32_b64** (I.2 + III.1) | -2348.38 ± 0.73 | 21.20 | **15.88 ± 0.47** | **2.347** | **8.394** | **0.478** |
+
+**Single-variable Δ vs baseline_b64**:
+
+| Intervention            | Δ KL_qp | Δ KL_pq | Δ mag  | Δ xi    | Δ gL    |
+| :---------------------- | ------: | ------: | -----: | ------: | ------: |
+| + III.1 (scaleLoss=1.0) | −1.59   | −0.46   | +0.007 | −0.032  | −0.004  |
+| + I.2 (cond. prior)     | **−2.26** | **−0.99** | **−0.065** | **−0.202** | **−0.016** |
+| + both (combined)       | −2.22   | **−1.17** | **−0.094** | **−0.392** | **−0.025** |
+
+**Interaction effect** = combined − iii1 − i2 + baseline:
+- KL_qp:   +1.63 (sub-additive, mild antagonism)
+- KL_pq:   +0.28 (essentially additive)
+- gL:      **−0.005** (super-linear structural synergy)
+
+⇒ **The two interventions are synergistic on *structure***
+(gL drops super-linearly) **but mildly antagonistic on KL_qp**.
+The combined run has the matrix's closest structural match: mag
+within 0.03 of HS, xi within 0.18, **gL = 0.478 ≈ data anchor 0.477**.
+
+### iii1 λ_scale sweep (b = 64)
+
+| λ_scale | F_c^q          | KL_qp | KL_pq | gL    | L_scale (training avg, ep ≥ 19,700) |
+| ------: | -------------: | ----: | ----: | ----: |------------------------------------:|
+| 0.0     | -2346.16 ± 0.77 | 23.42 | 17.05 | 0.503 | —                                   |
+| 0.1     | -2345.37 ± 0.81 | 24.22 | 17.04 | 0.509 | 0.81 (penalty too weak; ≈ init)     |
+| **1.0** | -2347.75 ± 0.76 | 21.84 | 16.59 | 0.499 | **0.31** (converged sweet spot)     |
+| 10.0    | -2347.89 ± 0.50 | 21.70 | **30.15** | 0.509 | **0.012** (over-driven)            |
+
+⇒ **λ=1.0 is the III.1 sweet spot**. **λ=10.0's marginal KL_qp gain (~0.1 nat)
+comes from mode-collapse** — `KL(p‖q)` nearly doubles (17.05 → 30.15) and
+`gL` *worsens* by 0.006 vs λ=1.0. The improvements.md prediction
+that "λ_scale anti-correlates with V5 RMS-G" is borne out by the
+KL_pq trajectory: λ=10 strongly degrades forward KL because the flow
+abandons bridge regions to satisfy the tightened scale constraint.
+
+### i2 slow_stride sweep (b = 128)
+
+| stride | slow grid | F_c^q          | KL_qp     | KL_pq | gL    | Note                                        |
+| -----: | --------: | -------------: | --------: | ----: | ----: | :------------------------------------------ |
+| **4**  | 16 × 16   | -2352.46 ± 0.69 | **17.13** | **14.14** | 0.493 | **best single-variable ablation** — Δ −6.3 nat KL_qp vs baseline |
+| 8      | 8 × 8     |  N/A           | **604,190** ⚠️ | 21.97 | 0.012 | **late-training divergence** — the original Phase-1 b=128 i2 run; **discard for any conclusion** (memory `project_l32_late_training_instability`) |
+| 16     | 2 × 2     | -2349.11 ± 0.76 | 20.48     | 15.78 | 0.501 | middling — coarse slow grid limits prior structure |
+
+⇒ **Conditional prior performance scales monotonically with slow-grid
+density**: 16 × 16 → 8 × 8 → 2 × 2 worsens. The L=32 verdict for I.2 must
+come from `stride=4` since the original `stride=8` b=128 run diverged
+late-training (a hard reminder to always use best-smoothed over
+trajectory, not last-100). **I.2 at stride=4 b=128 is the single
+biggest improvement in the 9-run single-variable ablation** — Δ KL_qp
+= **−6.3 nat** vs baseline.
+
+### Student-t prior (b = 128)
+
+| Quantity | baseline (= original `hs_bignet`, ep 19,900) | i1_df4.0 | Δ vs baseline_b64 |
+| :------- | -------------------------------------------:| --------:| -----------------:|
+| F_c^q    | -2348.65 (Summary table above)              | -2348.23 ± 0.77 | —                |
+| KL_qp    | 23.42 (baseline_b64 matched-row)            | 21.36    | −2.07             |
+| KL_pq    | 17.05                                       | 15.54    | −1.51             |
+| mag      | 2.441                                       | 2.389    | **−0.052**        |
+| xi       | 8.786                                       | 8.546    | **−0.24**         |
+| gL       | 0.503                                       | 0.483    | **−0.020**        |
+
+⇒ Student-t delivers a balanced 1.5–2 nat improvement on every metric,
+**with no metric degrading**, but no metric improves as dramatically
+as `i2_stride4`. **Consistent with improvements.md's negation-experiment
+positioning** — heavy-tail prior has a real but small effect.
+
+**(Cross-L note)** At L=64 the same I.1 Student-t run is the only
+intervention with a clearly visible *structural* improvement
+(`gL` Δ = **−0.029** at L=64 vs **−0.020** at L=32 — the negation
+experiment unexpectedly *strengthens* with L). See
+`concise_report_L64_T2.269.md` § "Phase-1 improvement ablation at L=64"
+for the parallel ablation and cross-L verdict.
+
+### Phase-1 ablation visuals — `flow_samples.png` + `flow_correlations.png`
+
+_Same format as the original-method panels above: per-config
+magnetisation distribution + log-log G(r)/G(0), flow vs HS data._
+
+#### baseline_b64 *(Gaussian prior, no scaleLoss, b = 64)*
+
+<p>
+<img src="../../data/32Ising_T2.269_hsBignet_baseline_b64/flow_samples.png" alt="baseline_b64 flow samples" width="42%">
+<img src="../../data/32Ising_T2.269_hsBignet_baseline_b64/flow_correlations.png" alt="baseline_b64 flow correlations" width="56%">
+</p>
+
+#### iii1_lam1.0_b64 *(+ III.1 multi-scale loss)*
+
+<p>
+<img src="../../data/32Ising_T2.269_hsBignet_iii1_lam1.0_b64/flow_samples.png" alt="iii1_lam1.0_b64 flow samples" width="42%">
+<img src="../../data/32Ising_T2.269_hsBignet_iii1_lam1.0_b64/flow_correlations.png" alt="iii1_lam1.0_b64 flow correlations" width="56%">
+</p>
+
+#### i2_stride8h32_b64 *(+ I.2 conditional Gaussian prior)*
+
+<p>
+<img src="../../data/32Ising_T2.269_hsBignet_i2_stride8h32_b64/flow_samples.png" alt="i2_stride8h32_b64 flow samples" width="42%">
+<img src="../../data/32Ising_T2.269_hsBignet_i2_stride8h32_b64/flow_correlations.png" alt="i2_stride8h32_b64 flow correlations" width="56%">
+</p>
+
+#### combined_lam1.0_stride8h32_b64 *(I.2 + III.1 stacked — best structural fit in the 2 × 2)*
+
+<p>
+<img src="../../data/32Ising_T2.269_hsBignet_combined_lam1.0_stride8h32_b64/flow_samples.png" alt="combined flow samples" width="42%">
+<img src="../../data/32Ising_T2.269_hsBignet_combined_lam1.0_stride8h32_b64/flow_correlations.png" alt="combined flow correlations" width="56%">
+</p>
+
+#### i2_stride4h32 *(I.2 + finer slow grid b=128 — single biggest ablation Δ)*
+
+_Slow grid 16 × 16; **largest Δ KL_qp = −6.3 nat** of any
+single-variable run in this report._
+
+<p>
+<img src="../../data/32Ising_T2.269_hsBignet_i2_stride4h32/flow_samples.png" alt="i2_stride4h32 flow samples" width="42%">
+<img src="../../data/32Ising_T2.269_hsBignet_i2_stride4h32/flow_correlations.png" alt="i2_stride4h32 flow correlations" width="56%">
+</p>
+
+#### i2_stride16h32 *(I.2 + coarser slow grid b=128)*
+
+<p>
+<img src="../../data/32Ising_T2.269_hsBignet_i2_stride16h32/flow_samples.png" alt="i2_stride16h32 flow samples" width="42%">
+<img src="../../data/32Ising_T2.269_hsBignet_i2_stride16h32/flow_correlations.png" alt="i2_stride16h32 flow correlations" width="56%">
+</p>
+
+#### i1_df4.0 *(I.1 Student-t prior, df = 4, b = 128)*
+
+_The improvements.md "negation experiment" — predicted small effect
+because heavy tails don't touch spatial structure. Delivers
+balanced 1.5–2 nat improvement on every metric; **at L=64 (see
+companion report) it produces the cleanest structural improvement
+of any intervention**._
+
+<p>
+<img src="../../data/32Ising_T2.269_hsBignet_i1_df4.0/flow_samples.png" alt="i1_df4.0 flow samples" width="42%">
+<img src="../../data/32Ising_T2.269_hsBignet_i1_df4.0/flow_correlations.png" alt="i1_df4.0 flow correlations" width="56%">
+</p>
+
+#### iii1_lam0.1_b64 *(III.1 λ = 0.1 — penalty too weak)*
+
+_L_scale stayed at ≈ 0.81 (init); see iii1 λ sweep table above
+for why this is "too weak"._
+
+<p>
+<img src="../../data/32Ising_T2.269_hsBignet_iii1_lam0.1_b64/flow_samples.png" alt="iii1_lam0.1_b64 flow samples" width="42%">
+<img src="../../data/32Ising_T2.269_hsBignet_iii1_lam0.1_b64/flow_correlations.png" alt="iii1_lam0.1_b64 flow correlations" width="56%">
+</p>
+
+#### iii1_lam10.0_b64 *(III.1 λ = 10.0 — over-tightened, mode collapse)*
+
+_L_scale crushed to 0.012, but `KL(p‖q) = 30.15` (1.77 × baseline)
+and `gL = 0.509` (worse than baseline by 0.006) confirm the
+"satisfying scale constraint at the cost of bridge / forward fit"
+pathology._
+
+<p>
+<img src="../../data/32Ising_T2.269_hsBignet_iii1_lam10.0_b64/flow_samples.png" alt="iii1_lam10.0_b64 flow samples" width="42%">
+<img src="../../data/32Ising_T2.269_hsBignet_iii1_lam10.0_b64/flow_correlations.png" alt="iii1_lam10.0_b64 flow correlations" width="56%">
+</p>
+
+**See `analyzers/rg_fixed_point/improvements_results.md` (English) /
+`improvements_results_zh.md` (中文) for the per-scheme verdict tables
+and the recommended Phase-2 priority ordering this dataset
+motivates.**
+

@@ -64,6 +64,12 @@ import train
 EXACT_FILE = "etc/exactz.md"
 MCMC_DIR = "data/mcmc_data"
 
+# Single source of truth for "which device the whole diagnostic runs on".
+# Both build_flow (model build) and run_one (state load + HS data load)
+# must use the same device or load_state_dict + indexing will straddle
+# cpu/cuda and trigger device mismatches in matmul / advanced indexing.
+DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
 
 def detect_symmetry(state_dict):
     return any(k.startswith("flow.") for k in state_dict.keys())
@@ -112,8 +118,14 @@ def find_hs_file(L, T, tol=1e-3):
     return None
 
 
-def build_flow(folder, state):
-    """Reconstruct and load the MERA flow from a run folder + checkpoint dict."""
+def build_flow(folder, state, device=None):
+    """Reconstruct and load the MERA flow from a run folder + checkpoint dict.
+
+    ``device`` lets V3/V4/V5 probes override the module-level DEVICE.
+    Defaults to DEVICE (CUDA when available) which is what the main
+    diagnostic script needs; the probes can pass ``torch.device("cpu")``
+    or ``"cuda"`` explicitly when they want to mix-and-match.
+    """
     with h5py.File(os.path.join(folder, "parameters.hdf5"), "r") as f:
         L = int(np.array(f["L"]))
         d = int(np.array(f["d"]))
@@ -128,10 +140,21 @@ def build_flow(folder, state):
         flowType = f["flowType"][()].decode() if "flowType" in f else "rnvp"
         nsfBins  = int(np.array(f["nsfBins"]))  if "nsfBins"  in f else 8
         nsfBound = float(np.array(f["nsfBound"])) if "nsfBound" in f else 5.0
+        # Non-Gaussian prior fields (default to Gaussian baseline for
+        # runs predating I.1/I.2). Without these the load_state_dict
+        # call below fails on conditional_gaussian / studentT checkpoints
+        # because the freshly-built Gaussian prior has no CNN / no df.
+        priorType = f["priorType"][()].decode() if "priorType" in f else "gaussian"
+        condPriorSlowStride = int(np.array(f["condPriorSlowStride"])) if "condPriorSlowStride" in f else -1
+        condPriorHidden = int(np.array(f["condPriorHidden"])) if "condPriorHidden" in f else 32
+        priorDf = float(np.array(f["priorDf"])) if "priorDf" in f else 4.0
     if depthMERA == -1:
         depthMERA = None
 
-    device = torch.device("cpu")
+    if device is None:
+        device = DEVICE
+    elif isinstance(device, str):
+        device = torch.device(device)
     dtype = torch.float32
     sym_used = detect_symmetry(state)
     name = f"SymmMERA_l{nlayers}_M{nmlp}H{nhidden}_R{nrepeat}_Ising"
@@ -140,6 +163,8 @@ def build_flow(folder, state):
         L, d, nlayers, nmlp, nhidden, nrepeat, sym, device, dtype, name,
         depthMERA=depthMERA, weightTying=weightTying, haarPrior=haarPrior,
         flowType=flowType, nsfBins=nsfBins, nsfBound=nsfBound,
+        priorType=priorType, condPriorSlowStride=condPriorSlowStride,
+        condPriorHidden=condPriorHidden, priorDf=priorDf,
     )
     fw.load(state)
     fw.eval()
@@ -173,7 +198,7 @@ def _render_grid(x_phys, nrow=10):
     from torchvision.utils import make_grid
     img = torch.sigmoid(2.0 * x_phys)                 # (B,1,L,L) -> [0,1]
     grid = make_grid(img, nrow=nrow, padding=1, pad_value=0.5)
-    return grid[0].numpy()                            # single channel -> 2D
+    return grid[0].detach().cpu().numpy()             # single channel -> 2D
 
 
 def save_flow_png(folder, x_q_vis, x_p_vis, epoch, label):
@@ -298,8 +323,17 @@ def run_one(folder, n_samples, batch_size, seed, make_png=True):
     ckpt_path = saving_files[-1]
     epoch = int(re.search(r"epoch(\d+)", ckpt_path).group(1))
 
-    state = torch.load(ckpt_path, weights_only=False, map_location="cpu")
+    # map_location=DEVICE so state tensors land on the same device the
+    # model will be built on -- otherwise load_state_dict has to copy
+    # CPU values into CUDA params and subtle device leaks (e.g. cpu-side
+    # masks lurking in old runs) show up at first matmul.
+    state = torch.load(ckpt_path, weights_only=False, map_location=DEVICE)
     fw, target, L, T, sym_used, wt, hp = build_flow(folder, state)
+    # Belt-and-suspenders: re-pin the entire flow + target to DEVICE after
+    # load_state_dict (some buffers don't move on load if they were copied
+    # from a CPU state via load_state_dict's in-place copy).
+    fw.to(DEVICE)
+    target.to(DEVICE)
     N = L * L
 
     sigma, sigma_src = read_sigma(folder)
@@ -360,7 +394,7 @@ def run_one(folder, n_samples, batch_size, seed, make_png=True):
     hs_file = find_hs_file(L, T)
     if hs_file is not None and lnZ_c is not None:
         x_p = torch.load(hs_file, weights_only=True).reshape(-1, 1, L, L)
-        x_p = x_p[:n_samples].to(dtype=torch.float32)
+        x_p = x_p[:n_samples].to(dtype=torch.float32, device=DEVICE)
         x_p_vis = x_p[:n_vis].clone()
         A_chunks, logq_chunks = [], []
         M_p, csum_p, ncfg_p = [], np.zeros((L, L)), 0

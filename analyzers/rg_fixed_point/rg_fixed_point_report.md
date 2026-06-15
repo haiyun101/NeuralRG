@@ -1095,6 +1095,68 @@ the strict sense the methodology requires.
   RMS-G for spatial structure) makes the failure quantitative,
   not qualitative.
 
+### Why T_c is hard on this architecture: a structural mismatch
+
+The MERA dispatch geometry implicitly enforces a **Wilson-style
+1/4-slow + 3/4-fast decomposition at every scale**: at scale s,
+the kept-coarse slot `y[..., ::2^s, ::2^s]` carries a slow mode
+forward; the other 3/4 of sites are dropped from the dispatch
+index and have their distribution evaluated by the N(0, I) prior.
+The prior is product Gaussian, so the architecture is **demanding
+that 3/4 of the field at every scale be marginally independent
+N(0, 1)**.
+
+This is exactly the structure of the **trivial Gaussian fixed
+point**: a Wilson RG with no anomalous dimension, where
+high-momentum modes integrate out to independent Gaussians once
+the scale exceeds ξ. Off-T_c (T = 2.15 ferromagnetic, T = 2.40
+paramagnetic) ξ is finite, so the assumption is roughly valid —
+and indeed fwd-KL at T = 2.40 satisfies V5 reasonably (deep-scale
+KS ≈ 0.04, RMS-G ≈ 0.07).
+
+**At T_c the assumption is wrong.** The 2D Ising critical fixed
+point is the Wilson–Fisher CFT (c = 1/2 minimal model), with
+anomalous dimension η = 1/4 and a non-Gaussian operator spectrum.
+ξ → ∞ means **no scale exhibits a clean fast/slow separation** —
+at every scale, 3/4 of the field still carries long-range
+non-Gaussian correlations that the architecture tries to force
+into independent N(0, 1). The architecture's implicit
+Wilson-Gaussian-FP target and Ising's actual Wilson–Fisher-FP
+target are **structurally incompatible**.
+
+This mismatch is the unifying physical reading of every T_c
+pathology in V3/V4/V5:
+
+- **rev-KL deep-block collapse** (V3 `f_4`, `f_5` residuals ≈
+  0.02–0.3): the optimiser starts from q ~ N(0, I), sees inputs
+  that already look Gaussian (in the q-view), and concludes
+  "nothing left to do" — the q-distribution drifts to a
+  low-Wilson-Fisher-structure sym state where the architecture's
+  assumption is internally consistent, at the cost of breaking
+  G(r) entirely (V5 RMS-G ≈ 0.62–0.67).
+- **fwd-KL deep-block inflation** (V3 `f_4` residuals 2.8–15.4;
+  V5 std ballooning 4–9×): the flow sees real Ising data where
+  3/4 of every scale's field is non-Gaussian, refuses to collapse,
+  but cannot push those modes to N(0, 1) without inflating their
+  variance — the only release valve the architecture leaves
+  available.
+- **The KS-vs-RMS-G two-axis split** (V5): the two objectives
+  pick different sub-axes of the impossible task to fail on.
+  Rev-KL preserves the marginal at the cost of spatial structure;
+  fwd-KL preserves spatial structure at the cost of the marginal.
+  Neither can satisfy both because the architecture's fast/slow
+  assumption forbids it.
+
+The framing-level consequence: **a Gaussian-prior MERA flow is
+built for non-critical phases**. To handle T_c rigorously one
+would need (a) a non-Gaussian prior that carries the
+Wilson–Fisher spectrum at the latent end, (b) an architecture
+whose dispatch geometry does not bake in a 1/4-slow + 3/4-fast
+split (so the flow can choose its own scale separation per
+region), or (c) acceptance that this architecture's T_c results
+are best read as "how well can a flow fake Wilson–Fisher inside
+a Gaussian-FP container", not as a literal RG fixed-point probe.
+
 ### See also
 
 - `temp_sweep_L32.md` — broader L=32 forward-KL temperature sweep
