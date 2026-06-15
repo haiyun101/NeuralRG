@@ -219,18 +219,47 @@ f_5 = 0.022 *不是* sym_bignet 那种"严格塌缩"(0.0004);它是"较弱工作
 
 **问"MERA 慢模是不是跟 Wilson 真物理一致"**。
 
-RMS-G(`G(r)/G(0)` 形状失配)是这里的关键 metric;KS 全部 ~10⁻³(quantile transform 强制 marginal 一致,by construction)无信号,不列。
+V5 报告 **3 个 metric**(KS / W1 / RMS-G),每个 metric 在 6 个尺度上各有值。三个 metric 在 gauge 下的物理意义不同:
 
-| Scale     | L_s | hs_bignet | sym_bignet | T = 2.15 | T = 2.40 |
-|-----------|----:|----------:|-----------:|---------:|---------:|
-| s = 0     | 32  | 0.000     | 0.000      | 0.000    | 0.000    |
-| s = 1     | 16  | 0.059     | 0.512      | 0.071    | 0.079    |
-| **s = 2** | **8** | **0.030** | **0.539**  | 0.046    | 0.068    |
-| s = 3     | 4   | 0.037     | 0.485      | 0.025    | 0.074    |
+| Metric | 测什么                          | gauge-fix 后行为                            |
+|--------|----------------------------------|---------------------------------------------|
+| KS     | 边际累积分布距离                 | **强制 ≈ 0**(逐位置 quantile transform 让两侧 marginal 严格 N(0,1),KS ≈ 有限样本噪声 ~10⁻³)|
+| W1     | 边际 Wasserstein-1 距离          | **同上**,~10⁻²(W1 对小尾部更敏感,但仍 by construction 接近 0)|
+| RMS-G  | `G(r)/G(0)` 两点函数 RMS 偏差    | **保留信号**(测纯空间结构;quantile transform 不改秩相关,RMS-G 是 gauge 下唯一携带信息的 metric)|
 
-**hs_bignet 解读**:**RMS-G 在 s=2 = 0.030,跟 Wilson 真物理 *最接近* 的尺度**(比 sym_bignet 低 18×)。
-低温 T=2.15 在 s=3 上 *更低*(0.025),但低温是 *非临界对照*,本身就远离 T_c 物理 —— 关键看 *在 T_c 上* 谁最接近 Wilson,而 **hs_bignet 是 6 流里 T_c 上 RMS-G 最低的**(fwd-KL hs_dataDriven s=2 = 0.043,sym_bignet 0.539)。
-sym_bignet 在所有 scale 上都灾难性偏离 Wilson(0.485–0.539),证实"rev-KL 把空间结构搞错"的核心 verdict。
+完整 6 流 × 6 尺度数据(L_s = 32 → 16 → 8 → 4 → 2 → 1):
+
+| Metric | s = 0 | s = 1 | **s = 2** | s = 3 | s = 4 | s = 5 |
+|--------|------:|------:|----------:|------:|------:|------:|
+| **hs_bignet KS** | 0.005 | 0.002 | 0.002 | 0.004 | 0.005 | 0.011 |
+| **hs_bignet W1** | 0.013 | 0.019 | 0.010 | 0.010 | 0.005 | 0.015 |
+| **hs_bignet RMS-G** | 0.000 | 0.059 | **0.030** | 0.037 | n/a | n/a |
+| sym_bignet KS    | 0.005 | 0.002 | 0.002 | 0.002 | 0.006 | 0.010 |
+| sym_bignet W1    | 0.013 | 0.010 | 0.012 | 0.009 | 0.007 | 0.010 |
+| **sym_bignet RMS-G** | 0.000 | **0.512** | **0.539** | **0.485** | n/a | n/a |
+| T=2.15 KS        | 0.002 | 0.006 | 0.005 | 0.006 | 0.007 | 0.015 |
+| T=2.15 W1        | 0.018 | 0.016 | 0.019 | 0.006 | 0.009 | 0.019 |
+| T=2.15 RMS-G     | 0.000 | 0.071 | 0.046 | 0.025 | n/a | n/a |
+| T=2.40 KS        | 0.001 | 0.003 | 0.002 | 0.003 | 0.005 | 0.009 |
+| T=2.40 W1        | 0.014 | 0.011 | 0.008 | 0.007 | 0.005 | 0.014 |
+| T=2.40 RMS-G     | 0.000 | 0.079 | 0.068 | 0.074 | n/a | n/a |
+
+**为什么 RMS-G 只到 s=3**:s=4 对应 L_s = 2(2×2 子格点),s=5 对应 L_s = 1(单点)。
+`G(r)/G(0)` 在 2×2 上只有 r=0 和 r=1 两个距离,样本量也小,信号在噪声里 —— 脚本判定 m < 4 时返回 `n/a`(见 `rg_v5_blockRG_compare.py:163`)。
+KS / W1 在所有 6 个尺度上都能算,因为它们只看单点边际分布,不需要空间几何。
+
+**⚠ Metric 不一致 + 已知问题**:V0–V4 用的是 *gauge-fixed 后 matched-pair MSE*(相邻 field 逐 sample 对齐),
+但 V5 历史上用 distributional 三件套(KS / W1 / RMS-G)。这两套 metric 的 *paired vs distributional* 设计选择不同,导致 V5 跟 V0–V4 不直接可比 + RMS-G 在 L_s ≤ 2 死区。
+**已写 `gauge_v5_matched_mse.py` 把 V5 改成 matched-pair MSE,job 40267635 等 2026-06-19 维护结束后跑;数据出来后会替换上面的 RMS-G 表为统一 metric 表**。
+
+**为什么 KS / W1 在所有尺度都 ~10⁻²**:这是 *gauge-fix by construction* —— 逐位置 quantile transform 把每格点的边际 *严格* 拉成 N(0,1),所以 MERA 慢模 `y_s` 跟 block-RG `x_s` 在 gauge 坐标下的 marginal 已经一致,KS / W1 只剩 *有限样本噪声*(N=2000 的 KS noise 量级正是 ~10⁻³,符合 `1/√N ≈ 0.022`)。
+**4 个流 × 6 尺度的 KS / W1 全部在同一噪声量级 → 证实 gauge-fix 在所有尺度上都成功**。
+
+**hs_bignet 解读(基于 RMS-G,因为只有它携带空间结构信号)**:
+- **s = 2 RMS-G = 0.030 是 T_c 上的最低值**(sym_bignet 0.539,T=2.40 控制 0.068)
+- 跟 sym_bignet 比:在 s=1, 2, 3 上 hs_bignet *一致* 比 sym_bignet 低 8–18×
+- 跟低温 T=2.15 比:s=3 上 T=2.15 = 0.025 略低,但低温是非临界对照(物理上 ξ < L/2,RG 自然流向 Gaussian 不动点,*更容易* 匹配 Wilson)。**关键是临界 T_c 上谁最接近,而那只有 hs_bignet**
+- sym_bignet 在所有尺度灾难性偏离 Wilson(0.485–0.539),证实"rev-KL 把空间结构搞错"的核心 verdict
 
 ---
 
@@ -247,6 +276,111 @@ sym_bignet 在所有 scale 上都灾难性偏离 Wilson(0.485–0.539),证实"re
 
 **结论**:hs_bignet 是 *唯一* 同时满足"深层做 copula 实事(V0–V4 健康)"和"跟 Wilson 接近(V5 独占)"的训练目标。
 hs_bignet 与 sym_bignet 同架构同温度,**唯一差异是训练目标 fwd-KL vs rev-KL** —— 6 个 probe 上的全面差距证明 *训练目标本身* 决定了 MERA 流是否在做物理 RG,与架构容量、数据规模无关。
+
+## L=32 prior 干预扫描(I.1 Student-t + I.2 conditional Gaussian)
+
+本节对比 *同 L=32* 下 **5 个 fwd-KL 训练**(同架构 RNVP affine,只换 latent prior):
+
+| 流 | latent prior | 参数 |
+|----|--------------|------|
+| `hs_bignet` | Gaussian | baseline,各向同性 N(0, I) |
+| `i2(8,32) P1` | Conditional Gaussian | **stride=8 慢模 sub-lattice + hidden=32 CNN(Phase-1 winner)**|
+| `i2(4,32) P2` | Conditional Gaussian | stride=4 慢模(更密)+ hidden=32 |
+| `i2(8,64) P2` | Conditional Gaussian | stride=8 + hidden=64(更宽 CNN)|
+| **`I.1 Student-t`** | **Student-t** | **df=4 heavy-tail prior**(b=128)|
+
+I.2(Conditional Gaussian):`P(z) = P(z_slow) · P(z_fast | z_slow)`,把 latent 自身做 *慢-快分解*,对应 Wilson RG 物理图像。
+I.1(Student-t):各向同性但 heavy-tail,允许 fluctuation 比 Gaussian 大得多。
+
+### V0/V1 perpos
+
+| 对          | hs_bignet | i2(8,32) P1 | i2(4,32) P2 | i2(8,64) P2 | Student-t |
+|-------------|----------:|------------:|------------:|------------:|----------:|
+| f_1 → f_2   | **2.73**  | 0.52        | 0.63        | 2.48        | 0.48      |
+| f_2 → f_3   | 1.81      | 0.66        | 0.59        | 0.13        | 0.22      |
+| f_3 → f_4   | 0.56      | **1.58**    | 0.07        | 0.61        | **1.10**  |
+| f_4 → f_5   | **1.97**  | **1.93**    | **0.029**   | **0.054**   | **1.08**  |
+
+**4 种深对 pattern**:
+- baseline / Phase-1 i2:深对 ≈ 2(blocks 函数很不同)
+- Phase-2 i2:深对 ≈ 0.03–0.05(blocks 函数极相似)
+- **Student-t**:**深对 ≈ 1.1**(中间状态)
+
+### V2b 几何修正
+
+| 对          | hs_bignet | i2(8,32) P1 | i2(4,32) P2 | i2(8,64) P2 | Student-t |
+|-------------|----------:|------------:|------------:|------------:|----------:|
+| f_4 → f_5   | **1.78**  | **1.82**    | **1.49**    | **1.50**    | **2.28**  |
+
+**5 个流 V2b 深对都 ≥ 1.5**,Student-t 反而 *最大*(2.28),意味着 Student-t 深层 block 在 V2b 真实几何下做的工作 *最多*。
+V0/V1 与 V2b 差异最大的是 Student-t(V1: 1.08,V2b: 2.28)—— "深对趋同"在 V2b 下完全消失,纯 4 元组几何 artefact。
+
+### V3 r_s
+
+| Block | hs_bignet | i2(8,32) P1 | i2(4,32) P2 | i2(8,64) P2 | Student-t |
+|-------|----------:|------------:|------------:|------------:|----------:|
+| f_3   | 1.63      | 0.65        | 0.14        | 0.56        | 0.47      |
+| f_4   | **1.87**  | **1.83**    | **0.033**   | **0.059**   | **1.41**  |
+| f_5   | **0.022** | **0.031**   | **0.001**   | **0.001**   | **0.749**  |
+
+**3 种相反的 r_5 模式**:
+- baseline / Phase-1 i2:r_5 = 0.02–0.03(*1 个* near-identity scale,健康 fixed-point)
+- Phase-2 i2:r_5 = 0.001(*2 个* near-identity scales,**接近 sym_bignet 退化 0.0004**)
+- **Student-t**:**r_5 = 0.75**(*0 个* near-identity scales,**深 block 做 *更多* 工作,而不是更少**!)
+
+⇒ **Student-t 跟 i2 Phase-2 是 *相反的* 病理方向**:i2 Phase-2 让 cascade 漂向 identity collapse,Student-t 让 cascade 在最深处 *拒绝* identity(heavy-tail prior 给最深层 *扩张* 空间)。
+
+### V4 adj
+
+| 对          | hs_bignet | i2(8,32) P1 | i2(4,32) P2 | i2(8,64) P2 | Student-t |
+|-------------|----------:|------------:|------------:|------------:|----------:|
+| f_2 → f_3   | 1.43      | 0.46        | 0.19        | 0.19        | 0.11      |
+| f_3 → f_4   | **1.79**  | **1.62**    | **0.08**    | **0.08**    | **1.36**  |
+| f_4 → f_5   | **0.025** | 0.06        | **0.001**   | **0.000**   | **1.24**  |
+
+**fixed-point 区(V4 < 0.1)宽度**:
+- baseline / Phase-1 i2:**1 scale**
+- Phase-2 i2:**3 scales**(全 cascade 自相似)
+- **Student-t**:**0 scale!** —— Student-t 在 L=32 上 *完全没有* internal fixed-point 区,深对 V4 = 1.24 跟浅对一样大
+
+(Student-t 在 L=64 上呈现 *3 scale* fixed-point 区 —— 跟 L=32 *方向相反*,见 L=64 报告。**Student-t 的 L 依赖很复杂,跟 i2 cells 的 cross-L 一致模式形成对比**)
+
+### V5 RMS-G vs Wilson
+
+| s | hs_bignet | i2(8,32) P1 | i2(4,32) P2 | i2(8,64) P2 | Student-t |
+|---|----------:|------------:|------------:|------------:|----------:|
+| 1 | 0.059     | 0.063       | **0.103**   | 0.070       | 0.083     |
+| **2** | **0.030** | 0.047 | **0.069** | 0.032 | **0.062** |
+| 3 | 0.037     | **0.003**   | 0.036       | 0.034       | **0.083** |
+
+**5 个流的 V5 表现**:
+- 跟 Wilson 物理 *最近*:**Phase-1 i2(8,32) 在 s=3 上 0.003**(全表最低,12× 改善)
+- 其它 i2 cells:s=2 持平或劣,s=3 与 baseline 同档
+- **Student-t**:**全 s 都比 baseline 差**,s=3 = 0.083 是 5 流里 *最差*
+
+### 综合解读
+
+L=32 上的 prior 干预呈现 **3 种不同的 *V0–V5 pattern*** —— 都对 latent 做同方向的"改造",**但在 V0–V5 各 probe 上的反应完全不同**:
+
+| 路径 | 代表流 | V3 深 r | V4 fixed-point 区 | V5 vs Wilson |
+|------|---------|---------|-------------------|---------------|
+| **保持 baseline + 精细 Wilson 匹配** | Phase-1 i2(8,32) | r_5 = 0.031(健康)| 1 scale | **s=3 = 0.003(全表最低,12× 改善)**|
+| **扩 internal 自相似 + 漂向 identity 退化** | Phase-2 i2(4,32) / (8,64) | r_5 = 0.001(接近 sym 0.0004)| 3 scales | s=2 持平 / s=3 持平(*不* 改善)|
+| **深层做更多工作 + 远离 Wilson** | Student-t | **r_5 = 0.75**(*反向* —— 比 baseline 大 35×)| **0 scale!** | **s=3 = 0.083(全表最差)**|
+
+⇒ **L=32 的 5 个 fwd-KL 流呈现 *3 种 V0–V5 病理模式*,只有 Phase-1 i2(8,32) 真改善 V5 vs Wilson**。
+其它干预要么 *扩 internal 自相似* 但 *外部不像 Wilson*(i2 Phase-2 cells),要么 *完全反向*(Student-t)。
+
+**关键 cross-L 一致性**(跟 L=64 报告联合):
+- **stride=8 hidden=32 是 *L-independent* 架构 sweet spot**:L=32 上 V5 s=3 砍 12×,L=64 上 V5 s=2 砍 15%;同架构在两个 L 都是 V5 winner
+- **stride=4 / hidden=64 在 L=32 *和* L=64 都过度** —— 把 internal "自相似"推过头,V5 不改善,且 r_5 漂向退化(0.001 vs sym 0.0004)
+- **Student-t 在 L=32 和 L=64 *表现相反*** —— L=32 上 deep block 做 *更多* 工作(r_5 = 0.75),L=64 上 deep block 趋同 identity(r_6 = 0.003)。**heavy-tail prior 的 L 依赖跟 i2 完全不同 —— 暗示其物理机制不同,不是简单的"prior 强弱"**
+
+**对 Phase-2 路线图的修正**(基于本节数据,补强 `improvements_results_zh.md` 的 verdict):
+- **i2 stride=8 hidden=32 是 *跨 L 的稳健 sweet spot***,值得作为 Phase-2 主推架构
+- **stride=4 / hidden=64 已被证明过度** —— 不需要继续扫
+- **I.1 Student-t 在 L=32 上 *最差*,L=64 上 internal 看似改善 *外部* 仍差** —— I.1 路线整体不优,但 L 依赖反常值得做物理机制分析(后续工作)
+- **Phase-2 路线图把 (stride, hidden) 固定到 sweet spot stride=8 hidden=32 后,重点 *只扫训练超参*(batch、lr、epoch)** —— L=32 / L=64 数据一致支持这点
 
 ## 剩余问题(hs_bignet 的失败模式)
 

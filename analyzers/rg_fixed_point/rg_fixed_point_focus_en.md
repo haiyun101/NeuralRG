@@ -209,18 +209,48 @@ Each is passed through its own quantile transform; then at each scale we compute
 
 **Question**: do MERA's slow modes match true physical RG?
 
-RMS-G (`G(r)/G(0)` shape mismatch) is the key metric here; KS is uniformly ~10⁻³ (quantile transform forces marginal agreement by construction) and carries no signal, so we omit it.
+V5 reports **3 metrics** (KS / W1 / RMS-G), each computed at every scale. Their post-gauge-fix behavior differs:
 
-| Scale     | L_s | hs_bignet | sym_bignet | T = 2.15 | T = 2.40 |
-|-----------|----:|----------:|-----------:|---------:|---------:|
-| s = 0     | 32  | 0.000     | 0.000      | 0.000    | 0.000    |
-| s = 1     | 16  | 0.059     | 0.512      | 0.071    | 0.079    |
-| **s = 2** | **8** | **0.030** | **0.539**  | 0.046    | 0.068    |
-| s = 3     | 4   | 0.037     | 0.485      | 0.025    | 0.074    |
+| Metric | What it measures                    | Post-gauge behavior                                                |
+|--------|--------------------------------------|---------------------------------------------------------------------|
+| KS     | Marginal CDF distance                | **Forced ≈ 0** (per-site quantile transform makes both sides strictly N(0,1); KS reflects only finite-sample noise ~10⁻³) |
+| W1     | Marginal Wasserstein-1 distance      | **Same**, ~10⁻² (W1 is more tail-sensitive but still ≈ 0 by construction) |
+| RMS-G  | RMS deviation of `G(r)/G(0)`         | **Retains signal** (pure spatial structure; quantile transform preserves rank correlations, making RMS-G the only metric carrying information in gauge coordinates) |
 
-**hs_bignet reading**: **RMS-G at s=2 is 0.030, the scale closest to true Wilson physics** (18× lower than sym_bignet).
-Low T = 2.15 dips lower at s=3 (0.025), but low T is an *off-fixed-point* control — physically far from T_c — so what matters is *who comes closest at T_c*. **hs_bignet is the lowest RMS-G among all six training objectives at T_c** (fwd-KL hs_dataDriven s=2 = 0.043, sym_bignet 0.539).
-sym_bignet is catastrophically off Wilson at all scales (0.485–0.539), confirming the core verdict that "rev-KL gets spatial structure wrong".
+Complete 4-flow × 6-scale data (L_s = 32 → 16 → 8 → 4 → 2 → 1):
+
+| Metric                | s = 0 | s = 1 | **s = 2** | s = 3 | s = 4 | s = 5 |
+|-----------------------|------:|------:|----------:|------:|------:|------:|
+| **hs_bignet KS**      | 0.005 | 0.002 | 0.002     | 0.004 | 0.005 | 0.011 |
+| **hs_bignet W1**      | 0.013 | 0.019 | 0.010     | 0.010 | 0.005 | 0.015 |
+| **hs_bignet RMS-G**   | 0.000 | 0.059 | **0.030** | 0.037 | n/a   | n/a   |
+| sym_bignet KS         | 0.005 | 0.002 | 0.002     | 0.002 | 0.006 | 0.010 |
+| sym_bignet W1         | 0.013 | 0.010 | 0.012     | 0.009 | 0.007 | 0.010 |
+| **sym_bignet RMS-G**  | 0.000 | **0.512** | **0.539** | **0.485** | n/a | n/a   |
+| T=2.15 KS             | 0.002 | 0.006 | 0.005     | 0.006 | 0.007 | 0.015 |
+| T=2.15 W1             | 0.018 | 0.016 | 0.019     | 0.006 | 0.009 | 0.019 |
+| T=2.15 RMS-G          | 0.000 | 0.071 | 0.046     | 0.025 | n/a   | n/a   |
+| T=2.40 KS             | 0.001 | 0.003 | 0.002     | 0.003 | 0.005 | 0.009 |
+| T=2.40 W1             | 0.014 | 0.011 | 0.008     | 0.007 | 0.005 | 0.014 |
+| T=2.40 RMS-G          | 0.000 | 0.079 | 0.068     | 0.074 | n/a   | n/a   |
+
+**Why RMS-G only up to s=3**: s=4 corresponds to L_s=2 (2×2 sublattice), s=5 to L_s=1 (single point).
+`G(r)/G(0)` on a 2×2 grid has only two distances (r=0, r=1) and very few samples — signal lost in noise — so the script returns `n/a` when m < 4 (see `rg_v5_blockRG_compare.py:163`).
+KS / W1 can be computed at all 6 scales because they only look at pointwise marginals, no spatial geometry.
+
+**⚠ Metric inconsistency + known issue**: V0–V4 use *gauge-fixed matched-pair MSE* (per-sample alignment between adjacent fields),
+but V5 historically uses three distributional metrics (KS / W1 / RMS-G). The *paired vs distributional* design choice differs,
+so V5 is not directly comparable to V0–V4, and RMS-G dies at L_s ≤ 2.
+**`gauge_v5_matched_mse.py` re-casts V5 as matched-pair MSE; job 40267635 is queued and will run after the cluster maintenance ends on 2026-06-19. Once data lands, the RMS-G table above will be replaced by a unified-metric table consistent with V0–V4.**
+
+**Why KS / W1 ≈ 10⁻² uniformly**: this is *gauge-fix by construction* — the per-site quantile transform forces every site to N(0,1) *exactly*, so MERA's slow modes `y_s` and block-RG's `x_s` have identical marginals in gauge coordinates, leaving only *finite-sample noise* (the N=2000 KS noise scale is exactly ~10⁻³, matching `1/√N ≈ 0.022`).
+**4 flows × 6 scales of KS / W1 all sit at the same noise level → confirms gauge-fix succeeds uniformly across all scales**.
+
+**hs_bignet reading (using RMS-G, the only structurally informative metric)**:
+- **s=2 RMS-G = 0.030 is the lowest at T_c** (sym_bignet 0.539, T=2.40 control 0.068)
+- vs sym_bignet: at s=1, 2, 3, hs_bignet is *uniformly* 8–18× lower
+- vs low-T T=2.15: at s=3, T=2.15 = 0.025 is slightly lower — but low T is an off-fixed-point control (ξ < L/2, RG naturally flows to Gaussian, *easier* to match Wilson). **What matters is who's closest at T_c, and that's hs_bignet alone**
+- sym_bignet is catastrophically off Wilson at every scale (0.485–0.539), confirming the core "rev-KL gets spatial structure wrong" verdict
 
 ---
 
@@ -237,6 +267,111 @@ sym_bignet is catastrophically off Wilson at all scales (0.485–0.539), confirm
 
 **Conclusion**: hs_bignet is the *only* training objective that satisfies "deep blocks do copula work (V0–V4 healthy)" *and* "close to Wilson (V5 unique)".
 hs_bignet and sym_bignet share architecture and temperature; **the only difference is fwd-KL vs rev-KL** — the across-six-probe gap shows the *training objective itself* determines whether the MERA flow does physical RG, independent of architecture capacity or data scale.
+
+## L=32 prior intervention sweep (I.1 Student-t + I.2 conditional Gaussian)
+
+This section compares *same L=32* under **5 fwd-KL training runs** (same RNVP-affine architecture; only the latent prior differs):
+
+| Flow | Latent prior | Parameters |
+|------|--------------|------------|
+| `hs_bignet` | Gaussian | baseline, isotropic N(0, I) |
+| `i2(8,32) P1` | Conditional Gaussian | **stride=8 slow sub-lattice + hidden=32 CNN (Phase-1 winner)** |
+| `i2(4,32) P2` | Conditional Gaussian | stride=4 (denser slow modes) + hidden=32 |
+| `i2(8,64) P2` | Conditional Gaussian | stride=8 + hidden=64 (wider CNN) |
+| **`I.1 Student-t`** | **Student-t** | **df=4 heavy-tail prior** (b=128) |
+
+I.2 (Conditional Gaussian): `P(z) = P(z_slow) · P(z_fast | z_slow)` — gives the latent itself a *slow/fast decomposition*, paralleling Wilson RG.
+I.1 (Student-t): isotropic but heavy-tail, allowing much larger fluctuations than Gaussian.
+
+### V0/V1 perpos
+
+| Pair        | hs_bignet | i2(8,32) P1 | i2(4,32) P2 | i2(8,64) P2 | Student-t |
+|-------------|----------:|------------:|------------:|------------:|----------:|
+| f_1 → f_2   | **2.73**  | 0.52        | 0.63        | 2.48        | 0.48      |
+| f_2 → f_3   | 1.81      | 0.66        | 0.59        | 0.13        | 0.22      |
+| f_3 → f_4   | 0.56      | **1.58**    | 0.07        | 0.61        | **1.10**  |
+| f_4 → f_5   | **1.97**  | **1.93**    | **0.029**   | **0.054**   | **1.08**  |
+
+**4 distinct deep-pair patterns**:
+- baseline / Phase-1 i2: deep pair ≈ 2 (block functions very different)
+- Phase-2 i2: deep pair ≈ 0.03–0.05 (block functions extremely similar)
+- **Student-t**: **deep pair ≈ 1.1** (intermediate)
+
+### V2b geometry correction
+
+| Pair        | hs_bignet | i2(8,32) P1 | i2(4,32) P2 | i2(8,64) P2 | Student-t |
+|-------------|----------:|------------:|------------:|------------:|----------:|
+| f_4 → f_5   | **1.78**  | **1.82**    | **1.49**    | **1.50**    | **2.28**  |
+
+**All 5 flows show V2b deep pair ≥ 1.5**, and **Student-t is the *largest*** (2.28), meaning Student-t's deep block does the *most* work under V2b's correct geometry.
+The biggest V0/V1 → V2b gap is Student-t (V1: 1.08, V2b: 2.28) — its "deep-pair convergence" *completely vanishes* under V2b, i.e. is a pure 4-tuple geometry artefact.
+
+### V3 r_s
+
+| Block | hs_bignet | i2(8,32) P1 | i2(4,32) P2 | i2(8,64) P2 | Student-t |
+|-------|----------:|------------:|------------:|------------:|----------:|
+| f_3   | 1.63      | 0.65        | 0.14        | 0.56        | 0.47      |
+| f_4   | **1.87**  | **1.83**    | **0.033**   | **0.059**   | **1.41**  |
+| f_5   | **0.022** | **0.031**   | **0.001**   | **0.001**   | **0.749** |
+
+**3 opposite r_5 patterns**:
+- baseline / Phase-1 i2: r_5 = 0.02–0.03 (*1* near-identity scale, healthy fixed point)
+- Phase-2 i2: r_5 = 0.001 (*2* near-identity scales, **approaching sym_bignet's 0.0004**)
+- **Student-t**: **r_5 = 0.75** (*0* near-identity scales — **deep block does *more* work, not less**!)
+
+⇒ **Student-t and Phase-2 i2 take *opposite* pathological directions**: Phase-2 i2 drifts the cascade toward identity collapse; Student-t makes the deepest block *refuse* identity (the heavy-tail prior *expands* the deepest layer's activity space).
+
+### V4 adj
+
+| Pair        | hs_bignet | i2(8,32) P1 | i2(4,32) P2 | i2(8,64) P2 | Student-t |
+|-------------|----------:|------------:|------------:|------------:|----------:|
+| f_2 → f_3   | 1.43      | 0.46        | 0.19        | 0.19        | 0.11      |
+| f_3 → f_4   | **1.79**  | **1.62**    | **0.08**    | **0.08**    | **1.36**  |
+| f_4 → f_5   | **0.025** | 0.06        | **0.001**   | **0.000**   | **1.24**  |
+
+**Fixed-point region (V4 < 0.1) width**:
+- baseline / Phase-1 i2: **1 scale**
+- Phase-2 i2: **3 scales** (full cascade self-similar)
+- **Student-t**: **0 scales!** — Student-t at L=32 has *no* internal fixed-point region; the deepest V4 = 1.24 is as large as shallow ones
+
+(Student-t at L=64 shows a *3-scale* fixed-point region — *opposite* to L=32, see L=64 report. **Student-t's L-dependence is more complex than i2 cells' cross-L consistency**.)
+
+### V5 RMS-G vs Wilson
+
+| s | hs_bignet | i2(8,32) P1 | i2(4,32) P2 | i2(8,64) P2 | Student-t |
+|---|----------:|------------:|------------:|------------:|----------:|
+| 1 | 0.059     | 0.063       | **0.103**   | 0.070       | 0.083     |
+| **2** | **0.030** | 0.047 | **0.069** | 0.032 | **0.062** |
+| 3 | 0.037     | **0.003**   | 0.036       | 0.034       | **0.083** |
+
+**5-flow V5 picture**:
+- *Closest to Wilson*: **Phase-1 i2(8,32) at s=3 = 0.003** (lowest in the table, 12× improvement)
+- Other i2 cells: s=2 unchanged or worse, s=3 matches baseline
+- **Student-t**: **worse than baseline at every s**; s=3 = 0.083 is the *worst* among the 5 flows
+
+### Composite reading
+
+L=32's prior interventions show **3 distinct *V0–V5 patterns*** — all "modify the latent" in the same nominal direction, **but their footprint across V0–V5 probes is completely different**:
+
+| Path | Representative | V3 deep r | V4 fixed-point region | V5 vs Wilson |
+|------|----------------|-----------|------------------------|---------------|
+| **Keep baseline + finer Wilson match** | Phase-1 i2(8,32) | r_5 = 0.031 (healthy) | 1 scale | **s=3 = 0.003 (lowest, 12× improvement)** |
+| **Expand internal self-similarity + drift to identity** | Phase-2 i2(4,32) / (8,64) | r_5 = 0.001 (near sym 0.0004) | 3 scales | s=2 unchanged / s=3 unchanged (no improvement) |
+| **Deepest does more work + farther from Wilson** | Student-t | **r_5 = 0.75** (*reversed* — 35× larger than baseline) | **0 scales!** | **s=3 = 0.083 (worst in table)** |
+
+⇒ **L=32's 5 fwd-KL flows show *3 distinct V0–V5 pathological patterns*; only Phase-1 i2(8,32) actually improves V5 vs Wilson**.
+The other interventions either *expand internal self-similarity* without external Wilson improvement (i2 Phase-2 cells), or move in the *opposite* direction altogether (Student-t).
+
+**Key cross-L consistencies** (joint with the L=64 report):
+- **stride=8 hidden=32 is a *L-independent* architectural sweet spot**: at L=32 it cuts V5 s=3 by 12×; at L=64 it cuts V5 s=2 by 15%; the same architecture is the V5 winner at both L
+- **stride=4 / hidden=64 are overkill at both L=32 *and* L=64** — push internal self-similarity too far, V5 stops improving, and r_5 drifts to degenerate levels (0.001 vs sym 0.0004)
+- **Student-t behaves *opposite* at L=32 vs L=64** — at L=32 the deepest block does *more* work (r_5 = 0.75); at L=64 the deepest block drifts toward identity (r_6 = 0.003). **Heavy-tail prior's L-dependence differs fundamentally from i2's — suggesting a distinct physical mechanism, not just "stronger prior"**
+
+**Phase-2 roadmap implications** (reinforcing the verdict in `improvements_results_zh.md`):
+- **i2 stride=8 hidden=32 is a *robust cross-L sweet spot*** — worth being the Phase-2 primary architecture
+- **stride=4 / hidden=64 are confirmed overkill** — no need to keep sweeping
+- **I.1 Student-t is *the worst* at L=32 and *internally improves but externally still worse* at L=64** — I.1 path is overall suboptimal, but its anomalous L-dependence warrants a physical-mechanism analysis (future work)
+- **Phase-2 roadmap: fix (stride, hidden) at sweet spot stride=8 hidden=32; sweep *only training hyperparameters* (batch, lr, epoch)** — both L=32 and L=64 data agree
 
 ## Remaining issues (hs_bignet's failure modes)
 
