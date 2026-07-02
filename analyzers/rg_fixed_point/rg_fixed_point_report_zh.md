@@ -93,6 +93,31 @@
 >    与"空间结构 mismatch"。25 fold 的 gauge-fixed 真值待 `gauge_v5_compare`
 >    跑完后整合(job 40261906)。**用途**:判定 I.1 / I.2 的 V5 RMS-G 改变是
 >    真结构 win 还是 marginal-only artefact —— 关键 verdict 工具。
+>
+> 7. **P2.x cells V0-V5 + gauge 补遗(2026-06-26)**。3 个 i2 + nrepeat=2 cell
+>    完成 V1/V2b/V3/V4/V5 raw + gauge probes(D32 = L=32 i2+nr=2,C64 = L=64 nr=2
+>    only,D64 = L=64 i2+nr=2)。**新发现的 fingerprint pattern**:
+>    - **raw V3 r_5 *巨大***(D64 = 7.15,C64 = 2.66,D32 = 0.77),比 baseline 大 3-20×
+>    - **gauge V3 r_5 *很小***(0.001-0.03,跟 baseline 同档甚至更接近 identity)
+>    - **raw / gauge ratio = 250-600×**(baseline 只 2-22×)
+>    - ⇒ **nrepeat=2 让深 block 做 *大量 marginal / fast-mode 工作*** 把 fast mode
+>      边际形状强 Gaussianize;copula 层面深 block 接近 identity(真 RG 行为)
+>    - **但 V5 raw RMS-G *劣化***(D32 s=2 = 0.14 vs baseline 0.05;D64 s=2 = 0.17
+>      vs baseline 0.04 = 3-4× 劣)→ MERA 慢模空间 cascade *不像 Wilson*
+>    - **KL_qp 改善**(D32 17.7 vs 23.4 baseline)但 **V5 vs Wilson 劣** = ⚠
+>      **学到 *不同的 fixed point*** —— 不是 Wilson cascade,而是 "p_HS-adapted
+>      fixed point"(总体分布近 p_HS,但 cascade 结构不像 Wilson critical attractor)
+>    - 完整数据见 `improvements_results_zh.md` 的"V0–V5 + gauge probes on D cells"节
+>
+>    **修正(2026-06-26)**:上面"学到不同的 fixed point"的写法 *不严谨*。理论上
+>    p_HS = 2D Ising T_c 的 Wilson critical attractor,二者本就是同一个。i2 在
+>    prior 里加了 CNN(`source/conditional_gaussian.py`),CNN 可以接 z_fast 跟
+>    z_slow 的局部耦合 ⇒ MERA *不必* 把 Ising 短程耦合做完。**V5 只测 MERA
+>    bijector,prior 在 normalizing flow 里不变换 sample,只 score ⇒ V5 *结构上*
+>    漏看 CNN 接走的物理**。D cells V5 raw 偏 Wilson = MERA 跟 CNN-prior *分担*
+>    了 Wilson 工作,*不是* 学到不同 fixed point。**判别实验方法论与定量数据**:
+>    见 [`prior_offload_analysis_zh.md`](./prior_offload_analysis_zh.md)(该报告收纳了
+>    原 V6 尝试的 target-mismatch 问题批评,以及从 loss 直接推导的正确 offload 定量框架)。
 
 ## V0–V5 探针角色对比(2026-06-14 新增,平等并列)
 

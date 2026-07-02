@@ -29,7 +29,15 @@ N=200000
 HS_PT="data/mcmc_data/hs_L32_T${T}_N${N}.pt"
 EPOCHS="${EPOCHS:-20000}"
 BATCH="${BATCH:-64}"
-FOLDER_SUFFIX="${FOLDER_SUFFIX:-_b${BATCH}}"
+NREPEAT="${NREPEAT:-1}"
+LR="${LR:-1e-3}"
+GRADCLIP="${GRADCLIP:-0}"
+SUFFIX=""
+[ "$NREPEAT" != "1" ] && SUFFIX="${SUFFIX}_nr${NREPEAT}"
+[ "$LR" != "1e-3" ] && SUFFIX="${SUFFIX}_lr${LR}"
+[ "$GRADCLIP" != "0" ] && [ "$GRADCLIP" != "0.0" ] && SUFFIX="${SUFFIX}_gc${GRADCLIP}"
+SUFFIX="${SUFFIX}_b${BATCH}"
+FOLDER_SUFFIX="${FOLDER_SUFFIX:-$SUFFIX}"
 FOLDER="./data/32Ising_T2.269_hsBignet_baseline${FOLDER_SUFFIX}"
 
 if [ ! -f "$HS_PT" ]; then
@@ -41,7 +49,7 @@ mkdir -p "$FOLDER"
 
 echo "=========================================="
 echo "L=32 hs_bignet baseline (batch=$BATCH, no scaleLoss, no bridge)"
-echo "  epochs=$EPOCHS"
+echo "  epochs=$EPOCHS  nrepeat=$NREPEAT  lr=$LR  gradClip=$GRADCLIP"
 echo "  Job $SLURM_JOB_ID on $SLURMD_NODENAME"
 echo "  folder: $FOLDER"
 echo "=========================================="
@@ -52,7 +60,9 @@ python main.py \
     -cuda 0 \
     -epochs "$EPOCHS" \
     -batch "$BATCH" \
-    -nlayers 16 -nmlp 3 -nhidden 128 -nrepeat 1 \
+    -nlayers 16 -nmlp 3 -nhidden 128 -nrepeat "$NREPEAT" \
+    -lr "$LR" \
+    -gradClip "$GRADCLIP" \
     -savePeriod 200 \
     -symmetry \
     -skipHMC \

@@ -40,13 +40,14 @@ N=200000
 HS_PT="data/mcmc_data/hs_L32_T${T}_N${N}.pt"
 SLOW_STRIDE="${SLOW_STRIDE:-8}"
 COND_HIDDEN="${COND_HIDDEN:-32}"
+NREPEAT="${NREPEAT:-1}"
 EPOCHS="${EPOCHS:-20000}"
 BATCH="${BATCH:-128}"
-if [ "$BATCH" = "128" ]; then
-    FOLDER_SUFFIX="${FOLDER_SUFFIX:-_stride${SLOW_STRIDE}h${COND_HIDDEN}}"
-else
-    FOLDER_SUFFIX="${FOLDER_SUFFIX:-_stride${SLOW_STRIDE}h${COND_HIDDEN}_b${BATCH}}"
-fi
+LOAD="${LOAD:-0}"
+SUFFIX="_stride${SLOW_STRIDE}h${COND_HIDDEN}"
+[ "$NREPEAT" != "1" ] && SUFFIX="${SUFFIX}_nr${NREPEAT}"
+[ "$BATCH" != "128" ] && SUFFIX="${SUFFIX}_b${BATCH}"
+FOLDER_SUFFIX="${FOLDER_SUFFIX:-$SUFFIX}"
 FOLDER="./data/32Ising_T2.269_hsBignet_i2${FOLDER_SUFFIX}"
 
 if [ ! -f "$HS_PT" ]; then
@@ -58,18 +59,25 @@ mkdir -p "$FOLDER"
 
 echo "=========================================="
 echo "L=32 hs_bignet + I.2 conditional Gaussian prior"
-echo "  slow_stride=$SLOW_STRIDE  cnn_hidden=$COND_HIDDEN  epochs=$EPOCHS"
+echo "  slow_stride=$SLOW_STRIDE  cnn_hidden=$COND_HIDDEN  nrepeat=$NREPEAT  epochs=$EPOCHS"
 echo "  Job $SLURM_JOB_ID on $SLURMD_NODENAME"
 echo "  folder: $FOLDER"
 echo "=========================================="
 
-python main.py \
+LOAD_FLAG=""
+if [ "$LOAD" = "1" ]; then
+    LOAD_FLAG="-load"
+    echo "  RESUMING from latest saving in $FOLDER (-load)"
+fi
+
+python -u main.py \
+    $LOAD_FLAG \
     -L 32 -T "$T" \
     -folder "$FOLDER" \
     -cuda 0 \
     -epochs "$EPOCHS" \
     -batch "$BATCH" \
-    -nlayers 16 -nmlp 3 -nhidden 128 -nrepeat 1 \
+    -nlayers 16 -nmlp 3 -nhidden 128 -nrepeat "$NREPEAT" \
     -savePeriod 200 \
     -symmetry \
     -skipHMC \

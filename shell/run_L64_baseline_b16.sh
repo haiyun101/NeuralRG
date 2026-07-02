@@ -20,10 +20,11 @@
 #   BATCH=16
 #   NLAYERS=16     (RNVP block depth)
 #   NHIDDEN=128    (MLP hidden channels — set 192 for megabignet)
+#   NREPEAT=1      (per-scale repeats of the scale-block; 2 doubles forward depth)
 #   LR=1e-3        (learning rate; lower to 5e-4 for megabignet bigger param space)
 #   GRADCLIP=0     (set to 5.0 to bound noisy gradients in megabignet)
 #   EPOCHS=20000
-#   FOLDER_SUFFIX  (default _b${BATCH}; auto-suffixes for non-default nlayers/nhidden/lr/gradClip)
+#   FOLDER_SUFFIX  (default _b${BATCH}; auto-suffixes for non-default tunables)
 
 module load miniforge
 source activate neuralrg
@@ -36,15 +37,20 @@ N="${N:-200000}"
 HS_PT="data/mcmc_data/hs_L${L}_T${T}_N${N}.pt"
 EPOCHS="${EPOCHS:-20000}"
 BATCH="${BATCH:-16}"
+LOAD="${LOAD:-0}"
 NLAYERS="${NLAYERS:-16}"
 NHIDDEN="${NHIDDEN:-128}"
+NREPEAT="${NREPEAT:-1}"
 LR="${LR:-1e-3}"
 GRADCLIP="${GRADCLIP:-0}"
+GRADACCUM="${GRADACCUM:-1}"
 # Build folder suffix from any non-default tunables (don't bake lr if it's still 1e-3, etc.)
 SUFFIX=""
 [ "$NLAYERS" != "16" ] || [ "$NHIDDEN" != "128" ] && SUFFIX="${SUFFIX}_l${NLAYERS}h${NHIDDEN}"
+[ "$NREPEAT" != "1" ] && SUFFIX="${SUFFIX}_nr${NREPEAT}"
 [ "$LR" != "1e-3" ] && SUFFIX="${SUFFIX}_lr${LR}"
 [ "$GRADCLIP" != "0" ] && [ "$GRADCLIP" != "0.0" ] && SUFFIX="${SUFFIX}_gc${GRADCLIP}"
+[ "$GRADACCUM" != "1" ] && SUFFIX="${SUFFIX}_ga${GRADACCUM}"
 [ "$N" != "200000" ] && SUFFIX="${SUFFIX}_N${N}"
 SUFFIX="${SUFFIX}_b${BATCH}"
 FOLDER_SUFFIX="${FOLDER_SUFFIX:-$SUFFIX}"
@@ -59,20 +65,28 @@ mkdir -p "$FOLDER"
 
 echo "=========================================="
 echo "L=$L hs_bignet baseline (batch=$BATCH, no scaleLoss)"
-echo "  nlayers=$NLAYERS  nhidden=$NHIDDEN  lr=$LR  gradClip=$GRADCLIP  epochs=$EPOCHS"
+echo "  nlayers=$NLAYERS  nhidden=$NHIDDEN  nrepeat=$NREPEAT  lr=$LR  gradClip=$GRADCLIP  epochs=$EPOCHS"
 echo "  Job $SLURM_JOB_ID on $SLURMD_NODENAME"
 echo "  folder: $FOLDER"
 echo "=========================================="
 
+LOAD_FLAG=""
+if [ "$LOAD" = "1" ]; then
+    LOAD_FLAG="-load"
+    echo "  RESUMING from latest saving in $FOLDER (-load)"
+fi
+
 python -u main.py \
+    $LOAD_FLAG \
     -L $L -T $T \
     -folder "$FOLDER" \
     -cuda 0 \
     -epochs "$EPOCHS" \
     -batch "$BATCH" \
-    -nlayers "$NLAYERS" -nmlp 3 -nhidden "$NHIDDEN" -nrepeat 1 \
+    -nlayers "$NLAYERS" -nmlp 3 -nhidden "$NHIDDEN" -nrepeat "$NREPEAT" \
     -lr "$LR" \
     -gradClip "$GRADCLIP" \
+    -gradAccum "$GRADACCUM" \
     -savePeriod 200 \
     -symmetry \
     -skipHMC \

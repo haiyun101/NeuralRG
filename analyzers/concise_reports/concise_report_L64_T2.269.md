@@ -43,6 +43,71 @@
 > score-function reverse-KL until larger-batch + grad-clip remedies
 > land.
 
+## ★ Phase-2 P2.x Verdict Update (2026-06-25) — `i2 + nrepeat=2` first in-family breakthrough
+
+**HS data anchors (L=64 T_c):** `|M|_p = 2.200,  gL_p = 0.407,  xi_p = 14.782`
+
+| Cell | Configuration | LOSS plateau | **KL_qp** | KL_pq | \|M\| | gL | xi |
+|------|---------------|-------------:|----------:|------:|------:|---:|---:|
+| **A** | baseline (nr=1) | 7686 | 86.88 | 65.64 | 2.267 | 0.433 | 15.190 |
+| **B** | i2 only (stride8h32, nr=1, Phase-1 P1 winner) | 7695 | 93.20 | 69.53 | 2.287 | 0.439 | 15.292 |
+| **C** | baseline + **nrepeat=2** | 7736 | **156.36** ❌ | 131.95 | 2.351 | 0.456 | 15.792 |
+| **★ D ★** | **i2 + nrepeat=2** | **7666** | **51.33** ✅ | **42.38** | **2.254** | **0.418** | **14.923** |
+
+**Key observations:**
+1. **D KL_qp 51.33 vs A 87 — a 41% improvement** — at L=64, this is the *first* configuration that genuinely breaks the baseline plateau
+2. **D's structural match is near-anchor:** gL within 3%, xi within 1%, |M| within 2.5%
+3. **C alone is a disaster** (+69 nat) — confirms the megabignet rule: adding capacity without aligning the target degrades training
+4. **B alone does *not* improve KL_qp** (+6 nat) — the "Phase-1 winner" label came from V5 gauge structural improvements; on KL_qp it has never broken baseline
+
+### Super-additive synergy (quantified)
+
+| Model | KL_qp prediction |
+|-------|-----------------|
+| Independent additive (A + Δ_C + Δ_B) | 87 + 69 + 6 = **162** |
+| Actual D | **51** |
+| **Net synergy** | **−111 nat below additive prediction** |
+
+⇒ **Mechanism is *orthogonal* two-pronged attack:**
+- **i2 changes the *target***: latent prior changes from strict N(0,I) to conditional Gaussian, matching local coupling of Ising fluctuations
+- **nrepeat=2 adds *forward capacity***: two sequential affine layers per scale absorb higher-order moments and Gaussianize fast modes more precisely
+- **Combined = drag the target closer + raise the capacity to reach it**; the two interventions do not block each other
+
+### Cross-L consistency (with the L=32 report)
+
+| L | A KL_qp | D KL_qp | Improvement |
+|---|--------:|--------:|-------------|
+| 32 | 23.42 | 17.69 | 24% |
+| 64 | 86.88 | 51.33 | **41%** |
+
+⇒ Improvement scales with L because L=64 baseline is more constrained by FSS critical scaling (α ≈ 2.20).
+
+### Phase-2 P2.x figures — i2 + nrepeat=2 winner (D64)
+
+<p>
+<img src="../../data/64Ising_T2.269_hsBignet_i2_stride8h32_nr2_b16/flow_samples.png" alt="D64 i2+nr2 flow samples" width="42%">
+<img src="../../data/64Ising_T2.269_hsBignet_i2_stride8h32_nr2_b16/flow_correlations.png" alt="D64 i2+nr2 flow correlations" width="56%">
+</p>
+
+For comparison, the C64 reference (nr=2 *only*, degrades to KL_qp 156):
+
+<p>
+<img src="../../data/64Ising_T2.269_hsBignet_baseline_nr2_b16/flow_samples.png" alt="C64 baseline+nr2 flow samples" width="42%">
+<img src="../../data/64Ising_T2.269_hsBignet_baseline_nr2_b16/flow_correlations.png" alt="C64 baseline+nr2 flow correlations" width="56%">
+</p>
+
+### P2.x verdict revision
+
+| Old verdict (2026-06-14) | New verdict (2026-06-25) |
+|--------------------------|--------------------------|
+| In-family parameter tuning has saturated | **Incorrect. `i2 + nrepeat=2` breaks 7686.** |
+| Main budget should move to family-level changes | **Family-level changes remain a priority, but in-family *combinations* also have room** |
+| stride=8 hidden=32 i2 is the "sole survivor" | i2(8,32) **paired with nrepeat=2** is the true in-family winner |
+
+See `improvements_results_zh.md` Appendix P2.x for the Chinese-language full verdict.
+
+---
+
 ## Summary — everything in one table
 
 Training-row numbers only (diagnostic rows pending). Constants

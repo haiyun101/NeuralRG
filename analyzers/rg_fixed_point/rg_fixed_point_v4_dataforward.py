@@ -137,6 +137,10 @@ FOLDERS = {
     "L=64 i2_stride4h32_b16 (Phase-2)":  "data/64Ising_T2.269_hsBignet_i2_stride4h32_b16",
     "L=64 i2_stride8h64_b16 (Phase-2)":  "data/64Ising_T2.269_hsBignet_i2_stride8h64_b16",
     "L=64 i2_stride4h64_b16 (Phase-2)":  "data/64Ising_T2.269_hsBignet_i2_stride4h64_b16",
+    # ----- Phase-2 P2.x: i2 + nrepeat=2 (D winner / C reference) -----
+    "L=32 i2_stride8h32_nr2_b64 (P2.x D32)":     "data/32Ising_T2.269_hsBignet_i2_stride8h32_nr2_b64",
+    "L=64 baseline_nr2_b16 (P2.x C64)":           "data/64Ising_T2.269_hsBignet_baseline_nr2_b16",
+    "L=64 i2_stride8h32_nr2_b16 (P2.x D64 ★)":   "data/64Ising_T2.269_hsBignet_i2_stride8h32_nr2_b16",
 }
 STYLE = {k: ORIG_STYLE[k] for k in FOLDERS}
 

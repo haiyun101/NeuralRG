@@ -1,0 +1,46 @@
+label,folder,L,T,epoch,scale_s,L_s,metric,value
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,0,32,v5_gauge_matched_mse,0.0
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,1,16,v5_gauge_matched_mse,0.5628677606582642
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,2,8,v5_gauge_matched_mse,0.7168445587158203
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,3,4,v5_gauge_matched_mse,3.2433271408081055
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,4,2,v5_gauge_matched_mse,0.7209359407424927
+"T = 2.15  (low T, ordered)",data/32Ising_T2.15_hs_dataDriven,32,2.15,16500,5,1,v5_gauge_matched_mse,0.7000782489776611
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,0,32,v5_gauge_matched_mse,0.0
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,1,16,v5_gauge_matched_mse,0.6923245787620544
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,2,8,v5_gauge_matched_mse,0.715794563293457
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,3,4,v5_gauge_matched_mse,3.217007875442505
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,4,2,v5_gauge_matched_mse,0.3848167657852173
+"T = 2.269 (T_c, hs_bignet)",data/32Ising_T2.269_hs_bignet,32,2.269185314213022,9500,5,1,v5_gauge_matched_mse,0.5212982296943665
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,0,32,v5_gauge_matched_mse,0.0
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,1,16,v5_gauge_matched_mse,2.241769313812256
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,2,8,v5_gauge_matched_mse,2.23024845123291
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,3,4,v5_gauge_matched_mse,2.2324326038360596
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,4,2,v5_gauge_matched_mse,2.2096176147460938
+T_c sym_bignet (rev-KL),data/32Ising_T2.269_sym_bignet,32,2.269,5950,5,1,v5_gauge_matched_mse,2.316274404525757
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,0,32,v5_gauge_matched_mse,0.0
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,1,16,v5_gauge_matched_mse,0.6616058945655823
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,2,8,v5_gauge_matched_mse,0.9383812546730042
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,3,4,v5_gauge_matched_mse,1.1819227933883667
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,4,2,v5_gauge_matched_mse,1.1402956247329712
+"T = 2.40  (high T, disorder)",data/32Ising_T2.4_hs_dataDriven,32,2.4,17000,5,1,v5_gauge_matched_mse,0.7194604277610779
+L=64 baseline_b16,data/64Ising_T2.269_hsBignet_baseline_b16,64,2.269185314213022,19800,0,64,v5_gauge_matched_mse,0.0
+L=64 baseline_b16,data/64Ising_T2.269_hsBignet_baseline_b16,64,2.269185314213022,19800,1,32,v5_gauge_matched_mse,0.5716378092765808
+L=64 baseline_b16,data/64Ising_T2.269_hsBignet_baseline_b16,64,2.269185314213022,19800,2,16,v5_gauge_matched_mse,0.7069834470748901
+L=64 baseline_b16,data/64Ising_T2.269_hsBignet_baseline_b16,64,2.269185314213022,19800,3,8,v5_gauge_matched_mse,0.7614279985427856
+L=64 baseline_b16,data/64Ising_T2.269_hsBignet_baseline_b16,64,2.269185314213022,19800,4,4,v5_gauge_matched_mse,0.7386458516120911
+L=64 baseline_b16,data/64Ising_T2.269_hsBignet_baseline_b16,64,2.269185314213022,19800,5,2,v5_gauge_matched_mse,0.7123720645904541
+L=64 baseline_b16,data/64Ising_T2.269_hsBignet_baseline_b16,64,2.269185314213022,19800,6,1,v5_gauge_matched_mse,0.6447704434394836
+L=64 i1_df4.0_b16 (Student-t),data/64Ising_T2.269_hsBignet_i1_df4.0_b16,64,2.269185314213022,19800,0,64,v5_gauge_matched_mse,0.0
+L=64 i1_df4.0_b16 (Student-t),data/64Ising_T2.269_hsBignet_i1_df4.0_b16,64,2.269185314213022,19800,1,32,v5_gauge_matched_mse,0.5995268821716309
+L=64 i1_df4.0_b16 (Student-t),data/64Ising_T2.269_hsBignet_i1_df4.0_b16,64,2.269185314213022,19800,2,16,v5_gauge_matched_mse,0.672272801399231
+L=64 i1_df4.0_b16 (Student-t),data/64Ising_T2.269_hsBignet_i1_df4.0_b16,64,2.269185314213022,19800,3,8,v5_gauge_matched_mse,0.7336267232894897
+L=64 i1_df4.0_b16 (Student-t),data/64Ising_T2.269_hsBignet_i1_df4.0_b16,64,2.269185314213022,19800,4,4,v5_gauge_matched_mse,0.7465236186981201
+L=64 i1_df4.0_b16 (Student-t),data/64Ising_T2.269_hsBignet_i1_df4.0_b16,64,2.269185314213022,19800,5,2,v5_gauge_matched_mse,0.8331443667411804
+L=64 i1_df4.0_b16 (Student-t),data/64Ising_T2.269_hsBignet_i1_df4.0_b16,64,2.269185314213022,19800,6,1,v5_gauge_matched_mse,0.7325738668441772
+L=64 i2_stride8h32_b16 (Phase-2),data/64Ising_T2.269_hsBignet_i2_stride8h32_b16,64,2.269185314213022,19800,0,64,v5_gauge_matched_mse,0.0
+L=64 i2_stride8h32_b16 (Phase-2),data/64Ising_T2.269_hsBignet_i2_stride8h32_b16,64,2.269185314213022,19800,1,32,v5_gauge_matched_mse,0.5332038402557373
+L=64 i2_stride8h32_b16 (Phase-2),data/64Ising_T2.269_hsBignet_i2_stride8h32_b16,64,2.269185314213022,19800,2,16,v5_gauge_matched_mse,0.6936055421829224
+L=64 i2_stride8h32_b16 (Phase-2),data/64Ising_T2.269_hsBignet_i2_stride8h32_b16,64,2.269185314213022,19800,3,8,v5_gauge_matched_mse,0.7040055990219116
+L=64 i2_stride8h32_b16 (Phase-2),data/64Ising_T2.269_hsBignet_i2_stride8h32_b16,64,2.269185314213022,19800,4,4,v5_gauge_matched_mse,0.727294921875
+L=64 i2_stride8h32_b16 (Phase-2),data/64Ising_T2.269_hsBignet_i2_stride8h32_b16,64,2.269185314213022,19800,5,2,v5_gauge_matched_mse,0.8277226090431213
+L=64 i2_stride8h32_b16 (Phase-2),data/64Ising_T2.269_hsBignet_i2_stride8h32_b16,64,2.269185314213022,19800,6,1,v5_gauge_matched_mse,0.6666643023490906

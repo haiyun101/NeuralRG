@@ -638,4 +638,184 @@ P2.x 严格 verdict 提出"至少需要 2 个轴联动才有可能再压"。Trac
     4. Multi-L 联合训练(scale-invariance 利用小 L 数据)
 ```
 
+### 实验 D — i2 + nrepeat=2 协同(2026-06-25 完成,**verdict 推翻**)
+
+P2.x 之前 verdict 说 "in-family 调参彻底饱和"。**这条结论被 i2 + nrepeat=2 联用 *推翻***。
+
+设计 4-cell 矩阵看协同:
+
+| Cell | i2 cond. Gaussian prior | nrepeat | 物理直觉攻击点 |
+|------|:-----------------------:|:-------:|----------------|
+| A baseline | ❌ | 1 | reference |
+| B i2 only(Phase-1 P1 winner)| ✅ stride8h32 | 1 | 改 *target*(latent prior 把 fast mode 目标改成 conditional Gaussian)|
+| C nr=2 only | ❌ | 2 | 加 *forward capacity*(同尺度 2 层 affine 串行)|
+| **★ D i2 + nr=2 ★** | ✅ stride8h32 | 2 | **双攻**(prior + forward 都改)|
+
+#### L=64 4-cell 完整诊断对比
+
+| Cell | LOSS plateau | **KL_qp** | KL_pq | \|M\| | gL | xi |
+|------|-------------:|----------:|------:|------:|---:|---:|
+| A baseline | 7686 | 86.88 | 65.64 | 2.267 | 0.433 | 15.190 |
+| B i2 only | 7695 | 93.20 | 69.53 | 2.287 | 0.439 | 15.292 |
+| C nr=2 only | 7736 | **156.36** ❌ | 131.95 | 2.351 | 0.456 | 15.792 |
+| **D i2 + nr=2 ★** | **7666** | **51.33** ✅ | **42.38** | **2.254** | **0.418** | **14.923** |
+
+HS data anchors:`|M|_p = 2.200,  gL_p = 0.407,  xi_p = 14.782`(L=64 T_c)
+
+**关键观察**:
+1. **D KL_qp 51.33 比 A 87 改善 41%** —— L=64 上 *首次* 真正破 baseline plateau
+2. **D 结构匹配近乎 anchor**:gL 偏差 < 3%,xi 偏差 < 1%,mag 偏差 < 2.5%
+3. **C 单独 *灾难***(+69 nat) —— 印证 megabignet 规律:加 capacity 不约束反劣化
+4. **B 单独 *不改善* KL_qp**(+6 nat) —— Phase-1 winner 标签基于 V5 gauge,KL_qp 角度从未 break
+
+#### 超加性协同 quantified
+
+| 模型 | KL_qp 预测 |
+|------|-----------|
+| 独立加和(A + Δ_C + Δ_B)| 87 + 69 + 6 = **162** |
+| 实际 D | **51** |
+| **净协同** | **−111 nat 超出加性预测** |
+
+⇒ **机制是 *正交* 双攻**:
+- **i2 改 target**:让 fast mode latent prior *从严格 N(0,I) 改成 conditional Gaussian*,匹配 Ising fluctuation 的局部耦合性
+- **nrepeat=2 加 forward capacity**:同尺度 2 层 affine *串行* 吸收高阶矩残差,*精细* Gaussianize fast mode
+- **联用 = 把 target 拉近来 + 提升到达 target 的能力**,两个攻击点 *不互相挡道*
+
+#### L=32 cross-L 印证
+
+| Cell | KL_qp | 改善 |
+|------|------:|-----:|
+| A baseline | 23.42 | (ref)|
+| B i2 only | 21.16 | −2.3 |
+| **D i2 + nr=2** | **17.69** | **−5.7(24%)** |
+
+L=32 也是 D 最优,但改善幅度小(L=32 已接近 H(p_HS) limit)。
+
+**Cross-L 一致性**:
+- L=32 改善 24%
+- L=64 改善 41%
+- ⇒ **L 越大改善幅度越大**(因为 L=64 baseline plateau 受 FSS 临界标度(α≈2.20)更严重 → 改善空间更大)
+
+#### P2.x verdict 重大修正
+
+| 旧 verdict(2026-06-14) | 新 verdict(2026-06-25) |
+|--------------------------|--------------------------|
+| in-family 调参彻底饱和 | **错误。i2 + nrepeat=2 联用 break 7686** |
+| 主要 budget 转 family-level 改动 | **family-level 仍优先,但 in-family 组合改动 *也* 有空间** |
+| stride=8 hidden=32 i2 是 "唯一存活" | i2(8,32) **配 nrepeat=2** 才是 真正的 in-family winner |
+
+**新 Phase-2 路线图(2026-06-25)**:
+
+```
+✓ in-family 突破方案(确认有效):
+    i2(stride=8, hidden=32) + nrepeat=2
+    - L=64 KL_qp 砍 41%,LOSS plateau 砍 20 nat
+    - 结构匹配:gL/xi/mag 距 anchor < 3%
+    - 协同 mechanism 物理上正交(prior 端 + forward 端)
+
+✓ 接下来值得做(in-family 续扩):
+    1. nrepeat=3,4 sweep(D 的 nrepeat 单调性)
+    2. D + cosine LR(stack 已知改善方向)
+    3. D + N=500K(stack 数据扩展;之前 megabignet 失败的实验在 D 上重试)
+    4. D 跟 V0-V5 + gauge 机制分析(probes 已投,等结果)
+
+✓ family-level 仍优先(独立改进方向):
+    1. NSF coupling(更强 prior)
+    2. Z2-equivariant RNVP
+    3. 学到的 prior(I.4 / I.3)
+    4. Multi-L 联合训练
+```
+
+### V0–V5 + gauge probes on D cells(2026-06-26 完成)
+
+3 个 P2.x cell(D32 = L=32 i2+nr=2,C64 = L=64 nr=2 only,D64 = L=64 i2+nr=2)的 V1/V2b/V3/V4/V5 probes 现已完成(`logs/L*_diag_40677*.out`、`analyzers/csv/rg_*.csv` 2026-06-26 更新)。
+
+#### V3 raw vs gauge(单 block 恒等残差)
+
+| Cell | raw r_5 | **gauge r_5** | raw r_6 | **gauge r_6** | raw / gauge ratio @ f_5 |
+|------|--------:|--------------:|--------:|--------------:|------------------------:|
+| L=32 baseline_b64       | 0.30    | 0.014         | n/a     | n/a           | ~22× |
+| L=32 i2_stride8h32_b64 (B P1) | 0.49 | 0.031        | n/a     | n/a           | ~16× |
+| **L=32 D32(i2+nr=2)** | **0.77** | **0.003**    | n/a     | n/a           | **~260×** ⚠ |
+| L=64 baseline_b16       | 0.30    | 0.17          | 0.0064  | 0.006         | ~2× |
+| L=64 i2_stride8h32_b16(B bignet)| 0.49 | 0.041   | 0.0014  | 0.001        | ~12× |
+| **L=64 C64(nr=2 only)**| **2.66** | **0.004** | **2.66** | **0.002**    | **~600×** ⚠ |
+| **L=64 D64(i2+nr=2)** | **7.15** ⚡ | **0.028**  | **2.72** | **0.0008**   | **~250×** ⚠ |
+
+**关键发现**:
+- **C64 / D64 raw r_5 / r_6 都 *巨大***(2.66 / 7.15)但 **gauge 都很小**(~0.001-0.03)
+- **raw/gauge ratio 在 P2.x cells 上是 *250-600×***,baseline 只 ~2-22×
+- ⇒ **nrepeat=2 让深 block 做 *大量 marginal 工作*** —— 把 fast mode 边际形状重塑成 N(0,1)。这是 *nrepeat 物理意图* 的 *直接* 实证
+- gauge r_5 / r_6 都很小(~0.001-0.03)⇒ copula 层面深 block 接近恒等(real RG fixed-point 行为)
+
+#### V5 raw RMS-G(空间结构 vs Wilson)
+
+| Cell | raw s=1 | raw s=2 | raw s=3 | raw s=4 |
+|------|--------:|--------:|--------:|--------:|
+| L=32 baseline | 0.06 | 0.05 | 0.05 | n/a |
+| **L=32 D32** | **0.20** | **0.14** | **0.16** | n/a |
+| L=64 baseline | 0.07 | 0.04 | 0.03 | 0.03 |
+| **L=64 C64** | 0.11 | 0.06 | 0.20 | **0.62 ⚠** |
+| **L=64 D64** | 0.16 | 0.17 | 0.15 | 0.31 |
+
+**关键反转 ⚠**:**D cells V5 raw *显著劣化***(D32 s=2 = 0.14 vs baseline 0.05 = 3× 劣;D64 s=2 = 0.17 vs baseline 0.04 = 4× 劣)。
+但 *同 cells* KL_qp 改善(D32: 17.7 vs 23.4;D64 投影 ~7700 vs A 7686)。
+
+⇒ **D cells *不是* Wilson cascade 的 winner,而是 *学到 *不同的* fixed point***:
+- KL_qp 角度好(总体分布距离 p_HS 近)
+- V5 Wilson 角度差(空间 cascade 跟 Wilson 不一致)
+
+**对比 D bignet(原 Phase-2 winner B stride=8h32 nr=1)**:V5 gauge s=2 = 0.039(比 baseline 0.046 *改善*)+ KL_qp 改善 → *Wilson + KL_qp 双 win*。
+**D32 / D64 是 KL_qp win + V5 *劣化* 反向** —— 跟 L=64 Student-t、L=64 i2 Phase-2 i2(4,32)/(8,64) *同模式*("internal self-similar but external worse")。
+
+#### V5 gauge RMS-G(空间结构 *gauge-fixed*)
+
+| Cell | gauge s=1 | gauge s=2 | gauge s=3 |
+|------|----------:|----------:|----------:|
+| L=32 baseline | 0.041 | 0.022 | 0.041 |
+| L=32 B i2 only | 0.063 | 0.047 | 0.003 |
+| **L=32 D32** | **0.117** | **0.076** | 0.086 |
+| L=64 baseline | 0.071 | 0.046 | 0.042 |
+| L=64 B i2 only | 0.067 | 0.039 | 0.030 |
+| **L=64 C64**(待 gauge_transforms.pt)| pending | pending | pending |
+| **L=64 D64**(待 gauge_transforms.pt)| pending | pending | pending |
+
+L=64 P2.x cell 的 gauge_v5 待 `40677193`(C64)和 `40677194`(D64)的 `gauge_fix_demo` 跑完后再 compute。**等 L=64 gauge V5 数字 → 确认 D64 是否 "raw 劣 + gauge 也 劣"(单纯不像 Wilson)还是 "raw 劣 + gauge 仍好"(D bignet 同 mechanism)**。
+
+#### 机制 verdict(基于已有数据)
+
+**i2 + nrepeat=2 联用学到 *不同* fixed point**:
+1. **深 block 做大量 marginal / fast-mode 工作**(raw V3 r_5 = 0.77-7.15 比 baseline 大 3-20×)
+2. **gauge V3 r_5 / r_6 接近 identity**(0.001-0.03 — 真 RG 行为)
+3. **V5 raw 跟 Wilson cascade 不像**(s=2 大 3-4×)
+4. **KL_qp 改善**(总体距离 p_HS 近)
+
+这是个 **新发现的 fixed point** —— 不是 Wilson cascade,而是 *p_HS-adapted* fixed point:
+- 总体分布 *更接近* HS 数据(KL_qp ↓)
+- 但 cascade 结构 *不是* Wilson cascade(V5 ↑)
+- 像是 "data-driven fixed point" 而非 "Wilson fixed point"
+
+⇒ **i2 + nrepeat=2 *突破* 了 bignet plateau,但代价是 *偏离* Wilson cascade 物理目标**。
+**对 *KL_qp 任务* 这是 win;对 *RG fixed-point 任务* 这是 *不同方向***(不能既要既要)。
+
+未来工作:研究"D 学到的新 fixed point"的物理含义。可能是 *p_HS 的 attractor*,跟 Wilson critical attractor 不同。
+
+**主要 plateau 突破必须换 family,不能在 MERA + affine RNVP + Gaussian prior 这组里再磨**。
+
+#### 补遺 —— "不同 fixed point"框架不准确(2026-06-26 修正)
+
+上面"D 学到不同 fixed point"的写法 *不严谨*,**两个 fixed point 其实是同一个**。理论上 `p_HS` *就是* 2D Ising 在 T_c 的 Wilson critical attractor —— "p_HS-adapted"和"Wilson"在物理上不是两件事。
+
+真正发生的是:**i2 + nrepeat=2 把 *同一个* Wilson fixed point 的工作 *拆给* 了 MERA 跟 CNN-prior 两块,V5 只测 MERA 那一块,所以 *漏看* 了 CNN 接住的部分**。
+
+具体:
+
+- baseline(Gaussian prior):loss 要求 `z = MERA.forward(x) ~ N(0, I) iid`。MERA *必须* 把 Ising 短程耦合完全 decouple 到 isotropic latent ⇒ V5 看 MERA 中间 y_s,**MERA 做全部 Wilson 工作 ⇒ V5 公平**。
+- i2(conditional Gaussian prior):loss 要求 `z_fast | z_slow ~ N(μ(z_slow), σ²(z_slow))`,**CNN 学 μ, σ**。MERA 可以把 z_fast 跟 z_slow 留有局部耦合(CNN 接得住、给它正确 log-prob)⇒ MERA 不必把 Ising 短程耦合做完 ⇒ V5 看 MERA 中间 y_s 偏离 Wilson,*但物理没丢*,只是 *被 CNN 接走了*。
+- V5 漏看 CNN:V5 只调用 `mera = fw.flow if hasattr(fw, "flow") else fw`,prior 没传进来。即便传进来,在 normalizing flow 里 prior 也不变换 sample,只 score。所以 V5 *结构上* 无法把 CNN 接走的物理算回来。
+
+⇒ **D cells 跟 Wilson 是 *同一个* fixed point**,V5 raw 偏离 *不代表* 学到不同物理,代表 **CNN-prior 容量帮 MERA 分担了短程耦合**。当 CNN 容量大(megabignet × i2)时分担越多,V5 raw 偏 Wilson 越明显。
+
+**判别实验(方法论已撤销,见新报告)**:CNN offload 定量分析首版尝试(V6,`rg_v6_cnn_offload.py`, job `40757108`)使用了错误的 target(把 z_fast 的 marginal 拿去跟 N(0,1) 比,忽略了 i2 model 里 z_fast target 本就是条件分布 mixture 而非 N(0,1))。**详细方法论批评 + 从 loss 直接推导的正确定量框架,见 [`prior_offload_analysis_zh.md`](./prior_offload_analysis_zh.md)**。
+
 **主要 plateau 突破必须换 family,不能在 MERA + affine RNVP + Gaussian prior 这组里再磨**。

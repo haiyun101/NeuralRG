@@ -14,6 +14,39 @@
 >   re-diagnostic (job 38843546) has landed and the summary table /
 >   structural-reading table now carry the real phase2 numbers.
 
+## ★ Phase-2 P2.x Verdict Update (2026-06-25) — `i2 + nrepeat=2` cross-L confirmation
+
+**HS data anchors (L=32 T_c):** `|M|_p = 2.382,  gL_p = 0.477,  xi_p = 8.568`
+
+| Cell | Configuration | **KL_qp** | KL_pq | \|M\| | gL | xi |
+|------|---------------|----------:|------:|------:|---:|---:|
+| **A** | baseline (nr=1) | 23.42 | 17.05 | 2.441 | 0.503 | 8.786 |
+| **B** | i2 only (stride8h32, nr=1) | 21.16 | 16.05 | 2.376 | 0.487 | 8.584 |
+| **★ D ★** | **i2 + nrepeat=2** | **17.69** ✅ | **13.37** | 2.496 | 0.500 | 8.817 |
+| C (diverged, retrying) | baseline + **nrepeat=2** | — | — | — | — | — |
+
+**Key findings:**
+- D is the best on KL_qp at L=32 (17.69 vs A 23.42), a 24% improvement
+- The improvement at L=32 is smaller than at L=64 (L=32 already near H(p_HS) limit, smaller headroom)
+- **C32 baseline + nr=2 *alone* diverged** at epoch 13K (LOSS spiked to 73716), resubmitted with `LR=5e-4 + gradClip=5.0`
+- ⇒ **nrepeat=2 *alone* is unstable at L=32; i2 prior *stabilises* it** (D32 stable through epoch 13,858 before walltime cut)
+
+**Cross-L consistency:**
+- L=32: D KL_qp 17.7 < A 23.4 (24% improvement)
+- L=64: D KL_qp 51.3 < A 86.9 (41% improvement)
+- ⇒ **i2 + nrepeat=2 is the cross-L winner; improvement grows with L** (because L=64 baseline plateau is hit harder by FSS critical scaling → more room to recover)
+
+### Phase-2 P2.x figures — i2 + nrepeat=2 winner (D32)
+
+<p>
+<img src="../../data/32Ising_T2.269_hsBignet_i2_stride8h32_nr2_b64/flow_samples.png" alt="D32 i2+nr2 flow samples" width="42%">
+<img src="../../data/32Ising_T2.269_hsBignet_i2_stride8h32_nr2_b64/flow_correlations.png" alt="D32 i2+nr2 flow correlations" width="56%">
+</p>
+
+See `concise_report_L64_T2.269.md` for the full 4-cell comparison and verdict.
+
+---
+
 ## Summary — everything in one table
 
 Superset of the two tables above: free energy / energy / entropy **and**

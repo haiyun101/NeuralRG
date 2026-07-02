@@ -33,12 +33,17 @@ from rg_v5_blockRG_compare import (
 from rg_fixed_point_v4_dataforward import load_hs_data
 from gauge_v5_compare import fit_per_site_quantile, apply_quantile_forward
 
-# Only the 4 main focus flows
+# L=32 main focus flows + L=64 fwd-KL flows for cross-L matched-MSE comparison
 KEEP = {
+    # L=32 (4 main: hs_bignet focus + sym_bignet rev-KL + non-critical controls)
     "T = 2.15  (low T, ordered)",
     "T = 2.269 (T_c, hs_bignet)",
     "T_c sym_bignet (rev-KL)",
     "T = 2.40  (high T, disorder)",
+    # L=64 (baseline + Phase-2 winner + Student-t — same set as the L=64 focus report)
+    "L=64 baseline_b16",
+    "L=64 i2_stride8h32_b16 (Phase-2)",
+    "L=64 i1_df4.0_b16 (Student-t)",
 }
 
 

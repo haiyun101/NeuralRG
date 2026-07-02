@@ -148,6 +148,10 @@ def build_flow(folder, state, device=None):
         condPriorSlowStride = int(np.array(f["condPriorSlowStride"])) if "condPriorSlowStride" in f else -1
         condPriorHidden = int(np.array(f["condPriorHidden"])) if "condPriorHidden" in f else 32
         priorDf = float(np.array(f["priorDf"])) if "priorDf" in f else 4.0
+        hcgScaleShared = bool(np.array(f["hcgScaleShared"])) if "hcgScaleShared" in f else True
+        hcgHidden      = int(np.array(f["hcgHidden"]))       if "hcgHidden"      in f else 32
+        hcgDilated     = bool(np.array(f["hcgDilated"]))     if "hcgDilated"     in f else True
+        hcgCircular    = bool(np.array(f["hcgCircular"]))    if "hcgCircular"    in f else True
     if depthMERA == -1:
         depthMERA = None
 
@@ -165,6 +169,8 @@ def build_flow(folder, state, device=None):
         flowType=flowType, nsfBins=nsfBins, nsfBound=nsfBound,
         priorType=priorType, condPriorSlowStride=condPriorSlowStride,
         condPriorHidden=condPriorHidden, priorDf=priorDf,
+        hcgScaleShared=hcgScaleShared, hcgHidden=hcgHidden,
+        hcgDilated=hcgDilated, hcgCircular=hcgCircular,
     )
     fw.load(state)
     fw.eval()

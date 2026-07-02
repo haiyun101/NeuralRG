@@ -97,7 +97,7 @@ def _compute_scale_invariance_loss(intermediates):
     return loss
 
 
-def symmetryMERAInit(L,d,nlayers,nmlp,nhidden,nrepeat,symmetryList,device,dtype,name = None, channel = 1, depthMERA = None,  weightTying=False, haarPrior=False, flowType="rnvp", nsfBins=8, nsfBound=5.0, priorType="gaussian", condPriorSlowStride=-1, condPriorHidden=32, priorDf=4.0):
+def symmetryMERAInit(L,d,nlayers,nmlp,nhidden,nrepeat,symmetryList,device,dtype,name = None, channel = 1, depthMERA = None,  weightTying=False, haarPrior=False, flowType="rnvp", nsfBins=8, nsfBound=5.0, priorType="gaussian", condPriorSlowStride=-1, condPriorHidden=32, priorDf=4.0, hcgScaleShared=True, hcgHidden=32, hcgDilated=True, hcgCircular=True):
     # Latent prior selection. The 'conditional_gaussian' option is
     # scheme A from analyzers/rg_fixed_point/improvements_zh.md: relaxes
     # the implicit demand that fast modes be marginally independent
@@ -117,6 +117,23 @@ def symmetryMERAInit(L,d,nlayers,nmlp,nhidden,nrepeat,symmetryList,device,dtype,
         s = source.ConditionalGaussian([channel]+[L]*d,
                                        slow_stride=slow_stride,
                                        n_hidden=condPriorHidden)
+    elif priorType == "hierarchical_conditional_gaussian":
+        # Path C of prior_offload_analysis_zh.md: replace single-CNN i2 with a
+        # hierarchical Gaussian prior over z, decomposed by successive strides
+        # [L/2, L/4, ..., 1]. Each level's conditional Gaussian is scored by a
+        # CNN (shared across levels by default → scale-invariant conditional
+        # whitening as a direct architectural RG prior). Fixes i2's edge bug
+        # by using circular padding by default.
+        print(f">>> Using Hierarchical Conditional Gaussian prior "
+              f"(scale_shared={hcgScaleShared}, hidden={hcgHidden}, "
+              f"dilated={hcgDilated}, circular_pad={hcgCircular})")
+        s = source.HierarchicalConditionalGaussian(
+            [channel]+[L]*d,
+            n_hidden=hcgHidden,
+            scale_shared=hcgScaleShared,
+            use_circular_padding=hcgCircular,
+            dilated_conv=hcgDilated,
+        )
     elif priorType == "studentT":
         print(f">>> Using Student-t prior  (df={priorDf}, "
               f"marginal sigma so var=1)")
@@ -269,7 +286,22 @@ def learn(source, flow, batchSize, epochs, lr=1e-3, save = True, saveSteps = 10,
     return LOSS,ACC,OBS
 
 
-def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save=True, saveSteps=10, savePath=None, keepSavings=3, weight_decay=0.001, adaptivelr=False, HMCsteps=10, HMCthermal=10, HMCepsilon=0.2, measureFn=None, alpha=1.0, skipHMC=True, dataDriven=False, dataPath=None, targetT=None, noDeq=False, jsLoss=False, jsLambda=0.5, jsMemOpt=False, entropyBeta=0.0, gradClip=0.0, bridgeWeight=0.0, bridgeThresh=0.5, pathGrad=False, scaleLoss=0.0, cosineAnneal=False, cosineEtaMin=None):
+def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save=True, saveSteps=10, savePath=None, keepSavings=3, weight_decay=0.001, adaptivelr=False, HMCsteps=10, HMCthermal=10, HMCepsilon=0.2, measureFn=None, alpha=1.0, skipHMC=True, dataDriven=False, dataPath=None, targetT=None, noDeq=False, jsLoss=False, jsLambda=0.5, jsMemOpt=False, entropyBeta=0.0, gradClip=0.0, bridgeWeight=0.0, bridgeThresh=0.5, pathGrad=False, scaleLoss=0.0, cosineAnneal=False, cosineEtaMin=None, gradAccum=1):
+    # gradAccum: number of micro-batches to accumulate gradients over before
+    # calling optimizer.step(). Splits batchSize into gradAccum micro-batches
+    # of size (batchSize // gradAccum) each, so effective batch is preserved.
+    # Default 1 = no accumulation, behavior identical to old runs. Only the
+    # dataDriven branch implements accumulation (which is what we currently
+    # need; other modes will fall back to gradAccum=1).
+    gradAccum = max(1, int(gradAccum))
+    if gradAccum > 1 and not dataDriven:
+        print(f"  [warning] gradAccum={gradAccum} requested but mode is not dataDriven; ignoring.")
+        gradAccum = 1
+    microBatch = batchSize // gradAccum
+    if gradAccum > 1:
+        assert batchSize % gradAccum == 0, \
+            f"batchSize={batchSize} not divisible by gradAccum={gradAccum}"
+        print(f"  [gradAccum] eff_batch={batchSize} = micro_batch={microBatch} x K={gradAccum}")
 
     def cleanSaving(epoch):
         if epoch >= keepSavings*saveSteps:
@@ -341,7 +373,7 @@ def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save=True, saveStep
                   f"N={n_dim}, N*log(sigma)={log_jac_std:.4f} "
                   f"(loss corrected to remain comparable to H(p_HS))")
         dataset = TensorDataset(mcmc_data)
-        dataloader = DataLoader(dataset, batch_size=batchSize, shuffle=True, drop_last=True)
+        dataloader = DataLoader(dataset, batch_size=microBatch, shuffle=True, drop_last=True)
         data_iterator = iter(dataloader)
     else:
         # Reverse-KL: if we're resuming from a forward-KL run that used input
@@ -487,87 +519,135 @@ def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save=True, saveStep
 
         elif dataDriven:
             # --- Data-Driven Forward KL (MLE) ---
-            try:
-                x_real, = next(data_iterator)
-            except StopIteration:
-                data_iterator = iter(dataloader)
-                x_real, = next(data_iterator)
-                
-            x_real = x_real.to(device=x_.device, dtype=x_.dtype)
-            
-            if noDeq:
-                x = x_real
-            else:
-                # Dequantization noise to smooth the discrete states
-                noise = (torch.rand_like(x_real) - 0.5) * 0.2
-                x = x_real + noise
-            
-            # Feed the flow ~unit-scale inputs; recover the physical log-density
-            # on the original x via the standardization Jacobian (constant term,
-            # so gradients/training dynamics are identical to training on the
-            # standardized data, but the logged loss stays physical).
-            x_std = x / data_std
-            log_prob = flow.logProbability(x_std) - log_jac_std
-
-            # Record Energy and Entropy for the MCMC dataset
-            # (source is defined on the original-scale x — do NOT standardize here)
-            energy_val = -source.logProbability(x).mean().item()
-            entropy_val = -log_prob.mean().item()  # pure unweighted MLE — comparable across runs
-
-            lossorigin = -log_prob
-            lossstd = lossorigin.std()
-
-            if bridgeWeight > 0:
-                # Per-sample magnetization on physical x; bridge = |M_i| < bridgeThresh.
-                # w_i = 1 + bridgeWeight * 1[in bridge], normalized to sum=batch so the
-                # loss magnitude stays comparable to the unweighted case.
-                with torch.no_grad():
-                    _M_i = x.reshape(x.shape[0], -1).mean(dim=1)
-                    _in_bridge = (_M_i.abs() < bridgeThresh).to(lossorigin.dtype)
-                    _w = 1.0 + bridgeWeight * _in_bridge
-                    _bridge_frac = float(_in_bridge.mean().item())
-                loss = (_w * lossorigin).sum() / _w.sum()
-            else:
-                _bridge_frac = float('nan')
-                loss = lossorigin.mean()
-
-            # Multi-scale loss (III.1 in improvements_zh.md). Calls the
-            # un-symmetrized MERA's forward_with_intermediates and
-            # penalizes mismatch between adjacent scales' kept-coarse
-            # subsets after per-sample z-scoring. Default coefficient
-            # 0 disables. Extra cost = one un-symmetrized forward.
-            if scaleLoss > 0:
-                _, _, _intermediates = _inner_mera.forward_with_intermediates(x_std)
-                _scale_loss_raw = _compute_scale_invariance_loss(_intermediates)
-                loss = loss + scaleLoss * _scale_loss_raw
-                _scale_loss_value = float(_scale_loss_raw.item())
-            else:
-                _scale_loss_value = float('nan')
-
-            if alpha > 0:
-                # -log_jac_std cancels in the difference, but keep it explicit
-                # so both terms are on the same (physical) scale.
-                log_prob_sym = flow.logProbability(-x_std) - log_jac_std
-                loss += alpha * (log_prob.mean() - log_prob_sym.mean())**2
-
-            if entropyBeta > 0:
-                # Entropy regularizer: subtract beta*H(q) so we maximize H(q).
-                # Sequential backward (like jsMemOpt) to keep peak memory ~1 graph
-                # at a time instead of MLE-graph + sampling-graph simultaneously.
-                # The MLE graph is freed before sampling begins.
+            # Gradient-accumulation guard: entropyBeta path does its own
+            # flow.zero_grad() inside the loss body, which would wipe out
+            # accumulated grads. The two are not jointly supported.
+            if gradAccum > 1 and entropyBeta > 0:
+                raise ValueError("gradAccum > 1 is incompatible with entropyBeta > 0")
+            # For gradAccum > 1, we zero grads ONCE here and accumulate
+            # across K micro-batches before the outer optimizer.step().
+            # K=1 path is unchanged: zero_grad still happens later (line ~634).
+            if gradAccum > 1:
                 flow.zero_grad()
-                loss.backward()
-                mle_val = loss.detach()
+                _accum_loss_sum = 0.0
+                _accum_lossstd_sq_sum = 0.0
+                _accum_energy_sum = 0.0
+                _accum_entropy_sum = 0.0
+                _accum_scale_loss_sum = 0.0
+                _accum_bridge_frac_sum = 0.0
+            # When K=1, the for-loop runs once and behavior is identical to
+            # the single-pass baseline.
+            for _accum_k in range(gradAccum):
+                try:
+                    x_real, = next(data_iterator)
+                except StopIteration:
+                    data_iterator = iter(dataloader)
+                    x_real, = next(data_iterator)
 
-                _u_q, _log_q_q = flow.sample(batchSize)
-                _H_q = -_log_q_q.mean()
-                ent_term = -entropyBeta * _H_q
-                ent_term.backward()
+                x_real = x_real.to(device=x_.device, dtype=x_.dtype)
 
-                # Combined scalar for logging; .detach() so no graph
-                loss = mle_val + ent_term.detach()
+                if noDeq:
+                    x = x_real
+                else:
+                    # Dequantization noise to smooth the discrete states
+                    noise = (torch.rand_like(x_real) - 0.5) * 0.2
+                    x = x_real + noise
+
+                # Feed the flow ~unit-scale inputs; recover the physical log-density
+                # on the original x via the standardization Jacobian (constant term,
+                # so gradients/training dynamics are identical to training on the
+                # standardized data, but the logged loss stays physical).
+                x_std = x / data_std
+                log_prob = flow.logProbability(x_std) - log_jac_std
+
+                # Record Energy and Entropy for the MCMC dataset
+                # (source is defined on the original-scale x — do NOT standardize here)
+                energy_val = -source.logProbability(x).mean().item()
+                entropy_val = -log_prob.mean().item()  # pure unweighted MLE — comparable across runs
+
+                lossorigin = -log_prob
+                lossstd = lossorigin.std()
+
+                if bridgeWeight > 0:
+                    # Per-sample magnetization on physical x; bridge = |M_i| < bridgeThresh.
+                    # w_i = 1 + bridgeWeight * 1[in bridge], normalized to sum=batch so the
+                    # loss magnitude stays comparable to the unweighted case.
+                    with torch.no_grad():
+                        _M_i = x.reshape(x.shape[0], -1).mean(dim=1)
+                        _in_bridge = (_M_i.abs() < bridgeThresh).to(lossorigin.dtype)
+                        _w = 1.0 + bridgeWeight * _in_bridge
+                        _bridge_frac = float(_in_bridge.mean().item())
+                    loss = (_w * lossorigin).sum() / _w.sum()
+                else:
+                    _bridge_frac = float('nan')
+                    loss = lossorigin.mean()
+
+                # Multi-scale loss (III.1 in improvements_zh.md). Calls the
+                # un-symmetrized MERA's forward_with_intermediates and
+                # penalizes mismatch between adjacent scales' kept-coarse
+                # subsets after per-sample z-scoring. Default coefficient
+                # 0 disables. Extra cost = one un-symmetrized forward.
+                if scaleLoss > 0:
+                    _, _, _intermediates = _inner_mera.forward_with_intermediates(x_std)
+                    _scale_loss_raw = _compute_scale_invariance_loss(_intermediates)
+                    loss = loss + scaleLoss * _scale_loss_raw
+                    _scale_loss_value = float(_scale_loss_raw.item())
+                else:
+                    _scale_loss_value = float('nan')
+
+                if alpha > 0:
+                    # -log_jac_std cancels in the difference, but keep it explicit
+                    # so both terms are on the same (physical) scale.
+                    log_prob_sym = flow.logProbability(-x_std) - log_jac_std
+                    loss += alpha * (log_prob.mean() - log_prob_sym.mean())**2
+
+                if entropyBeta > 0:
+                    # Entropy regularizer: subtract beta*H(q) so we maximize H(q).
+                    # Sequential backward (like jsMemOpt) to keep peak memory ~1 graph
+                    # at a time instead of MLE-graph + sampling-graph simultaneously.
+                    # The MLE graph is freed before sampling begins.
+                    # (Guarded against gradAccum > 1 at the top of the dataDriven branch.)
+                    flow.zero_grad()
+                    loss.backward()
+                    mle_val = loss.detach()
+
+                    _u_q, _log_q_q = flow.sample(batchSize)
+                    _H_q = -_log_q_q.mean()
+                    ent_term = -entropyBeta * _H_q
+                    ent_term.backward()
+
+                    # Combined scalar for logging; .detach() so no graph
+                    loss = mle_val + ent_term.detach()
+                    loss_already_backward = True
+
+                if gradAccum > 1:
+                    # Accumulate this micro-batch's gradient into .grad.
+                    # Divide loss by K so that the accumulated total matches
+                    # the gradient of a full (batchSize) batch.
+                    (loss / gradAccum).backward()
+                    _accum_loss_sum += loss.item()
+                    _accum_lossstd_sq_sum += lossstd.item() ** 2
+                    _accum_energy_sum += energy_val
+                    _accum_entropy_sum += entropy_val
+                    _accum_scale_loss_sum += (_scale_loss_value if _scale_loss_value == _scale_loss_value else 0.0)
+                    _accum_bridge_frac_sum += (_bridge_frac if _bridge_frac == _bridge_frac else 0.0)
+
+            # End of K-loop (or single pass when gradAccum=1).
+            if gradAccum > 1:
+                # Build aggregated per-step scalars for logging; gradient
+                # has already been accumulated K times in .grad, so the
+                # outer dispatch block must skip its zero_grad + backward.
                 loss_already_backward = True
-                
+                _device = log_prob.device
+                _dtype = log_prob.dtype
+                loss = torch.tensor(_accum_loss_sum / gradAccum, device=_device, dtype=_dtype)
+                lossstd = torch.tensor((_accum_lossstd_sq_sum / gradAccum) ** 0.5,
+                                       device=_device, dtype=_dtype)
+                energy_val = _accum_energy_sum / gradAccum
+                entropy_val = _accum_entropy_sum / gradAccum
+                _scale_loss_value = _accum_scale_loss_sum / gradAccum if scaleLoss > 0 else float('nan')
+                _bridge_frac = _accum_bridge_frac_sum / gradAccum if bridgeWeight > 0 else float('nan')
+
         elif pathGrad:
             # --- Reverse-KL Path Gradient (STL / Roeder 2017, Vaitl 2024) ---
             # Standard reparam grad of E_q[log q - log p] has two routes through θ:
@@ -629,7 +709,7 @@ def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save=True, saveStep
         # backward passes; gradients are accumulated in .grad. The entropy-reg
         # data-driven branch does the same (sequential MLE then -beta*H).
         # Otherwise we do the standard single-pass backward here.
-        skip_outer_backward = (jsLoss and jsMemOpt) or (dataDriven and entropyBeta > 0)
+        skip_outer_backward = (jsLoss and jsMemOpt) or (dataDriven and entropyBeta > 0) or (dataDriven and gradAccum > 1)
         if not skip_outer_backward:
             flow.zero_grad()
             loss.backward()

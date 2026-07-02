@@ -138,6 +138,13 @@ STYLE = {
     "L=64 i2_stride4h32_b16 (Phase-2)":          dict(color="#43a047", linestyle="--", marker="s"),
     "L=64 i2_stride8h64_b16 (Phase-2)":          dict(color="#2e7d32", linestyle="-",  marker="D"),
     "L=64 i2_stride4h64_b16 (Phase-2)":          dict(color="#1b5e20", linestyle="--", marker="D"),
+    # ----- Phase-2 P2.x: i2 + nrepeat=2 (2026-06-25, winner D64) -----
+    "L=32 i2_stride8h32_nr2_b64 (P2.x D32)":     dict(color="#c2185b", linestyle="-",  marker="*",
+                                                     linewidth=2.4, markersize=12),
+    "L=64 baseline_nr2_b16 (P2.x C64)":           dict(color="#ad1457", linestyle=":",  marker="x",
+                                                     linewidth=2.0, markersize=10),
+    "L=64 i2_stride8h32_nr2_b16 (P2.x D64 ★)":   dict(color="#880e4f", linestyle="-",  marker="*",
+                                                     linewidth=2.8, markersize=14),
 }
 
 

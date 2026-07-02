@@ -57,10 +57,15 @@ group.add_argument("-pathGrad", action='store_true', help="Reverse-KL path-gradi
 group.add_argument("-scaleLoss", type=float, default=0.0, help="Multi-scale loss coefficient lambda_scale. Adds lambda_scale * sum_s MSE(zscore(y_s[::2,::2]), zscore(y_{s+1})) to the training loss. Penalizes deviation from scale invariance at every MERA scale; targets the rev-KL deep-block collapse and fwd-KL deep-block inflation diagnosed in rg_fixed_point_report.md. 0 disables. (forward-KL / dataDriven only for now.)")
 group.add_argument("-cosineAnneal", action='store_true', help="Use CosineAnnealingLR scheduler over full training: lr smoothly decays from -lr to cosineEtaMin (default lr*0.01) over -epochs. Off by default; opt-in only (existing runs unaffected). Mutually exclusive in effect with the legacy -adaptivelr StepLR (adaptivelr takes priority if both set).")
 group.add_argument("-cosineEtaMin", type=float, default=None, help="Floor LR for cosine schedule. Defaults to lr*0.01 (e.g. 5e-4 -> 5e-6). Only used with -cosineAnneal.")
-group.add_argument("-priorType", type=str, default="gaussian", choices=["gaussian", "conditional_gaussian", "studentT"], help="Latent prior. 'gaussian' is the isotropic N(0,I) baseline. 'conditional_gaussian' = scheme A of improvements_zh.md: P(z) = P(z_slow) * P(z_fast | z_slow) with mu/sigma at fast positions produced by a small CNN conditioned on z_slow. At init reproduces N(0,I) exactly (zero-init final conv), so the conditional structure has to be learned. 'studentT' = scheme I.1: diagonal heavy-tailed prior with marginal variance = 1; the negation experiment for Wilson-Gaussian-FP critique (heavy tails shift V5 KS but leave V5 RMS-G alone if the bottleneck is spatial structure).")
+group.add_argument("-gradAccum", type=int, default=1, help="Gradient accumulation steps: split -batch into K micro-batches of size (batch/K) and accumulate gradients before optimizer.step(). Default 1 = no accumulation (existing behavior). K>=2 lets megabignet + nrepeat>=2 runs preserve effective batch when single-pass batch hits OOM. Only the dataDriven branch implements it; other modes ignore K>1 with a warning. Incompatible with -entropyBeta > 0.")
+group.add_argument("-priorType", type=str, default="gaussian", choices=["gaussian", "conditional_gaussian", "hierarchical_conditional_gaussian", "studentT"], help="Latent prior. 'gaussian' is the isotropic N(0,I) baseline. 'conditional_gaussian' = scheme A of improvements_zh.md: single CNN conditions fast on slow. 'hierarchical_conditional_gaussian' = Path C of prior_offload_analysis_zh.md: multi-scale extension of scheme A, one CNN per level (or scale-shared) over strides [L/2, L/4, ..., 1]. 'studentT' = scheme I.1 (heavy-tailed diagonal prior).")
 group.add_argument("-priorDf", type=float, default=4.0, help="Degrees-of-freedom for -priorType studentT. Must be > 2 for finite variance. df=4 -> heavy tails with kurtosis at the boundary; df=5+ -> finite excess kurtosis.")
 group.add_argument("-condPriorSlowStride", type=int, default=-1, help="slow-grid stride for -priorType conditional_gaussian. Default -1 = max(2, L//4) (4x4 slow for L=16, 8x8 for L=32 etc.). Must divide L.")
 group.add_argument("-condPriorHidden", type=int, default=32, help="hidden channels of the conditional-prior CNN (-priorType conditional_gaussian).")
+group.add_argument("-hcgScaleShared", type=int, default=1, help="1 = scale-shared single CNN across all HCG levels (RG-invariant conditional whitening, default). 0 = independent CNN per level.")
+group.add_argument("-hcgHidden", type=int, default=32, help="hidden channels of the hierarchical-prior CNN(s).")
+group.add_argument("-hcgDilated", type=int, default=1, help="1 = per-level CNN uses dilation = coarser-level stride (reaches coarser context). 0 = dilation always 1. Only meaningful with -hcgScaleShared=0.")
+group.add_argument("-hcgCircular", type=int, default=1, help="1 = HCG CNN uses padding_mode='circular' (respects Ising periodic BC, default). 0 = zero-padding (matches i2 original but structurally biased at boundaries).")
 
 group = parser.add_argument_group('Ising target parameters')
 #
@@ -112,6 +117,11 @@ if args.load:
         args.condPriorSlowStride = _loaded_condPriorSlowStride
         args.condPriorHidden = _loaded_condPriorHidden
         args.priorDf = _loaded_priorDf
+        # HCG flags (default to sensible values if pre-HCG run)
+        args.hcgScaleShared = int(np.array(f["hcgScaleShared"])) if "hcgScaleShared" in f else 1
+        args.hcgHidden      = int(np.array(f["hcgHidden"]))      if "hcgHidden"      in f else 32
+        args.hcgDilated     = int(np.array(f["hcgDilated"]))     if "hcgDilated"     in f else 1
+        args.hcgCircular    = int(np.array(f["hcgCircular"]))    if "hcgCircular"    in f else 1
 else:
     epochs = args.epochs
     batch = args.batch
@@ -162,6 +172,10 @@ else:
         f.create_dataset("condPriorSlowStride", data=args.condPriorSlowStride)
         f.create_dataset("condPriorHidden", data=args.condPriorHidden)
         f.create_dataset("priorDf", data=args.priorDf)
+        f.create_dataset("hcgScaleShared", data=args.hcgScaleShared)
+        f.create_dataset("hcgHidden", data=args.hcgHidden)
+        f.create_dataset("hcgDilated", data=args.hcgDilated)
+        f.create_dataset("hcgCircular", data=args.hcgCircular)
 
 device = torch.device("cpu" if cuda<0 else "cuda:"+str(cuda))
 
@@ -199,7 +213,11 @@ fw = train.symmetryMERAInit(L,d,nlayers,nmlp,nhidden,nrepeat,sym,device,dtype,na
                             priorType=args.priorType,
                             condPriorSlowStride=args.condPriorSlowStride,
                             condPriorHidden=args.condPriorHidden,
-                            priorDf=args.priorDf)
+                            priorDf=args.priorDf,
+                            hcgScaleShared=bool(args.hcgScaleShared),
+                            hcgHidden=args.hcgHidden,
+                            hcgDilated=bool(args.hcgDilated),
+                            hcgCircular=bool(args.hcgCircular))
 
 #fw = train.symmetryMERAInit(L,d,nlayers,nmlp,nhidden,nrepeat,sym,device,dtype,name)
 
@@ -230,5 +248,6 @@ LOSS,ZACC,ZOBS,XACC,XOBS = train.learnInterface(
     pathGrad=args.pathGrad,
     scaleLoss=args.scaleLoss,
     cosineAnneal=args.cosineAnneal, cosineEtaMin=args.cosineEtaMin,
+    gradAccum=args.gradAccum,
 )
 #LOSS,ZACC,ZOBS,XACC,XOBS = train.learnInterface(target,fw,batch,epochs,save=True,saveSteps = savePeriod,savePath=rootFolder,measureFn = measure)

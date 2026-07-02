@@ -213,53 +213,75 @@ f_5 = 0.022 *不是* sym_bignet 那种"严格塌缩"(0.0004);它是"较弱工作
 ## V5 —— vs Wilson 真物理 RG
 
 **怎么测**:同样的 HS 输入 `x` 上,**同时**跑 MERA 正向 (`y_s = MERA`) 和 Wilson-Kadanoff 块平均 (`x_s = AvgPool2d(2)^s(x)`)。
-两者各自做 quantile transform 后,在每个尺度算:
-- `KS`:边际 KS 距离(quantile transform 后理论 ≈ 0)
-- `RMS-G`:`G(r)/G(0)` 两点函数 RMS 偏差 —— **真空间结构 mismatch**
-
+两者各自做 quantile transform 后,在每个尺度算 metric。
 **问"MERA 慢模是不是跟 Wilson 真物理一致"**。
 
-V5 报告 **3 个 metric**(KS / W1 / RMS-G),每个 metric 在 6 个尺度上各有值。三个 metric 在 gauge 下的物理意义不同:
+V5 提供两种互补 metric(*都* 在 gauge 坐标下):
 
-| Metric | 测什么                          | gauge-fix 后行为                            |
-|--------|----------------------------------|---------------------------------------------|
-| KS     | 边际累积分布距离                 | **强制 ≈ 0**(逐位置 quantile transform 让两侧 marginal 严格 N(0,1),KS ≈ 有限样本噪声 ~10⁻³)|
-| W1     | 边际 Wasserstein-1 距离          | **同上**,~10⁻²(W1 对小尾部更敏感,但仍 by construction 接近 0)|
-| RMS-G  | `G(r)/G(0)` 两点函数 RMS 偏差    | **保留信号**(测纯空间结构;quantile transform 不改秩相关,RMS-G 是 gauge 下唯一携带信息的 metric)|
+| Metric | 类型 | 测什么 | 适用 |
+|--------|------|--------|------|
+| **matched-pair MSE** | sample-level | `E_i[(T_y(y_s^i) − T_x(x_s^i))²]` —— 逐 sample 对齐 | **跟 V0–V4 同 metric 家族**,所有尺度都能算 |
+| **RMS-G** | distributional | `G(r)/G(0)` 两点函数 RMS 偏差 | 测空间结构形状(分布级),L_s ≤ 2 死区 |
+| KS / W1 | distributional(边际) | 边际 CDF / Wasserstein-1 距离 | gauge by construction ≈ 0,**无信号**(仅做 sanity check)|
 
-完整 6 流 × 6 尺度数据(L_s = 32 → 16 → 8 → 4 → 2 → 1):
+#### V5 matched-pair MSE(跟 V0–V4 统一 metric)
+
+`E_i[||T_y(y_s^i) − T_x(x_s^i)||²]`,gauge 后 N(0,1) 边际下 **MSE = 2(1 − corr)**,所以:
+- MSE = 0 → 完美对齐(corr = 1)
+- MSE = 2 → 完全不相关
+- MSE > 2 → 反相关(sign-flipped)
+- MSE = 4 → 完全反相关
+
+| s | L_s | hs_bignet | sym_bignet | T=2.15 | T=2.40 |
+|---|----:|----------:|-----------:|-------:|-------:|
+| 0 | 32  | 0.000     | 0.000      | 0.000  | 0.000  |
+| 1 | 16  | **0.69**  | **2.24**   | 0.56   | 0.66   |
+| 2 |  8  | 0.72      | 2.23       | 0.72   | 0.94   |
+| **3** | **4**  | **3.22 ⚠** | 2.23       | **3.24 ⚠** | 1.18   |
+| 4 |  2  | **0.38**  | 2.21       | 0.72   | 1.14   |
+| 5 |  1  | 0.52      | 2.32       | 0.70   | 0.72   |
+
+**三个新发现**(matched MSE 独有,RMS-G 看不到):
+
+1. **sym_bignet matched MSE ≈ 2.24 *全尺度均匀***。
+   翻译成 correlation:**rev-KL 学到的 MERA 慢模 *跟 Wilson 真物理慢模 *逐样本完全不相关***。RMS-G 0.54 说"分布形状不像",matched MSE 2.24 说"*per-sample 也对不上*"。**rev-KL 的 V5 失败是 *双重的*:分布错 + 样本对齐错**。
+
+2. **hs_bignet 在 s=4(L_s=2)matched MSE = 0.38 是 *4 流里最优***,意味着 corr ≈ 81%。这是 V5 *新看到的* 信号 —— RMS-G 在 s=4 死区(n/a),matched MSE 揭示 **hs_bignet 最深 2×2 子格点上 sample-by-sample 跟 Wilson 高度对齐**。
+
+3. ⚠ **hs_bignet 和 T=2.15 在 s=3 上 MSE > 3(反相关 60%)**,sym_bignet 和 T=2.40 没有。
+   翻译:fwd-KL MERA 在 s=3(L_s=4 子格点)上学到 *sign-flipped* slow modes —— 跟 Wilson 物理 *值相反* 但 *绝对值结构相同*(所以 RMS-G 看不出来)。
+   这可能是:
+   - MERA 训练 artefact(scale-3 处偶然反号,因为 RNVP 的 ± 是 latent N(0,1) 对称下的可学习参数)
+   - 真 RG 内禀对称性的体现(Wilson 块平均跟 MERA 的 slow-mode 编码可能存在符号自由度)
+   - **需要后续分析**(等 L=64 matched MSE 看是否同模式)
+
+#### V5 RMS-G(空间结构形状 distributional view)
 
 | Metric | s = 0 | s = 1 | **s = 2** | s = 3 | s = 4 | s = 5 |
 |--------|------:|------:|----------:|------:|------:|------:|
-| **hs_bignet KS** | 0.005 | 0.002 | 0.002 | 0.004 | 0.005 | 0.011 |
-| **hs_bignet W1** | 0.013 | 0.019 | 0.010 | 0.010 | 0.005 | 0.015 |
 | **hs_bignet RMS-G** | 0.000 | 0.059 | **0.030** | 0.037 | n/a | n/a |
-| sym_bignet KS    | 0.005 | 0.002 | 0.002 | 0.002 | 0.006 | 0.010 |
-| sym_bignet W1    | 0.013 | 0.010 | 0.012 | 0.009 | 0.007 | 0.010 |
 | **sym_bignet RMS-G** | 0.000 | **0.512** | **0.539** | **0.485** | n/a | n/a |
-| T=2.15 KS        | 0.002 | 0.006 | 0.005 | 0.006 | 0.007 | 0.015 |
-| T=2.15 W1        | 0.018 | 0.016 | 0.019 | 0.006 | 0.009 | 0.019 |
 | T=2.15 RMS-G     | 0.000 | 0.071 | 0.046 | 0.025 | n/a | n/a |
-| T=2.40 KS        | 0.001 | 0.003 | 0.002 | 0.003 | 0.005 | 0.009 |
-| T=2.40 W1        | 0.014 | 0.011 | 0.008 | 0.007 | 0.005 | 0.014 |
 | T=2.40 RMS-G     | 0.000 | 0.079 | 0.068 | 0.074 | n/a | n/a |
 
-**为什么 RMS-G 只到 s=3**:s=4 对应 L_s = 2(2×2 子格点),s=5 对应 L_s = 1(单点)。
-`G(r)/G(0)` 在 2×2 上只有 r=0 和 r=1 两个距离,样本量也小,信号在噪声里 —— 脚本判定 m < 4 时返回 `n/a`(见 `rg_v5_blockRG_compare.py:163`)。
-KS / W1 在所有 6 个尺度上都能算,因为它们只看单点边际分布,不需要空间几何。
+**为什么 RMS-G 只到 s=3**:s=4 对应 L_s = 2,`G(r)/G(0)` 在 2×2 上只有 r=0 和 r=1 两个距离,样本量也小,信号在噪声里 —— 脚本判定 m < 4 时返回 `n/a`(见 `rg_v5_blockRG_compare.py:163`)。
 
-**⚠ Metric 不一致 + 已知问题**:V0–V4 用的是 *gauge-fixed 后 matched-pair MSE*(相邻 field 逐 sample 对齐),
-但 V5 历史上用 distributional 三件套(KS / W1 / RMS-G)。这两套 metric 的 *paired vs distributional* 设计选择不同,导致 V5 跟 V0–V4 不直接可比 + RMS-G 在 L_s ≤ 2 死区。
-**已写 `gauge_v5_matched_mse.py` 把 V5 改成 matched-pair MSE,job 40267635 等 2026-06-19 维护结束后跑;数据出来后会替换上面的 RMS-G 表为统一 metric 表**。
-
-**为什么 KS / W1 在所有尺度都 ~10⁻²**:这是 *gauge-fix by construction* —— 逐位置 quantile transform 把每格点的边际 *严格* 拉成 N(0,1),所以 MERA 慢模 `y_s` 跟 block-RG `x_s` 在 gauge 坐标下的 marginal 已经一致,KS / W1 只剩 *有限样本噪声*(N=2000 的 KS noise 量级正是 ~10⁻³,符合 `1/√N ≈ 0.022`)。
-**4 个流 × 6 尺度的 KS / W1 全部在同一噪声量级 → 证实 gauge-fix 在所有尺度上都成功**。
-
-**hs_bignet 解读(基于 RMS-G,因为只有它携带空间结构信号)**:
-- **s = 2 RMS-G = 0.030 是 T_c 上的最低值**(sym_bignet 0.539,T=2.40 控制 0.068)
+**hs_bignet 解读(基于 RMS-G)**:
+- **s=2 RMS-G = 0.030 是 T_c 上的最低值**(sym_bignet 0.539,T=2.40 控制 0.068)
 - 跟 sym_bignet 比:在 s=1, 2, 3 上 hs_bignet *一致* 比 sym_bignet 低 8–18×
 - 跟低温 T=2.15 比:s=3 上 T=2.15 = 0.025 略低,但低温是非临界对照(物理上 ξ < L/2,RG 自然流向 Gaussian 不动点,*更容易* 匹配 Wilson)。**关键是临界 T_c 上谁最接近,而那只有 hs_bignet**
-- sym_bignet 在所有尺度灾难性偏离 Wilson(0.485–0.539),证实"rev-KL 把空间结构搞错"的核心 verdict
+
+#### 两 metric 联合解读(distributional + sample-level)
+
+RMS-G(分布形状)和 matched MSE(样本对齐)互补,**hs_bignet 的两 metric "最优 scale" 不一样**:
+- RMS-G 最优 @ **s=2**(0.030)
+- matched MSE 最优 @ **s=4**(0.38)
+
+物理直觉:浅尺度(s=2)spatial structure 复杂,matched-pair 对齐难做但 distributional 形状能比;深尺度(s=4)spatial structure 简单(2×2),反过来 distributional 死区但 matched-pair 容易对齐。
+
+**rev-KL sym_bignet 在两 metric 上 *双双灾难***:RMS-G 0.5(分布完全错形)+ matched MSE 2.2(样本完全不相关)→ rev-KL 不论从哪个角度看都跟 Wilson 物理脱钩。
+
+KS / W1 全 ~10⁻³ 是 gauge-fix by construction(N=2000 噪声 ~ 1/√N ≈ 0.022),不携带信号,仅做 gauge-fix 工作的 sanity check。
 
 ---
 

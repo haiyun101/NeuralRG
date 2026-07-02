@@ -203,54 +203,75 @@ This is V4's most critical evidence, *invisible* to V0–V3 probes.
 ## V5 — vs Wilson block-RG ground truth
 
 **How it's measured**: on the same HS input `x`, *simultaneously* run MERA forward (`y_s` = MERA) and Wilson–Kadanoff block averaging (`x_s = AvgPool2d(2)^s(x)`).
-Each is passed through its own quantile transform; then at each scale we compute:
-- `KS`: marginal Kolmogorov–Smirnov distance (after quantile transform, theoretically ≈ 0)
-- `RMS-G`: RMS deviation of `G(r)/G(0)` (two-point function) — **the genuine spatial-structure mismatch**
-
+Each is passed through its own quantile transform; then at each scale we compute a metric.
 **Question**: do MERA's slow modes match true physical RG?
 
-V5 reports **3 metrics** (KS / W1 / RMS-G), each computed at every scale. Their post-gauge-fix behavior differs:
+V5 provides two complementary metrics (*both* in gauge coordinates):
 
-| Metric | What it measures                    | Post-gauge behavior                                                |
-|--------|--------------------------------------|---------------------------------------------------------------------|
-| KS     | Marginal CDF distance                | **Forced ≈ 0** (per-site quantile transform makes both sides strictly N(0,1); KS reflects only finite-sample noise ~10⁻³) |
-| W1     | Marginal Wasserstein-1 distance      | **Same**, ~10⁻² (W1 is more tail-sensitive but still ≈ 0 by construction) |
-| RMS-G  | RMS deviation of `G(r)/G(0)`         | **Retains signal** (pure spatial structure; quantile transform preserves rank correlations, making RMS-G the only metric carrying information in gauge coordinates) |
+| Metric | Type | What it measures | Coverage |
+|--------|------|------------------|----------|
+| **matched-pair MSE** | sample-level | `E_i[(T_y(y_s^i) − T_x(x_s^i))²]` — per-sample alignment | **Same metric family as V0–V4**, all scales computable |
+| **RMS-G** | distributional | RMS deviation of `G(r)/G(0)` two-point function | Spatial-structure shape (distributional), dies at L_s ≤ 2 |
+| KS / W1 | distributional (marginal) | Marginal CDF / Wasserstein-1 distance | Gauge by construction ≈ 0, **no signal** (sanity-check only) |
 
-Complete 4-flow × 6-scale data (L_s = 32 → 16 → 8 → 4 → 2 → 1):
+#### V5 matched-pair MSE (unified metric family with V0–V4)
+
+`E_i[||T_y(y_s^i) − T_x(x_s^i)||²]`. With N(0,1) marginals after gauge, **MSE = 2(1 − corr)**, so:
+- MSE = 0 → perfect alignment (corr = 1)
+- MSE = 2 → uncorrelated
+- MSE > 2 → anti-correlated (sign-flipped)
+- MSE = 4 → perfectly anti-correlated
+
+| s | L_s | hs_bignet | sym_bignet | T=2.15 | T=2.40 |
+|---|----:|----------:|-----------:|-------:|-------:|
+| 0 | 32  | 0.000     | 0.000      | 0.000  | 0.000  |
+| 1 | 16  | **0.69**  | **2.24**   | 0.56   | 0.66   |
+| 2 |  8  | 0.72      | 2.23       | 0.72   | 0.94   |
+| **3** | **4** | **3.22 ⚠** | 2.23   | **3.24 ⚠** | 1.18 |
+| 4 |  2  | **0.38**  | 2.21       | 0.72   | 1.14   |
+| 5 |  1  | 0.52      | 2.32       | 0.70   | 0.72   |
+
+**Three findings unique to matched MSE (invisible to RMS-G)**:
+
+1. **sym_bignet matched MSE ≈ 2.24 *uniformly across scales***.
+   Translating: **rev-KL's MERA slow modes are *uncorrelated* with Wilson's per-sample**. RMS-G 0.54 says "distribution shape is wrong"; matched MSE 2.24 says "*per-sample alignment is also lost*". **rev-KL's V5 failure is *two-fold*: wrong shape + wrong sample alignment.**
+
+2. **hs_bignet matched MSE at s=4 (L_s=2) = 0.38 is the *best* among the 4 flows** (corr ≈ 81%). This is a *new* V5 signal — RMS-G is in n/a territory at s=4, but matched MSE reveals **hs_bignet's deepest 2×2 sublattice is sample-by-sample highly aligned with Wilson**.
+
+3. ⚠ **hs_bignet and T=2.15 show MSE > 3 at s=3 (anti-correlated by 60%)**; sym_bignet and T=2.40 do not.
+   Translation: fwd-KL MERA at s=3 (L_s=4 sublattice) learns *sign-flipped* slow modes — values are *opposite* to Wilson but with *the same absolute structure* (which is why RMS-G doesn't see it).
+   Possible causes:
+   - MERA training artefact (random sign convention at scale 3 is learnable since the latent N(0,1) is sign-symmetric)
+   - A real RG-intrinsic symmetry (Wilson block averaging and MERA slow-mode encoding may have a sign degree of freedom)
+   - **Requires follow-up analysis** (the L=64 matched MSE will tell whether the same anomaly appears)
+
+#### V5 RMS-G (distributional view of spatial-structure shape)
 
 | Metric                | s = 0 | s = 1 | **s = 2** | s = 3 | s = 4 | s = 5 |
 |-----------------------|------:|------:|----------:|------:|------:|------:|
-| **hs_bignet KS**      | 0.005 | 0.002 | 0.002     | 0.004 | 0.005 | 0.011 |
-| **hs_bignet W1**      | 0.013 | 0.019 | 0.010     | 0.010 | 0.005 | 0.015 |
 | **hs_bignet RMS-G**   | 0.000 | 0.059 | **0.030** | 0.037 | n/a   | n/a   |
-| sym_bignet KS         | 0.005 | 0.002 | 0.002     | 0.002 | 0.006 | 0.010 |
-| sym_bignet W1         | 0.013 | 0.010 | 0.012     | 0.009 | 0.007 | 0.010 |
 | **sym_bignet RMS-G**  | 0.000 | **0.512** | **0.539** | **0.485** | n/a | n/a   |
-| T=2.15 KS             | 0.002 | 0.006 | 0.005     | 0.006 | 0.007 | 0.015 |
-| T=2.15 W1             | 0.018 | 0.016 | 0.019     | 0.006 | 0.009 | 0.019 |
 | T=2.15 RMS-G          | 0.000 | 0.071 | 0.046     | 0.025 | n/a   | n/a   |
-| T=2.40 KS             | 0.001 | 0.003 | 0.002     | 0.003 | 0.005 | 0.009 |
-| T=2.40 W1             | 0.014 | 0.011 | 0.008     | 0.007 | 0.005 | 0.014 |
 | T=2.40 RMS-G          | 0.000 | 0.079 | 0.068     | 0.074 | n/a   | n/a   |
 
-**Why RMS-G only up to s=3**: s=4 corresponds to L_s=2 (2×2 sublattice), s=5 to L_s=1 (single point).
-`G(r)/G(0)` on a 2×2 grid has only two distances (r=0, r=1) and very few samples — signal lost in noise — so the script returns `n/a` when m < 4 (see `rg_v5_blockRG_compare.py:163`).
-KS / W1 can be computed at all 6 scales because they only look at pointwise marginals, no spatial geometry.
+**Why RMS-G only up to s=3**: s=4 corresponds to L_s=2, where `G(r)/G(0)` has only two distances (r=0, r=1) and small sample counts — signal lost in noise. The script returns `n/a` when m < 4 (see `rg_v5_blockRG_compare.py:163`).
 
-**⚠ Metric inconsistency + known issue**: V0–V4 use *gauge-fixed matched-pair MSE* (per-sample alignment between adjacent fields),
-but V5 historically uses three distributional metrics (KS / W1 / RMS-G). The *paired vs distributional* design choice differs,
-so V5 is not directly comparable to V0–V4, and RMS-G dies at L_s ≤ 2.
-**`gauge_v5_matched_mse.py` re-casts V5 as matched-pair MSE; job 40267635 is queued and will run after the cluster maintenance ends on 2026-06-19. Once data lands, the RMS-G table above will be replaced by a unified-metric table consistent with V0–V4.**
-
-**Why KS / W1 ≈ 10⁻² uniformly**: this is *gauge-fix by construction* — the per-site quantile transform forces every site to N(0,1) *exactly*, so MERA's slow modes `y_s` and block-RG's `x_s` have identical marginals in gauge coordinates, leaving only *finite-sample noise* (the N=2000 KS noise scale is exactly ~10⁻³, matching `1/√N ≈ 0.022`).
-**4 flows × 6 scales of KS / W1 all sit at the same noise level → confirms gauge-fix succeeds uniformly across all scales**.
-
-**hs_bignet reading (using RMS-G, the only structurally informative metric)**:
+**hs_bignet reading (RMS-G)**:
 - **s=2 RMS-G = 0.030 is the lowest at T_c** (sym_bignet 0.539, T=2.40 control 0.068)
 - vs sym_bignet: at s=1, 2, 3, hs_bignet is *uniformly* 8–18× lower
-- vs low-T T=2.15: at s=3, T=2.15 = 0.025 is slightly lower — but low T is an off-fixed-point control (ξ < L/2, RG naturally flows to Gaussian, *easier* to match Wilson). **What matters is who's closest at T_c, and that's hs_bignet alone**
-- sym_bignet is catastrophically off Wilson at every scale (0.485–0.539), confirming the core "rev-KL gets spatial structure wrong" verdict
+- vs low-T T=2.15: at s=3, T=2.15 = 0.025 is slightly lower — but low T is an off-fixed-point control (ξ < L/2, RG naturally flows to Gaussian, *easier* to match Wilson). **What matters is who's closest at T_c, and that's hs_bignet**
+
+#### Joint reading (distributional + sample-level)
+
+RMS-G (distribution shape) and matched MSE (sample alignment) are complementary, and **hs_bignet's best scale differs between them**:
+- RMS-G best @ **s=2** (0.030)
+- matched MSE best @ **s=4** (0.38)
+
+Physical intuition: at shallow scales (s=2) spatial structure is rich, distributional comparison is easy but sample alignment is hard; at deep scales (s=4) spatial structure is simple (2×2), distributional metrics die but sample alignment is straightforward.
+
+**rev-KL sym_bignet fails *both* metrics**: RMS-G 0.5 (totally wrong distribution shape) + matched MSE 2.2 (sample-by-sample uncorrelated) → rev-KL is disconnected from Wilson physics under any lens.
+
+KS / W1 are uniformly ~10⁻³ — gauge-fix by construction (N=2000 noise scale ~ 1/√N ≈ 0.022) — they carry no signal, only sanity-check that gauge-fix worked.
 
 ---
 
