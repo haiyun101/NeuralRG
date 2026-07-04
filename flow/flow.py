@@ -34,9 +34,43 @@ class Flow(nn.Module):
             return self.prior.logProbability(z)+logp
         return logp
 
-    def save(self):
-        return self.state_dict()
+    def save(self, optimizer=None):
+        """Build a checkpoint dict for `torch.save`.
 
-    def load(self,saveDict):
+        If ``optimizer`` is passed, the returned dict is
+        ``{'model': model_state, 'optimizer': optimizer_state}``. That
+        lets ``-load`` restore Adam's m, v moments too, so resumes
+        continue from the pre-save trajectory instead of paying a
+        ~500-epoch Adam warm-up that can eject a well-converged model
+        from its minimum. See ``project_resume_optimizer_state`` memory.
+
+        If ``optimizer`` is None, returns the raw ``state_dict()`` —
+        backward-compatible with pre-existing ``.saving`` files.
+        """
+        if optimizer is None:
+            return self.state_dict()
+        return {
+            'model': self.state_dict(),
+            'optimizer': optimizer.state_dict(),
+        }
+
+    def load(self, saveDict):
+        """Load model weights from a checkpoint dict.
+
+        Accepts both formats:
+          - Legacy: bare ``state_dict`` produced by ``save()`` without
+            ``optimizer`` (all keys are parameter names).
+          - New: ``{'model': ..., 'optimizer': ...}`` produced by
+            ``save(optimizer=...)``.
+
+        Returns the optimizer state dict if present, else None. Caller
+        is responsible for applying it to a freshly-created optimizer
+        (Adam's state_dict includes step, m, v; loading restores full
+        trajectory).
+        """
+        if isinstance(saveDict, dict) and 'model' in saveDict:
+            self.load_state_dict(saveDict['model'])
+            return saveDict.get('optimizer', None)
+        # Legacy bare state_dict — no optimizer state available.
         self.load_state_dict(saveDict)
-        return saveDict
+        return None

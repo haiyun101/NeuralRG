@@ -32,8 +32,8 @@ source activate neuralrg
 mkdir -p logs
 
 L=32
-T="2.269185314213022"
-N=200000
+T="${T:-2.269185314213022}"        # override with env: T=2.4 for off-critical
+N="${N:-200000}"
 HS_PT="data/mcmc_data/hs_L${L}_T${T}_N${N}.pt"
 
 EPOCHS="${EPOCHS:-20000}"
@@ -64,7 +64,13 @@ fi
 [ "$GRADCLIP" != "0" ] && [ "$GRADCLIP" != "0.0" ] && SUFFIX="${SUFFIX}_gc${GRADCLIP}"
 SUFFIX="${SUFFIX}_b${BATCH}"
 FOLDER_SUFFIX="${FOLDER_SUFFIX:-$SUFFIX}"
-FOLDER="./data/${L}Ising_T2.269_hsBignet_hcg${FOLDER_SUFFIX}"
+# Fold non-critical T into folder name (T_c uses legacy "T2.269" prefix)
+if [ "$T" = "2.269185314213022" ]; then
+    T_TAG="T2.269"
+else
+    T_TAG="T${T}"
+fi
+FOLDER="./data/${L}Ising_${T_TAG}_hsBignet_hcg${FOLDER_SUFFIX}"
 
 if [ ! -f "$HS_PT" ]; then
     echo "ERROR: HS data missing: $HS_PT"

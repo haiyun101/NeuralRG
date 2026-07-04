@@ -221,13 +221,21 @@ fw = train.symmetryMERAInit(L,d,nlayers,nmlp,nhidden,nrepeat,sym,device,dtype,na
 
 #fw = train.symmetryMERAInit(L,d,nlayers,nmlp,nhidden,nrepeat,sym,device,dtype,name)
 
+loaded_optimizer_state = None
 if args.load:
     import os
     import glob
     name = max(glob.iglob(rootFolder+'savings/*.saving'), key=os.path.getctime)
     print("load saving at "+name)
     saved = torch.load(name)
-    fw.load(saved)
+    # New checkpoint format returns Adam state so learnInterface can
+    # restore it into the optimizer it creates (avoids Adam warm-up
+    # ejecting a converged model — see project_resume_optimizer_state).
+    # Legacy checkpoints (bare state_dict) return None, resume behaves
+    # as before.
+    loaded_optimizer_state = fw.load(saved)
+    if loaded_optimizer_state is not None:
+        print("  -> also restored optimizer state (Adam m/v moments)")
 
 def measure(x):
         p = torch.sigmoid(2.*x).reshape(-1, target.nvars[0])
@@ -249,5 +257,6 @@ LOSS,ZACC,ZOBS,XACC,XOBS = train.learnInterface(
     scaleLoss=args.scaleLoss,
     cosineAnneal=args.cosineAnneal, cosineEtaMin=args.cosineEtaMin,
     gradAccum=args.gradAccum,
+    optimizerState=loaded_optimizer_state,
 )
 #LOSS,ZACC,ZOBS,XACC,XOBS = train.learnInterface(target,fw,batch,epochs,save=True,saveSteps = savePeriod,savePath=rootFolder,measureFn = measure)

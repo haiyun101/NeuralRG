@@ -280,13 +280,13 @@ def learn(source, flow, batchSize, epochs, lr=1e-3, save = True, saveSteps = 10,
         if adaptivelr:
             scheduler.step()
         if save and epoch%saveSteps == 0:
-            d = flow.save()
+            d = flow.save(optimizer=optimizer)
             torch.save(d,savePath+flow.name+".saving")
 
     return LOSS,ACC,OBS
 
 
-def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save=True, saveSteps=10, savePath=None, keepSavings=3, weight_decay=0.001, adaptivelr=False, HMCsteps=10, HMCthermal=10, HMCepsilon=0.2, measureFn=None, alpha=1.0, skipHMC=True, dataDriven=False, dataPath=None, targetT=None, noDeq=False, jsLoss=False, jsLambda=0.5, jsMemOpt=False, entropyBeta=0.0, gradClip=0.0, bridgeWeight=0.0, bridgeThresh=0.5, pathGrad=False, scaleLoss=0.0, cosineAnneal=False, cosineEtaMin=None, gradAccum=1):
+def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save=True, saveSteps=10, savePath=None, keepSavings=3, weight_decay=0.001, adaptivelr=False, HMCsteps=10, HMCthermal=10, HMCepsilon=0.2, measureFn=None, alpha=1.0, skipHMC=True, dataDriven=False, dataPath=None, targetT=None, noDeq=False, jsLoss=False, jsLambda=0.5, jsMemOpt=False, entropyBeta=0.0, gradClip=0.0, bridgeWeight=0.0, bridgeThresh=0.5, pathGrad=False, scaleLoss=0.0, cosineAnneal=False, cosineEtaMin=None, gradAccum=1, optimizerState=None):
     # gradAccum: number of micro-batches to accumulate gradients over before
     # calling optimizer.step(). Splits batchSize into gradAccum micro-batches
     # of size (batchSize // gradAccum) each, so effective batch is preserved.
@@ -413,6 +413,9 @@ def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save=True, saveStep
     nparams = sum([np.prod(p.size()) for p in params])
     print ('total nubmer of trainable parameters:', nparams)
     optimizer = torch.optim.Adam(params, lr=lr, weight_decay=weight_decay)
+    if optimizerState is not None:
+        optimizer.load_state_dict(optimizerState)
+        print("[resume] restored Adam state — skipping ~500-epoch warm-up")
 
     if adaptivelr:
         scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=500, gamma=0.7)
@@ -819,7 +822,7 @@ def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save=True, saveStep
                     f.create_dataset("ZOBS",data=np.array(ZOBS))
                     f.create_dataset("XACC",data=np.array(XACC))
                     f.create_dataset("XOBS",data=np.array(XOBS))
-                d = flow.save()
+                d = flow.save(optimizer=optimizer)
                 torch.save(d,savePath+"savings/"+flow.name+"Saving_epoch"+str(epoch)+".saving")
                 # cleanSaving(epoch)
 
