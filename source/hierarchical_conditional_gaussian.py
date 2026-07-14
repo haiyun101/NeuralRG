@@ -68,7 +68,14 @@ class HierarchicalConditionalGaussian(Source):
                  scale_shared=True,
                  use_circular_padding=True,
                  dilated_conv=True,
+                 shared_dilations=None,
                  name="hierarchical_conditional_gaussian"):
+        # shared_dilations (only meaningful when scale_shared=True):
+        # list of 3 ints giving progressive dilation across the CNN's
+        # three conv layers, e.g. [1, 2, 4] → effective RF grows from
+        # 3 to 15 pixels (span ±7), letting the single shared CNN
+        # reach farther context. None (default) preserves the original
+        # uniform dilation=1 (RF 7, span ±3).
         super().__init__(nvars, name)
         if len(nvars) < 3:
             raise ValueError(
@@ -131,18 +138,29 @@ class HierarchicalConditionalGaussian(Source):
         padding_mode = 'circular' if use_circular_padding else 'zeros'
 
         def make_cnn(dilation):
-            # dilation applied uniformly to all conv layers; padding compensates.
+            # dilation: int (uniform across 3 conv layers) or list/tuple of 3
+            # ints (per-layer, e.g. [1, 2, 4] for progressive dilation).
+            # Uniform dilation gives receptive field RF = 1 + 3·2·d.
+            # Progressive [1, 2, 4] gives RF = 1 + 2·(1+2+4) = 15, letting
+            # a single shared CNN reach farther context without matching
+            # kernel step to any specific level's stride — useful for
+            # shared HCG whose one CNN must serve all levels.
+            if isinstance(dilation, (int,)):
+                dils = [dilation, dilation, dilation]
+            else:
+                dils = list(dilation)
+                assert len(dils) == 3, f"expected 3 dilations, got {len(dils)}"
             layers = [
                 nn.Conv2d(channel, n_hidden, kernel_size=3,
-                          padding=dilation, dilation=dilation,
+                          padding=dils[0], dilation=dils[0],
                           padding_mode=padding_mode),
                 nn.ELU(),
                 nn.Conv2d(n_hidden, n_hidden, kernel_size=3,
-                          padding=dilation, dilation=dilation,
+                          padding=dils[1], dilation=dils[1],
                           padding_mode=padding_mode),
                 nn.ELU(),
                 nn.Conv2d(n_hidden, 2 * channel, kernel_size=3,
-                          padding=dilation, dilation=dilation,
+                          padding=dils[2], dilation=dils[2],
                           padding_mode=padding_mode),
             ]
             cnn = nn.Sequential(*layers)
@@ -156,25 +174,98 @@ class HierarchicalConditionalGaussian(Source):
         # Levels 1..K-1 each need CNN-produced (μ, σ)
         # ------------------------------------------------------------------
         if scale_shared:
-            # One CNN, dilation=1 (fixed 3×3 receptive field). Scale-invariance
-            # is enforced at the parameter level: same conditional-whitening
+            # One CNN shared across all levels. Scale-invariance is
+            # enforced at the parameter level: same conditional-whitening
             # operator applied at every scale.
-            self.cnn_shared = make_cnn(dilation=1)
+            #
+            # Default dilation=1 (RF 7) is fine when the coarsest level's
+            # "distance to nearest context" is < 3 sites. For large L or
+            # deep hierarchies, that distance grows (L=32 Level 1 → 8,
+            # L=64 Level 1 → 16) and RF 7 misses. Pass
+            # shared_dilations=[1, 2, 4] to grow RF to 15 without adding
+            # parameters (progressive dilation across the 3 conv layers).
+            if shared_dilations is None:
+                shared_dilations = 1                # scalar → uniform d=1
+            self.cnn_shared = make_cnn(dilation=shared_dilations)
             self.cnns = None
+            self.shared_dilations = shared_dilations
         else:
-            # Per-level CNNs. Dilation matched to that level's stride so the
-            # 3×3 conv can reach the nearest coarser sites.
+            # Per-level CNNs. Dilation matched to *this* level's own stride
+            # so the 3×3 conv steps exactly to the nearest coarser context.
+            #
+            # NOTE (2026-07-04 fix): previously dilation was
+            # strides[k-1] (the *coarser* level's stride), which trapped
+            # the kernel view in same-level fast positions — every kernel
+            # step preserves (row mod stride_k, col mod stride_k), so
+            # starting from a Level-k fast position and stepping by
+            # strides[k-1] = 2·strides[k] can never reach Level<k
+            # positions. Conv0 saw all-zero input, its weight died to
+            # zero (weight-decay path), and the CNN output became
+            # constant σ (see hcg_perscale_similarity.py Test 2b).
+            #
+            # Correct dilation = strides[k]: stepping by the level's own
+            # stride lands directly on the nearest coarser context site
+            # (which is at stride strides[k-1] = 2·strides[k], offset by
+            # strides[k] from the Level-k position).
             cnns = []
             for k in range(1, self.K):
                 if dilated_conv:
-                    # coarser context lives at stride strides[k-1]; dilate to reach it
-                    d = strides[k - 1]
+                    d = strides[k]                       # this level's own stride
                     d = max(1, min(d, L // 4))
                 else:
                     d = 1
                 cnns.append(make_cnn(dilation=d))
             self.cnns = nn.ModuleList(cnns)
             self.cnn_shared = None
+
+    def init_perscale_from_shared_state(self, shared_state_dict):
+        """Copy shared HCG's single CNN weights into every per-scale CNN.
+
+        Only copies the *prior CNN* — the caller is responsible for
+        copying MERA / Symmetrized weights separately (they live at
+        keys not starting with ``prior.cnn_shared.``). See
+        ``init_perscale_from_shared_full_state`` for the wrapper that
+        does both. Kept as a separate low-level primitive since some
+        experiments may want to combine a fresh MERA with a pretrained
+        shared CNN.
+
+        Starts training from a scale-invariant conditional prior. Per-
+        scale CNNs may then differentiate (find per-level physics) or
+        stay similar (confirm scale-invariance is the true optimum).
+
+        No-op if this instance is scale_shared=True (no per-scale CNNs
+        to init) or if no cnn_shared params found in the given state.
+        """
+        if self.cnns is None:
+            print("[warn] init_perscale_from_shared_state: scale_shared=True, nothing to init")
+            return
+        # Extract shared CNN parameters
+        prefix = "prior.cnn_shared."
+        shared_params = {
+            k[len(prefix):]: v
+            for k, v in shared_state_dict.items()
+            if k.startswith(prefix)
+        }
+        if not shared_params:
+            print(f"[warn] init_perscale_from_shared_state: no keys starting with "
+                  f"'{prefix}' found in shared state (found {len(shared_state_dict)} "
+                  f"total keys); skipping.")
+            return
+        # Copy shared CNN weights into every per-scale CNN
+        n_copied = 0
+        with torch.no_grad():
+            for k, cnn in enumerate(self.cnns):
+                cnn_sd = cnn.state_dict()
+                for name, param in shared_params.items():
+                    if name in cnn_sd and cnn_sd[name].shape == param.shape:
+                        cnn_sd[name].copy_(param)
+                        n_copied += 1
+                    else:
+                        expected_shape = tuple(cnn_sd[name].shape) if name in cnn_sd else "MISSING"
+                        print(f"[warn] Level {k+1} CNN: could not copy '{name}' "
+                              f"(shape {tuple(param.shape)} vs expected {expected_shape})")
+        print(f"[init_perscale_from_shared] copied {n_copied} tensors from shared → "
+              f"{len(self.cnns)} per-scale CNNs (each level = same starting weights)")
 
     # ---------------------------------------------------------------------
     # Core: compute (μ, log_sigma) for level k conditioned on coarser context.

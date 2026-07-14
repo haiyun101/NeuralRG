@@ -53,6 +53,7 @@ group.add_argument("-nsfBound", type=float, default=5.0, help="Boundary B for th
 group.add_argument("-gradClip", type=float, default=0.0, help="Max gradient norm (clip_grad_norm_); 0 disables. Recommended ~5.0 for NSF L=32 where unclipped runs NaN around ep 3-6k.")
 group.add_argument("-bridgeWeight", type=float, default=0.0, help="Bridge-targeted upweighting: each training sample with |M|<bridgeThresh gets weight (1+bridgeWeight) instead of 1. 0 disables.")
 group.add_argument("-bridgeThresh", type=float, default=0.5, help="Per-sample magnetization threshold for the bridge region (|M_i|<thresh -> upweighted). Only used with -bridgeWeight>0.")
+group.add_argument("-volumePreservingWeight", type=float, default=0.0, help="Soft volume-preserving regularizer: loss += lambda * mean((log|det J_MERA|)^2). 0 = off (default). Forces MERA's Jacobian toward 0 so HCG prior variance actually reflects the data marginal variance (rescues σ interpretability). Only active with -dataDriven.")
 group.add_argument("-pathGrad", action='store_true', help="Reverse-KL path-gradient (STL) estimator: backward through path only, drop explicit-theta score-function term. Vaitl et al. 2024 (arxiv:2403.15881). Adds one inverse pass per step (~50%% wall-time overhead). Reverse-KL only for now.")
 group.add_argument("-scaleLoss", type=float, default=0.0, help="Multi-scale loss coefficient lambda_scale. Adds lambda_scale * sum_s MSE(zscore(y_s[::2,::2]), zscore(y_{s+1})) to the training loss. Penalizes deviation from scale invariance at every MERA scale; targets the rev-KL deep-block collapse and fwd-KL deep-block inflation diagnosed in rg_fixed_point_report.md. 0 disables. (forward-KL / dataDriven only for now.)")
 group.add_argument("-cosineAnneal", action='store_true', help="Use CosineAnnealingLR scheduler over full training: lr smoothly decays from -lr to cosineEtaMin (default lr*0.01) over -epochs. Off by default; opt-in only (existing runs unaffected). Mutually exclusive in effect with the legacy -adaptivelr StepLR (adaptivelr takes priority if both set).")
@@ -66,6 +67,8 @@ group.add_argument("-hcgScaleShared", type=int, default=1, help="1 = scale-share
 group.add_argument("-hcgHidden", type=int, default=32, help="hidden channels of the hierarchical-prior CNN(s).")
 group.add_argument("-hcgDilated", type=int, default=1, help="1 = per-level CNN uses dilation = coarser-level stride (reaches coarser context). 0 = dilation always 1. Only meaningful with -hcgScaleShared=0.")
 group.add_argument("-hcgCircular", type=int, default=1, help="1 = HCG CNN uses padding_mode='circular' (respects Ising periodic BC, default). 0 = zero-padding (matches i2 original but structurally biased at boundaries).")
+group.add_argument("-hcgSharedDilations", type=str, default="", help="Progressive dilation for the shared HCG CNN (only meaningful with -hcgScaleShared=1). Comma-separated list of 3 dilations for the CNN's three conv layers, e.g. '1,2,4' → effective RF = 15 (vs default 7 with uniform dilation=1). Empty (default) → uniform dilation=1, RF=7. Useful for L>=32 where Level 1's coarser context is >3 sites away.")
+group.add_argument("-hcgInitFromShared", type=str, default="", help="Path to a shared HCG run folder (containing savings/*.saving). Only meaningful with -hcgScaleShared=0 (per-scale). At start of training, loads that shared checkpoint and copies its single CNN's weights into every per-scale CNN — per-scale starts from a scale-invariant point and may then differentiate or stay similar. Useful for testing whether per-scale physics genuinely differs from scale-invariance, given a good starting minimum.")
 
 group = parser.add_argument_group('Ising target parameters')
 #
@@ -122,6 +125,44 @@ if args.load:
         args.hcgHidden      = int(np.array(f["hcgHidden"]))      if "hcgHidden"      in f else 32
         args.hcgDilated     = int(np.array(f["hcgDilated"]))     if "hcgDilated"     in f else 1
         args.hcgCircular    = int(np.array(f["hcgCircular"]))    if "hcgCircular"    in f else 1
+        args.hcgSharedDilations = str(np.array(f["hcgSharedDilations"]).item().decode()) if "hcgSharedDilations" in f else ""
+        # Restore -symmetry too. Historically CLI-only; without this the
+        # saved Symmetrized state_dict (has `flow.` prefix) fails to load
+        # into a bare MERA. Legacy runs without this field: infer from the
+        # checkpoint's key structure below.
+        if "symmetry" in f:
+            args.symmetry = bool(np.array(f["symmetry"]))
+        else:
+            # Auto-detect from checkpoint keys (legacy run without the
+            # HDF5 flag).
+            import glob as _g
+            _sav = sorted(_g.glob(rootFolder + 'savings/*.saving'))
+            if _sav:
+                _tmp = torch.load(_sav[-1], weights_only=False, map_location='cpu')
+                _sd = _tmp['model'] if (isinstance(_tmp, dict) and 'model' in _tmp) else _tmp
+                _has_flow_prefix = any(k.startswith('flow.') for k in _sd.keys())
+                if _has_flow_prefix and not args.symmetry:
+                    print("[load] checkpoint has `flow.` prefix → auto-enable -symmetry")
+                    args.symmetry = True
+                del _tmp, _sd
+        # Same restore for other CLI-only flags. If missing from HDF5
+        # (legacy run), keep whatever the user passed on CLI.
+        if "dataDriven" in f:
+            args.dataDriven = bool(np.array(f["dataDriven"]))
+        if "noDeq" in f:
+            args.noDeq = bool(np.array(f["noDeq"]))
+        if "skipHMC" in f:
+            args.skipHMC = bool(np.array(f["skipHMC"]))
+        if "gradClip" in f:
+            args.gradClip = float(np.array(f["gradClip"]))
+        if "gradAccum" in f:
+            args.gradAccum = int(np.array(f["gradAccum"]))
+        if "alpha" in f:
+            args.alpha = float(np.array(f["alpha"]))
+        if "dataPath" in f:
+            _dp = str(np.array(f["dataPath"]).item().decode())
+            if _dp:
+                args.dataPath = _dp
 else:
     epochs = args.epochs
     batch = args.batch
@@ -167,6 +208,7 @@ else:
         f.create_dataset("nsfBound", data=nsfBound)
         f.create_dataset("bridgeWeight", data=args.bridgeWeight)
         f.create_dataset("bridgeThresh", data=args.bridgeThresh)
+        f.create_dataset("volumePreservingWeight", data=args.volumePreservingWeight)
         f.create_dataset("scaleLoss", data=args.scaleLoss)
         f.create_dataset("priorType", data=np.string_(args.priorType))
         f.create_dataset("condPriorSlowStride", data=args.condPriorSlowStride)
@@ -176,6 +218,20 @@ else:
         f.create_dataset("hcgHidden", data=args.hcgHidden)
         f.create_dataset("hcgDilated", data=args.hcgDilated)
         f.create_dataset("hcgCircular", data=args.hcgCircular)
+        f.create_dataset("hcgSharedDilations", data=np.string_(args.hcgSharedDilations))
+        # Save -symmetry as a boolean so -load can rebuild the same wrap.
+        # Historically -symmetry was CLI-only; state_dicts from Symmetrized
+        # runs have `flow.` prefix and won't load into a bare MERA.
+        f.create_dataset("symmetry", data=bool(args.symmetry))
+        # Same story for other CLI-only flags — save all so `-load` gives
+        # exactly the same training loop as the original run.
+        f.create_dataset("dataDriven", data=bool(args.dataDriven))
+        f.create_dataset("noDeq", data=bool(args.noDeq))
+        f.create_dataset("skipHMC", data=bool(args.skipHMC))
+        f.create_dataset("gradClip", data=float(args.gradClip))
+        f.create_dataset("gradAccum", data=int(args.gradAccum))
+        f.create_dataset("alpha", data=float(args.alpha))
+        f.create_dataset("dataPath", data=np.string_(args.dataPath or ""))
 
 device = torch.device("cpu" if cuda<0 else "cuda:"+str(cuda))
 
@@ -217,7 +273,10 @@ fw = train.symmetryMERAInit(L,d,nlayers,nmlp,nhidden,nrepeat,sym,device,dtype,na
                             hcgScaleShared=bool(args.hcgScaleShared),
                             hcgHidden=args.hcgHidden,
                             hcgDilated=bool(args.hcgDilated),
-                            hcgCircular=bool(args.hcgCircular))
+                            hcgCircular=bool(args.hcgCircular),
+                            hcgSharedDilations=(
+                                [int(x) for x in args.hcgSharedDilations.split(",")]
+                                if args.hcgSharedDilations else None))
 
 #fw = train.symmetryMERAInit(L,d,nlayers,nmlp,nhidden,nrepeat,sym,device,dtype,name)
 
@@ -237,6 +296,117 @@ if args.load:
     if loaded_optimizer_state is not None:
         print("  -> also restored optimizer state (Adam m/v moments)")
 
+# Optional: init per-scale HCG CNNs from a trained shared HCG checkpoint.
+# Runs BEFORE training starts, and only when scale_shared=0. This is the
+# "start from a scale-invariant point" experiment — per-scale then chooses
+# to stay similar (scale-invariance confirmed) or differentiate (per-level
+# physics beats scale-invariance from this basin).
+if args.hcgInitFromShared and not args.load:
+    if args.priorType != "hierarchical_conditional_gaussian":
+        print(f"[warn] -hcgInitFromShared given but priorType is "
+              f"{args.priorType}, skipping.")
+    elif args.hcgScaleShared:
+        print(f"[warn] -hcgInitFromShared given but -hcgScaleShared=1 "
+              f"(per-scale not in use), skipping.")
+    else:
+        import os
+        import glob
+        shared_folder = args.hcgInitFromShared
+        shared_ckpts = sorted(
+            glob.glob(os.path.join(shared_folder, "savings", "*.saving")),
+            key=os.path.getctime,
+        )
+        if not shared_ckpts:
+            raise SystemExit(f"-hcgInitFromShared: no *.saving under "
+                             f"{shared_folder}/savings/")
+        shared_ckpt = shared_ckpts[-1]
+        print(f"[hcgInitFromShared] loading shared checkpoint: {shared_ckpt}")
+        shared_state = torch.load(shared_ckpt)
+        shared_model = (shared_state["model"]
+                        if isinstance(shared_state, dict) and "model" in shared_state
+                        else shared_state)
+        # (1) Copy shared MERA + Symmetrized + prior masks (everything
+        # NOT under prior.cnn_shared.*) directly into per-scale model —
+        # architectures match on those keys. Without this, only ~40 K
+        # CNN params would be initialized; the 10.9 M MERA would start
+        # random and dominate initial loss (~2650 vs shared's ~1912).
+        non_cnn = {k: v for k, v in shared_model.items()
+                   if not k.startswith("prior.cnn_shared.")
+                   and not k.startswith("prior.cnns.")}
+        missing, unexpected = fw.load_state_dict(non_cnn, strict=False)
+        # per-scale prior.cnns.*.* will show up as "missing" here — that's
+        # expected; we fill them via init_perscale_from_shared_state next.
+        print(f"[hcgInitFromShared] MERA + Symmetrized state loaded "
+              f"({len(non_cnn)} tensors); "
+              f"{len(missing)} missing (mostly prior.cnns.*.* — filled next), "
+              f"{len(unexpected)} unexpected.")
+        # (2) Expand shared CNN weights to every per-scale CNN
+        prior_instance = fw.flow.prior if hasattr(fw, "flow") else fw.prior
+        prior_instance.init_perscale_from_shared_state(shared_model)
+        # (3) Also expand Adam state if the shared checkpoint carries it.
+        # Without this, per-scale would create fresh Adam m=v=0 → the first
+        # Adam step (bias-corrected to lr·sign(g) even at LOSS minimum)
+        # kicks 10.9 M MERA params out of the shared basin → LOSS drifts up
+        # 10-20 nat and per-scale can't recover. Preserving shared's Adam
+        # moments for MERA (identical arch) and duplicating them to each
+        # per-scale CNN sidesteps that warm-up.
+        if isinstance(shared_state, dict) and "optimizer" in shared_state:
+            shared_opt = shared_state["optimizer"]
+            # Build a fresh matching shared HCG so we can enumerate its
+            # trainable params in the SAME order the shared optimizer saw
+            # them. IMPORTANT: filter by requires_grad — RNVP maskList
+            # buffers show up in named_parameters() but are frozen and
+            # therefore absent from the Adam optimizer's param_group.
+            # Mixing them into positions ⇒ optimizer.load_state_dict()
+            # rejects the group with a size-mismatch ValueError.
+            shared_fw_tmp = train.symmetryMERAInit(
+                L, d, nlayers, nmlp, nhidden, nrepeat, sym, device, dtype, name+"_tmp_shared_for_opt",
+                depthMERA=depthMERA, weightTying=weightTying, haarPrior=haarPrior,
+                flowType=flowType, nsfBins=nsfBins, nsfBound=nsfBound,
+                priorType="hierarchical_conditional_gaussian",
+                hcgScaleShared=True, hcgHidden=args.hcgHidden,
+                hcgDilated=bool(args.hcgDilated), hcgCircular=bool(args.hcgCircular),
+                hcgSharedDilations=None,
+            )
+            shared_trainable = [(n, p) for n, p in shared_fw_tmp.named_parameters() if p.requires_grad]
+            shared_name_to_pos = {n: p for p, (n, _) in enumerate(shared_trainable)}
+            del shared_fw_tmp
+
+            perscale_trainable = [(n, p) for n, p in fw.named_parameters() if p.requires_grad]
+
+            perscale_state = {}
+            n_mera = 0
+            n_cnn = 0
+            for p_pos, (p_name, _) in enumerate(perscale_trainable):
+                if p_name.startswith("prior.cnns."):
+                    # e.g., "prior.cnns.0.0.weight" -> "prior.cnn_shared.0.weight"
+                    _, _, _, tail = p_name.split(".", 3)
+                    shared_equiv = "prior.cnn_shared." + tail
+                    n_cnn += 1
+                else:
+                    shared_equiv = p_name
+                    n_mera += 1
+                s_pos = shared_name_to_pos.get(shared_equiv)
+                if s_pos is None or s_pos not in shared_opt["state"]:
+                    continue
+                src = shared_opt["state"][s_pos]
+                new_entry = {}
+                for k, v in src.items():
+                    new_entry[k] = v.clone() if isinstance(v, torch.Tensor) else v
+                perscale_state[p_pos] = new_entry
+
+            loaded_optimizer_state = {
+                "state": perscale_state,
+                "param_groups": [{
+                    **shared_opt["param_groups"][0],
+                    "params": list(range(len(perscale_trainable))),
+                }],
+            }
+            print(f"[hcgInitFromShared] Adam state expanded: "
+                  f"{n_mera} MERA + {n_cnn} CNN trainable params → "
+                  f"{len(perscale_state)}/{len(perscale_trainable)} state entries populated "
+                  f"(CNN entries duplicated from shared CNN)")
+
 def measure(x):
         p = torch.sigmoid(2.*x).reshape(-1, target.nvars[0])
         s = 2.*p.data.cpu().numpy() - 1.
@@ -253,6 +423,7 @@ LOSS,ZACC,ZOBS,XACC,XOBS = train.learnInterface(
     jsLoss=args.jsLoss, jsLambda=args.jsLambda, jsMemOpt=args.jsMemOpt,
     entropyBeta=args.entropyBeta, gradClip=args.gradClip,
     bridgeWeight=args.bridgeWeight, bridgeThresh=args.bridgeThresh,
+    volumePreservingWeight=args.volumePreservingWeight,
     pathGrad=args.pathGrad,
     scaleLoss=args.scaleLoss,
     cosineAnneal=args.cosineAnneal, cosineEtaMin=args.cosineEtaMin,

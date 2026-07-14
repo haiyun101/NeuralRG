@@ -47,6 +47,8 @@ HCG_SHARED="${HCG_SHARED:-1}"
 HCG_HIDDEN="${HCG_HIDDEN:-32}"
 HCG_DILATED="${HCG_DILATED:-1}"
 HCG_CIRCULAR="${HCG_CIRCULAR:-1}"
+HCG_SHARED_DIL="${HCG_SHARED_DIL:-}"    # e.g. "1,2,4" for progressive shared-HCG dilation
+HCG_INIT_SHARED="${HCG_INIT_SHARED:-}"  # path to shared-HCG folder for per-scale init copy
 
 # Folder suffix encodes non-default knobs.
 SUFFIX=""
@@ -58,6 +60,8 @@ fi
 [ "$HCG_HIDDEN" != "32" ] && SUFFIX="${SUFFIX}_hcgh${HCG_HIDDEN}"
 [ "$HCG_DILATED" != "1" ] && SUFFIX="${SUFFIX}_nodilate"
 [ "$HCG_CIRCULAR" != "1" ] && SUFFIX="${SUFFIX}_zeropad"
+[ -n "$HCG_SHARED_DIL" ] && SUFFIX="${SUFFIX}_progdil${HCG_SHARED_DIL//,/-}"
+[ -n "$HCG_INIT_SHARED" ] && SUFFIX="${SUFFIX}_initshared"
 [ "$NHIDDEN" != "128" ] && SUFFIX="${SUFFIX}_nh${NHIDDEN}"
 [ "$NREPEAT" != "1" ] && SUFFIX="${SUFFIX}_nr${NREPEAT}"
 [ "$LR" != "1e-3" ] && SUFFIX="${SUFFIX}_lr${LR}"
@@ -105,7 +109,7 @@ python -u main.py \
     -nlayers 16 -nmlp 3 -nhidden "$NHIDDEN" -nrepeat "$NREPEAT" \
     -lr "$LR" \
     -gradClip "$GRADCLIP" \
-    -savePeriod 200 \
+    -savePeriod "${SAVE_PERIOD:-200}" \
     -symmetry \
     -skipHMC \
     -dataDriven \
@@ -115,6 +119,8 @@ python -u main.py \
     -hcgScaleShared "$HCG_SHARED" \
     -hcgHidden "$HCG_HIDDEN" \
     -hcgDilated "$HCG_DILATED" \
-    -hcgCircular "$HCG_CIRCULAR"
+    -hcgCircular "$HCG_CIRCULAR" \
+    -hcgSharedDilations "$HCG_SHARED_DIL" \
+    -hcgInitFromShared "$HCG_INIT_SHARED"
 
 echo "Done."

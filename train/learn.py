@@ -97,7 +97,7 @@ def _compute_scale_invariance_loss(intermediates):
     return loss
 
 
-def symmetryMERAInit(L,d,nlayers,nmlp,nhidden,nrepeat,symmetryList,device,dtype,name = None, channel = 1, depthMERA = None,  weightTying=False, haarPrior=False, flowType="rnvp", nsfBins=8, nsfBound=5.0, priorType="gaussian", condPriorSlowStride=-1, condPriorHidden=32, priorDf=4.0, hcgScaleShared=True, hcgHidden=32, hcgDilated=True, hcgCircular=True):
+def symmetryMERAInit(L,d,nlayers,nmlp,nhidden,nrepeat,symmetryList,device,dtype,name = None, channel = 1, depthMERA = None,  weightTying=False, haarPrior=False, flowType="rnvp", nsfBins=8, nsfBound=5.0, priorType="gaussian", condPriorSlowStride=-1, condPriorHidden=32, priorDf=4.0, hcgScaleShared=True, hcgHidden=32, hcgDilated=True, hcgCircular=True, hcgSharedDilations=None):
     # Latent prior selection. The 'conditional_gaussian' option is
     # scheme A from analyzers/rg_fixed_point/improvements_zh.md: relaxes
     # the implicit demand that fast modes be marginally independent
@@ -126,13 +126,15 @@ def symmetryMERAInit(L,d,nlayers,nmlp,nhidden,nrepeat,symmetryList,device,dtype,
         # by using circular padding by default.
         print(f">>> Using Hierarchical Conditional Gaussian prior "
               f"(scale_shared={hcgScaleShared}, hidden={hcgHidden}, "
-              f"dilated={hcgDilated}, circular_pad={hcgCircular})")
+              f"dilated={hcgDilated}, circular_pad={hcgCircular}, "
+              f"shared_dilations={hcgSharedDilations})")
         s = source.HierarchicalConditionalGaussian(
             [channel]+[L]*d,
             n_hidden=hcgHidden,
             scale_shared=hcgScaleShared,
             use_circular_padding=hcgCircular,
             dilated_conv=hcgDilated,
+            shared_dilations=hcgSharedDilations,
         )
     elif priorType == "studentT":
         print(f">>> Using Student-t prior  (df={priorDf}, "
@@ -286,7 +288,7 @@ def learn(source, flow, batchSize, epochs, lr=1e-3, save = True, saveSteps = 10,
     return LOSS,ACC,OBS
 
 
-def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save=True, saveSteps=10, savePath=None, keepSavings=3, weight_decay=0.001, adaptivelr=False, HMCsteps=10, HMCthermal=10, HMCepsilon=0.2, measureFn=None, alpha=1.0, skipHMC=True, dataDriven=False, dataPath=None, targetT=None, noDeq=False, jsLoss=False, jsLambda=0.5, jsMemOpt=False, entropyBeta=0.0, gradClip=0.0, bridgeWeight=0.0, bridgeThresh=0.5, pathGrad=False, scaleLoss=0.0, cosineAnneal=False, cosineEtaMin=None, gradAccum=1, optimizerState=None):
+def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save=True, saveSteps=10, savePath=None, keepSavings=3, weight_decay=0.001, adaptivelr=False, HMCsteps=10, HMCthermal=10, HMCepsilon=0.2, measureFn=None, alpha=1.0, skipHMC=True, dataDriven=False, dataPath=None, targetT=None, noDeq=False, jsLoss=False, jsLambda=0.5, jsMemOpt=False, entropyBeta=0.0, gradClip=0.0, bridgeWeight=0.0, bridgeThresh=0.5, volumePreservingWeight=0.0, pathGrad=False, scaleLoss=0.0, cosineAnneal=False, cosineEtaMin=None, gradAccum=1, optimizerState=None):
     # gradAccum: number of micro-batches to accumulate gradients over before
     # calling optimizer.step(). Splits batchSize into gradAccum micro-batches
     # of size (batchSize // gradAccum) each, so effective batch is preserved.
@@ -440,7 +442,7 @@ def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save=True, saveStep
     # When Symmetrized wraps the MERA, scale loss is computed on the
     # un-symmetrized branch only (one extra forward pass per step). This
     # keeps the cost predictable and the loss term interpretable.
-    _inner_mera = getattr(flow, "flow", flow) if scaleLoss > 0 else None
+    _inner_mera = getattr(flow, "flow", flow) if (scaleLoss > 0 or volumePreservingWeight > 0) else None
 
     z_ = flow.prior.sample(batchSize)
     x_ = flow.prior.sample(batchSize)
@@ -584,6 +586,20 @@ def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save=True, saveStep
                 else:
                     _bridge_frac = float('nan')
                     loss = lossorigin.mean()
+
+                # Volume-preserving regularizer. Adds λ · mean((log|det J_MERA|)²)
+                # to the loss. Under the un-symmetrized MERA, log|det J| per
+                # sample tells us how much the flow expands/contracts volume;
+                # pushing it toward 0 forces the marginal p(z) to actually
+                # equal the HCG prior scale (rescues σ interpretability, see
+                # discussion of prior-Jacobian trade-off). Extra cost: one
+                # un-symmetrized forward pass.
+                _vp_penalty_value = float("nan")
+                if volumePreservingWeight > 0:
+                    _, _logjac_mera = _inner_mera.forward(x_std)
+                    _vp_penalty_raw = _logjac_mera.pow(2).mean()
+                    loss = loss + volumePreservingWeight * _vp_penalty_raw
+                    _vp_penalty_value = float(_vp_penalty_raw.item())
 
                 # Multi-scale loss (III.1 in improvements_zh.md). Calls the
                 # un-symmetrized MERA's forward_with_intermediates and
