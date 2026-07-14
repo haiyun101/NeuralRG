@@ -154,7 +154,11 @@ def collect_experimental_results_for_T(data_path, target_t, L=None, exclude=None
 
     for folder in folders:
         # 提取 L、温度和方法名。例如: 32Ising_T2.3_nsym_HP
-        match = re.search(r"(\d+)Ising_T(\d+\.\d+)_(\w+)", folder)
+        # NOTE: use [\w.-]+ instead of \w+ so folder names containing `-`
+        # or `.` (e.g. "..._vp1e-3_...", "..._gc5.0_...") don't get truncated
+        # at the first non-word character, which caused method-name
+        # collisions (multiple λ values mapped to the same key).
+        match = re.search(r"(\d+)Ising_T(\d+\.\d+)_([\w.-]+)", folder)
         if not match: continue
 
         folder_l = int(match.group(1))
@@ -186,13 +190,47 @@ def collect_experimental_results_for_T(data_path, target_t, L=None, exclude=None
         
         try:
             with h5py.File(latest_record, "r") as rf:
-                # 获取 Loss
+                # 获取 Loss (may include regularizer penalties like VP)
                 full_loss = np.array(rf["LOSS"]).flatten()
-                
-                # 找到最小 Loss 及其索引
-                min_idx = np.argmin(full_loss)
-                min_loss = full_loss[min_idx]
-                
+                # ENTROPY = pure MLE loss = -E_data[log q(x)]
+                # For non-regularized runs, ENTROPY == LOSS.
+                # For runs with VP or entropy penalties, ENTROPY < LOSS
+                # because LOSS = ENTROPY + penalty. ENTROPY is the fair
+                # cross-variant metric (a.k.a. "F" in cross-variant tables).
+                full_entropy = np.array(rf["ENTROPY"]).flatten() if "ENTROPY" in rf else None
+
+                # Pick best by ENTROPY (pure MLE) so VP-regularized runs
+                # are not artificially penalized by their own regularizer
+                # in the "best of each mode" comparison. Fall back to
+                # LOSS when ENTROPY is unavailable (legacy runs).
+                if full_entropy is not None and len(full_entropy) == len(full_loss):
+                    min_idx = int(np.argmin(full_entropy))
+                else:
+                    min_idx = int(np.argmin(full_loss))
+                min_loss = float(full_loss[min_idx])
+
+                # Best-200: lowest 200-epoch rolling mean of ENTROPY.
+                # Smoothes out lucky-batch spikes → what actually
+                # characterizes the trained model. Reduces or eliminates
+                # the artifactual negative KL(p‖q) seen when using the
+                # single-epoch minimum (which drops below H(p_HS) purely
+                # from batch noise).
+                # Also record the CENTER epoch of the min-mean window so
+                # downstream tier1 / flow_sample_diagnostic can use that
+                # checkpoint for consistent physics analysis.
+                best_200_entropy = None
+                best_200_epoch = None
+                if full_entropy is not None and len(full_entropy) >= 200:
+                    _cs = np.cumsum(full_entropy)
+                    _window_sums = _cs[199:] - np.concatenate([[0.0], _cs[:-200]])
+                    _window_means = _window_sums / 200.0
+                    _min_start = int(np.argmin(_window_means))
+                    best_200_entropy = float(_window_means[_min_start])
+                    best_200_epoch = _min_start + 100  # center of the 200-ep window
+                elif full_entropy is not None and len(full_entropy) > 0:
+                    best_200_entropy = float(full_entropy.mean())
+                    best_200_epoch = int(np.argmin(full_entropy))
+
                 # 连续图像 的 能量/熵 (nat 单位, reverse-KL 下 flow 采样测得):
                 #   ENERGY  = E_q[-log p_unnorm(x)] = ⟨A⟩   -> E_c
                 #   ENTROPY = -E_q[log q(x)] = H(q)         -> S_c
@@ -205,15 +243,22 @@ def collect_experimental_results_for_T(data_path, target_t, L=None, exclude=None
                     if min_idx < len(full_energy):
                         corr_energy = float(full_energy[min_idx])
 
-                if "ENTROPY" in rf:
-                    full_entropy = np.array(rf["ENTROPY"]).flatten()
+                if full_entropy is not None:
                     if min_idx < len(full_entropy):
                         corr_entropy = float(full_entropy[min_idx])
 
+                # If two folders reduce to the same method name (should not
+                # happen after the [\w.-]+ regex fix, but guard anyway),
+                # keep the one with lower min_loss.
+                existing = results.get(method)
+                if existing is not None and existing["min_loss"] <= min_loss:
+                    continue
                 results[method] = {
                     "min_loss": min_loss,
                     "energy": corr_energy,     # E_c (nat)
                     "entropy": corr_entropy,   # S_c (nat)
+                    "best_200_entropy": best_200_entropy,  # smoothed S
+                    "best_200_epoch": best_200_epoch,      # center of min-mean window
                     "folder": os.path.join(data_path, folder),
                 }
 
@@ -587,10 +632,20 @@ def generate_report_for_T(target_t, L, exclude=None):
             out.append([f"*{method} — training*", "continuous",
                         fi(ml), fi(d.get("energy")), fi(d.get("entropy")),
                         fi(kl_qp_tr), "N/A"])
-        else:                              # forward-KL: only S (= loss) logged
-            kl_pq_tr = (ml - th["S_c"]) if ml_num else None     # loss - H(p_HS)
+        else:                              # forward-KL: S is pure MLE (ENTROPY)
+            # Use Best-200 (200-epoch rolling minimum-mean of ENTROPY)
+            # as the reported S. Smoothed metric avoids the artifactual
+            # negative KL(p‖q) from single-epoch minima dipping below
+            # H(p_HS) due to batch noise.
+            b200 = d.get("best_200_entropy")
+            ent = d.get("entropy")
+            b200_num = isinstance(b200, (int, float, np.floating))
+            ent_num = isinstance(ent, (int, float, np.floating))
+            fair_s = b200 if b200_num else (ent if ent_num else ml)
+            fair_s_num = b200_num or ent_num or ml_num
+            kl_pq_tr = (fair_s - th["S_c"]) if fair_s_num else None
             out.append([f"*{method} — training*", "continuous",
-                        "N/A", "N/A", fi(ml), "N/A", fi(kl_pq_tr)])
+                        "N/A", "N/A", fi(fair_s), "N/A", fi(kl_pq_tr)])
         dg = d.get("diag")
         if dg and all(isinstance(dg.get(k), (int, float, np.floating))
                       for k in ("Fcq", "EA", "Hq")):
@@ -605,10 +660,27 @@ def generate_report_for_T(target_t, L, exclude=None):
                         kl_qp_d, kl_pq_d])
         return out
 
-    if best_rev is not None:
-        sum_rows += _summary_method_rows(best_rev)
-    if best_fwd is not None:
-        sum_rows += _summary_method_rows(best_fwd)
+    # Include ALL trained variants (not just best-of-mode) so nothing gets
+    # hidden. Group by mode, sort by min_loss (ascending). The former
+    # "best-of-mode" filter obscured every HCG/VP variant when a baseline
+    # happened to have a marginally lower L (which is unfair for VP runs
+    # whose L is inflated by the penalty term).
+    # Sort forward-KL runs by ENTROPY (pure MLE, penalty-free) so VP variants
+    # rank fairly. Fall back to min_loss when ENTROPY unavailable.
+    def _fair_key(d):
+        b200 = d.get("best_200_entropy")
+        if isinstance(b200, (int, float, np.floating)):
+            return b200
+        ent = d.get("entropy")
+        if isinstance(ent, (int, float, np.floating)):
+            return ent
+        return d.get("min_loss", float("inf"))
+    rev_sorted = sorted(rev.items(), key=lambda kv: _fair_key(kv[1]))
+    fwd_sorted = sorted(fwd.items(), key=lambda kv: _fair_key(kv[1]))
+    for method, _ in rev_sorted:
+        sum_rows += _summary_method_rows(method)
+    for method, _ in fwd_sorted:
+        sum_rows += _summary_method_rows(method)
 
     summary_section = [
         "",

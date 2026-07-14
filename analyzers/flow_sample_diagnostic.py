@@ -72,7 +72,12 @@ DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
 def detect_symmetry(state_dict):
-    return any(k.startswith("flow.") for k in state_dict.keys())
+    # New checkpoint format wraps model state under {'model': ..., 'optimizer': ...}.
+    # Peel that off before scanning key prefixes.
+    keys = state_dict.get("model", state_dict).keys() \
+        if isinstance(state_dict, dict) and "model" in state_dict \
+        else state_dict.keys()
+    return any(k.startswith("flow.") for k in keys)
 
 
 def read_sigma(folder):
@@ -152,6 +157,8 @@ def build_flow(folder, state, device=None):
         hcgHidden      = int(np.array(f["hcgHidden"]))       if "hcgHidden"      in f else 32
         hcgDilated     = bool(np.array(f["hcgDilated"]))     if "hcgDilated"     in f else True
         hcgCircular    = bool(np.array(f["hcgCircular"]))    if "hcgCircular"    in f else True
+        _hcgSharedDilStr = str(np.array(f["hcgSharedDilations"]).item().decode()) if "hcgSharedDilations" in f else ""
+        hcgSharedDilations = [int(x) for x in _hcgSharedDilStr.split(",")] if _hcgSharedDilStr else None
     if depthMERA == -1:
         depthMERA = None
 
@@ -171,6 +178,7 @@ def build_flow(folder, state, device=None):
         condPriorHidden=condPriorHidden, priorDf=priorDf,
         hcgScaleShared=hcgScaleShared, hcgHidden=hcgHidden,
         hcgDilated=hcgDilated, hcgCircular=hcgCircular,
+        hcgSharedDilations=hcgSharedDilations,
     )
     fw.load(state)
     fw.eval()
@@ -317,7 +325,7 @@ def save_corr_png(folder, M_q, M_p, G_q, G_p, epoch, label, T=None, L=None):
     return out
 
 
-def run_one(folder, n_samples, batch_size, seed, make_png=True):
+def run_one(folder, n_samples, batch_size, seed, make_png=True, force_epoch=None):
     folder = folder.rstrip("/") + "/"
 
     saving_files = sorted(
@@ -326,7 +334,14 @@ def run_one(folder, n_samples, batch_size, seed, make_png=True):
     )
     if not saving_files:
         raise FileNotFoundError(f"no .saving files in {folder}savings/")
-    ckpt_path = saving_files[-1]
+    if force_epoch is not None:
+        # pick the saving nearest to force_epoch (used to work around
+        # rare sampling-time overflows on very-late checkpoints).
+        eps = [int(re.search(r"epoch(\d+)", p).group(1)) for p in saving_files]
+        idx = min(range(len(eps)), key=lambda i: abs(eps[i] - force_epoch))
+        ckpt_path = saving_files[idx]
+    else:
+        ckpt_path = saving_files[-1]
     epoch = int(re.search(r"epoch(\d+)", ckpt_path).group(1))
 
     # map_location=DEVICE so state tensors land on the same device the
@@ -480,13 +495,17 @@ def main():
     p.add_argument("--no-json", action="store_true",
                    help="do not overwrite flow_diagnostic.json "
                         "(use with small -n when only refreshing the PNG)")
+    p.add_argument("--epoch", type=int, default=None,
+                   help="Pick saving nearest to this epoch instead of latest. "
+                        "Useful when the last checkpoint's sampling has "
+                        "numerically diverged.")
     args = p.parse_args()
 
     for folder in args.folders:
         print(f"\n=== {folder} ===", flush=True)
         try:
             out = run_one(folder, args.n_samples, args.batch_size, args.seed,
-                          make_png=not args.no_png)
+                          make_png=not args.no_png, force_epoch=args.epoch)
         except Exception as e:
             print(f"  FAILED: {e}")
             continue
