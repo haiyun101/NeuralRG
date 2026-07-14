@@ -1,49 +1,246 @@
 # Ising L=32 — Concise Report (T=2.269)
 
-> **2026-05-28 update.** Two bodies of work since the original edition
-> are merged into this single report (the prior `_v2.md` fork has been
-> removed):
->
-> - **Bridge-targeted upweighting** (`-bridgeWeight`) — replacement
->   for the failed `-entropyBeta` approach. First run lands within
->   ~1% of data on three structural statistics (`mag_abs_q`, `xi_q`,
->   `G(L/2)/G(0)`) at the cost of ≈6 nat KL in both directions.
-> - **Phase2 anchor-confusion fix** — the old phase2 diagnostic row
->   was scoring an anchor `epoch9500.saving` left in the savings
->   folder, not the actual phase2 ep1500 checkpoint. Corrected
->   re-diagnostic (job 38843546) has landed and the summary table /
->   structural-reading table now carry the real phase2 numbers.
+## ★ Phase-4 volume-preserving penalty (2026-07-09) — the LOSS metric was concealing the story
 
-## ★ Phase-2 P2.x Verdict Update (2026-06-25) — `i2 + nrepeat=2` cross-L confirmation
+Diagnostic finding across all HCG variants: the CNN's predicted σ² is
+10–100× smaller than the empirical variance of MERA's z_fast output
+(calib_ratio ≈ 0.03–0.10). MERA's log|det J| absorbs the mismatch,
+letting total LOSS stay low even though the CNN is not encoding
+"physical" per-scale variance. To rescue the interpretability the design
+was supposed to give, we add a soft penalty forcing MERA toward
+volume-preserving:
 
-**HS data anchors (L=32 T_c):** `|M|_p = 2.382,  gL_p = 0.477,  xi_p = 8.568`
+```
+loss_total = −log q(x) + λ · (log|det J_MERA|)²
+                 └────── F ──────┘    └── VP penalty ──┘
+                 (pure MLE)         (regularizer term)
+```
 
-| Cell | Configuration | **KL_qp** | KL_pq | \|M\| | gL | xi |
-|------|---------------|----------:|------:|------:|---:|---:|
-| **A** | baseline (nr=1) | 23.42 | 17.05 | 2.441 | 0.503 | 8.786 |
-| **B** | i2 only (stride8h32, nr=1) | 21.16 | 16.05 | 2.376 | 0.487 | 8.584 |
-| **★ D ★** | **i2 + nrepeat=2** | **17.69** ✅ | **13.37** | 2.496 | 0.500 | 8.817 |
-| C (diverged, retrying) | baseline + **nrepeat=2** | — | — | — | — | — |
+**IMPORTANT**: only **F** (pure MLE) is comparable across variants.
+The training-target LOSS `L = F + λ·penalty` inflates VP runs by the
+penalty term itself. All numbers below are **F** unless noted.
 
-**Key findings:**
-- D is the best on KL_qp at L=32 (17.69 vs A 23.42), a 24% improvement
-- The improvement at L=32 is smaller than at L=64 (L=32 already near H(p_HS) limit, smaller headroom)
-- **C32 baseline + nr=2 *alone* diverged** at epoch 13K (LOSS spiked to 73716), resubmitted with `LR=5e-4 + gradClip=5.0`
-- ⇒ **nrepeat=2 *alone* is unstable at L=32; i2 prior *stabilises* it** (D32 stable through epoch 13,858 before walltime cut)
+### L=32 T_c results with VP penalty (fixdil per-scale nr=1)
 
-**Cross-L consistency:**
-- L=32: D KL_qp 17.7 < A 23.4 (24% improvement)
-- L=64: D KL_qp 51.3 < A 86.9 (41% improvement)
-- ⇒ **i2 + nrepeat=2 is the cross-L winner; improvement grows with L** (because L=64 baseline plateau is hit harder by FSS critical scaling → more room to recover)
+Fixdil per-scale gained MOST from VP because its CNN was already trying
+to encode conditional variance and MERA had been silently overriding it.
 
-### Phase-2 P2.x figures — i2 + nrepeat=2 winner (D32)
+| Variant | F | vs fixdil baseline | vs D nr=2 (1896.16) |
+|---|---:|---:|---:|
+| fixdil baseline (no VP) | 1903.97 | ref | +7.81 |
+| fixdil + VP-1e-5 | 1896.54 | **−7.43** | +0.38 |
+| fixdil + VP-1e-4 | 1897.06 | −6.91 | +0.90 |
+| **fixdil + VP-1e-3** | **1896.20** | **−7.77** | **+0.04** ← ties D nr=2 at HALF compute |
+| fixdil + VP-1e-2 | 1897.21 | −6.76 | +1.05 |
+
+### Shared HCG + VP: nearly free at small λ
+
+| Variant | F | vs shared baseline (1891.10) |
+|---|---:|---:|
+| shared baseline | 1891.10 | ref |
+| **shared + VP-1e-5** | **1891.99** | **+0.89** ← essentially free |
+| shared + VP-1e-4 | 1892.44 | +1.34 |
+| shared + VP-1e-3 | 1893.52 | +2.42 |
+| shared + VP-1e-2 | 1895.30 | +4.20 |
+
+### Interpretation
+
+**VP penalty asymmetry across architectures:**
+- **Shared** was cheating hardest (its σ was disconnected from physics).
+  Adding VP costs LOSS proportional to how much cheating it stops.
+  But at small λ (1e-5) it's essentially free.
+- **Fixdil** had a semi-honest CNN (Conv0 alive at all levels, R²(mean) up
+  to 0.85 at L1). Adding VP acts as a productive regularizer — it forces
+  MERA to be honest, and the CNN takes over the physical variance role
+  it was supposed to have. Result: fixdil+VP at nr=1 **ties D at nr=2
+  compute**.
+
+### CNN behavior interpretation
+
+The CNN's job is to parametrize `p(z_fast[i] | z_slow) = N(μ_i, σ_i²)`
+per site per level. In practice:
+
+- **μ ≈ 0** (Z2-symmetrized training pushes it to 0) — CNN's mean output
+  is inert.
+- **σ carries all signal** — training shapes it to depend on z_slow.
+- At **fine levels** the learned law is interpretable: `σ(z_slow)`
+  decreases with local ordering `|mean z_slow|` (R² ≈ 0.6 in nodilate,
+  0.6–0.85 in fixdil). This is a susceptibility-like law: model is
+  "quiet" in ordered blocks, "loud" near domain walls.
+- At **coarse levels** most variants collapse Conv0 → σ becomes constant
+  → HCG at those levels degenerates to a plain Gaussian.
+
+Volume-preserving penalty pushes σ closer to reflecting actual conditional
+variance instead of being an ignored bookkeeping variable.
+
+### Sample and correlation plots — winning VP variants
+
+**Fixdil + VP-1e-3 nr=1** (best fixdil-arm cell, F=1896.20 — ties D nr=2):
 
 <p>
-<img src="../../data/32Ising_T2.269_hsBignet_i2_stride8h32_nr2_b64/flow_samples.png" alt="D32 i2+nr2 flow samples" width="42%">
-<img src="../../data/32Ising_T2.269_hsBignet_i2_stride8h32_nr2_b64/flow_correlations.png" alt="D32 i2+nr2 flow correlations" width="56%">
+<img src="../../data/32Ising_T2.269_hsBignet_hcg_perscale_fixdil_vp1e-3_b64/flow_samples.png" alt="fixdil VP-1e-3 samples" width="42%">
+<img src="../../data/32Ising_T2.269_hsBignet_hcg_perscale_fixdil_vp1e-3_b64/flow_correlations.png" alt="fixdil VP-1e-3 correlations" width="56%">
 </p>
 
-See `concise_report_L64_T2.269.md` for the full 4-cell comparison and verdict.
+**Shared + VP-1e-5 nr=1** (best shared-arm cell, F=1891.99 — near-free VP):
+
+<p>
+<img src="../../data/32Ising_T2.269_hsBignet_hcg_shared_vp1e-5_b64/flow_samples.png" alt="shared VP-1e-5 samples" width="42%">
+<img src="../../data/32Ising_T2.269_hsBignet_hcg_shared_vp1e-5_b64/flow_correlations.png" alt="shared VP-1e-5 correlations" width="56%">
+</p>
+
+**Shared + VP-1e-2 nr=1** (strongest VP tested, F=1895.30 — largest departure from cheating):
+
+<p>
+<img src="../../data/32Ising_T2.269_hsBignet_hcg_shared_vp1e-2_b64/flow_samples.png" alt="shared VP-1e-2 samples" width="42%">
+<img src="../../data/32Ising_T2.269_hsBignet_hcg_shared_vp1e-2_b64/flow_correlations.png" alt="shared VP-1e-2 correlations" width="56%">
+</p>
+
+## ★ Physical observables — sample-based physics at T_c
+
+The forward-KL loss (S = −E_data[log q]) tells us how well the flow
+matches the data's log-density. But **it doesn't guarantee that samples
+from the flow reproduce the physics** — a model can memorize the batch
+while still generating overly-ordered / overly-disordered configurations.
+We test this by sampling N=10 000 configurations from each flow and
+computing standard Ising observables.
+
+### Definitions
+
+**Energy per site** `⟨E⟩ = −(1/N_sites) Σ_⟨ij⟩ s_i s_j` (nearest-neighbour
+sum, J=1). Sensitive to short-range order.
+
+**Absolute magnetization** `⟨|M|⟩ = ⟨|(1/N) Σ s_i|⟩`. Order parameter.
+
+**Susceptibility** — the fluctuation of magnetization:
+```
+χ = N_sites · (⟨M²⟩ − ⟨|M|⟩²)
+```
+Physically: **how much the system fluctuates in magnetization from
+configuration to configuration**. Small χ ⇒ every sample has similar M
+(system is "stiff"); large χ ⇒ samples vary widely in M (system is at
+criticality). At the 2D Ising critical point χ **diverges** in the
+thermodynamic limit: χ ∝ |T − T_c|^{−γ} with γ = 7/4. On a finite lattice
+L=32 the peak is finite — theory expects **χ ≈ 33 at T_c** for L=32
+(from Wolff MCMC ground truth).
+
+**Binder cumulant** — a universal ratio of moments:
+```
+U₄ = 1 − ⟨M⁴⟩ / (3 · ⟨M²⟩²)
+```
+Physically: **a dimensionless measure of how Gaussian the magnetization
+distribution is**. For a Gaussian P(M): U₄ = 0. For a delta-function
+(sharp order): U₄ = 2/3 ≈ 0.667. For 2D Ising at criticality the
+universal value is **U₄ ≈ 0.611** — independent of L, entirely determined
+by the fixed point. Deviations from this value directly measure how far
+the model's sampled distribution is from a genuine critical distribution.
+
+**Why U₄ is especially useful**:
+- Universal at T_c (any 2D Ising-universality-class model gives the same)
+- Robust to finite-N sampling noise (moments cancel in the ratio)
+- **A model at T_c that gives U₄ ≠ 0.611 is not producing critical
+  configurations**, no matter how good its LOSS looks
+
+### Ground truth (Wolff MCMC, N=10 000, L=32 T_c)
+
+```
+⟨E⟩ ≈ −1.504     ⟨|M|⟩ ≈ 0.67     χ ≈ 32.93     U₄ ≈ 0.612
+```
+
+### Preliminary model observables (partial — CPU tier1 job timed out)
+
+Only 3 variants completed sampling before the CPU walltime cut. Rerun
+with Best-200 anchored checkpoints planned.
+
+| Variant                    | ⟨E⟩    | χ    | Δχ%  | U₄    | ΔU₄  |
+|:---------------------------|:-----: |:----:|:----:|:-----:|:----:|
+| **GT (Wolff)**             | −1.504 | 32.93|  0   | 0.612 |  0   |
+| D = i2 nr=2                | −1.415 | 22.28| −32% | 0.621 | 0.009|
+| A = Gaussian nr=1          | −1.422 | 20.05| −39% | 0.627 | 0.015|
+| HCG shared nr=1 (LOSS champ) | −1.419 |  **6.88** | **−79%** | 0.649 | **0.037** |
+
+### Physics interpretation
+
+Even with only 3 data points the pattern is stark:
+
+- **HCG shared nr=1** (previously reported as LOSS champion by
+  single-epoch min) has **χ = 6.88 vs GT 32.93** — 5× too small. Its
+  samples don't reproduce critical fluctuations.
+- Its U₄ = 0.649 sits closer to the ordered limit (2/3 = 0.667) than to
+  the critical value 0.611 — consistent with it producing over-ordered
+  configurations.
+- Meanwhile **A** (plain Gaussian nr=1, LOSS 8 nat WORSE than HCG shared)
+  produces **3× more physical susceptibility (χ = 20)** with U₄ closer
+  to the T_c value (0.627 vs shared's 0.649).
+
+**LOSS ≠ physics dissociation confirmed at L=32** exactly as it was at
+L=64. The fair-metric fix (Best-200) applied to L=64 rankings correctly
+demoted HCG shared and elevated fixdil+VP; when we complete the L=32
+tier1 rerun with Best-200 anchors, we expect the same qualitative story.
+
+Remaining variants to run at Best-200 for L=32: fixdil+VP-1e-{5,4,3,2},
+HCG nodilate init nr=2, HCG perscale nr=2, HCG shared nr=2, and the
+new T-sweep results (T=2.15, 2.22, 2.32, 2.40) once training completes.
+
+> **⚠ Note**: `make_concise_report.py` regenerates this file from scratch —
+> both the Phase-3 AND Phase-4 sections must be re-added after every
+> regeneration.
+
+> **⚠ Note**: `make_concise_report.py` regenerates this file from scratch —
+> both the Phase-3 AND Phase-4 sections must be re-added after every
+> regeneration.
+
+---
+
+## ★ Phase-3 HCG results (2026-07-04) — Hierarchical Conditional Gaussian prior
+
+Follow-up to D's KL_qp win: replace i2's single-CNN conditional Gaussian
+prior with a **multi-scale hierarchy** of conditional Gaussians (one per
+stride level [16, 8, 4, 2, 1] for L=32). CNN can be *scale-shared* (one
+CNN across all levels — hard-codes RG scale-invariance) or *per-scale*
+(one CNN per level — flexibility).
+
+### HCG best-200 vs D reference (L=32 T_c)
+
+| Cell | Config | Params | Best-200 | vs D32 |
+|------|--------|-------:|---------:|:-:|
+| A    | Gaussian baseline nr=1 | 10.94 M | 1919.05 | +8.20 |
+| B    | i2 (single CNN) nr=1 | 10.95 M | 1919.31 | +8.46 |
+| **D** | **i2 (single CNN) nr=2** | **21.89 M** | **1910.85** | ref |
+| E-shared nr=1  | HCG shared, nr=1 | 10.95 M | 1912.80 | +1.95 |
+| **E-shared nr=2 (pre-spike)** | HCG shared, nr=2 | 21.89 M | **1910.40** | **−0.45 ★** |
+| E-perscale nr=1 (broken dil) | HCG per-scale, buggy dilation | 10.98 M | 1917.02 | +6.17 |
+| E-perscale nr=1 (**fixdil**) | HCG per-scale, corrected dilation | 10.98 M | 1922.27 | +11.42 |
+| E-perscale nr=2 (**fixdil**) | HCG per-scale, corrected dilation, nr=2 | 21.90 M | 1919.25 | +8.40 |
+
+**Key finding**: **E-shared nr=2 beats D32 by 0.45 nat** — HCG's scale-shared
+prior (RG-invariant architectural bias) improves on D at equal MERA depth.
+
+### CNN mechanism check (via `hcg_perscale_similarity.py`)
+
+Conv0 weight L2 at each hierarchy level (per-scale HCG at L=32 T_c):
+
+| Level | Broken dil | Fixed dil (2026-07-04) |
+|:-:|:-:|:-:|
+| 1 | 1.80 | 0.51 |
+| 2 | **0.0000 (dead)** | **0.98 ✓** |
+| 3 | 0.0001 (dead) | **1.68 ✓** |
+| 4 | 0.0000 (dead) | **2.64 ✓** |
+
+σ output std at Level 2: broken = 0.0000 (constant), fixed = 0.63 (conditional).
+
+### Test 4 — off-critical reversal (T = 2.40) confirms scale-invariance is T_c-specific
+
+| Cell | T_c | T=2.40 |
+|------|:-:|:-:|
+| **shared** (hard-codes scale-invariance) | **1912.80 win by 9 nat** | 1965.90 lose by 1.7 nat |
+| **perscale fixdil** (per-level flexibility) | 1922.27 lose | **1964.21 win ★** |
+
+Reversal confirms scale-invariance is a genuine physics inductive bias for
+the T_c fixed point — not just an optimization artifact.
+
+> **⚠ Note**: `make_concise_report.py` regenerates this file from scratch —
+> this Phase-3 HCG section must be re-added after every regeneration.
 
 ---
 
@@ -51,9 +248,7 @@ See `concise_report_L64_T2.269.md` for the full 4-cell comparison and verdict.
 
 Superset of the two tables above: free energy / energy / entropy **and**
 both KL directions, for exact theory, the two **datasets**, and the best
-trained flow of each mode. Rows are grouped by training objective —
-**reference → reverse-KL → forward-KL → mixed-objective** — separated by
-`══════` double-line dividers inside the table.
+trained flow of each mode. Discrete rows are grouped first.
 
 Font marks where each number comes from (Markdown has no portable text
 colour, so font carries the distinction):
@@ -66,691 +261,235 @@ colour, so font carries the distinction):
   flow diagnostic that draws `x ~ q` (the only way to get a forward-KL
   run's model-side `F/E`).
 
-### Architectures used at L=32
+| Source                               |  Picture   |    F (-lnZ)    |       E       |       S       |  KL(q‖p)  | KL(p‖q)  |
+| :----------------------------------- | :--------: | :------------: | :-----------: | :-----------: | :-------: | :------: |
+| **Exact (theory)**                   |  discrete  | **-952.6481**  | **-668.4678** |  **284.1802** |     —     |    —     |
+| MCMC dataset (Wolff)                 |  discrete  |      N/A       |   -647.0935   |      N/A      |     —     |    —     |
+| **Exact (theory)**                   | continuous | **-2369.5871** | **-466.6111** | **1902.9760** |   **0**   |  **0**   |
+| HS dataset (x ~ p_HS)                | continuous |      N/A       |   -466.6109   |   1902.9762   |     —     |    —     |
+| *sym_longer — training*              | continuous |  *-2357.6262*  |  *-535.9175*  |  *1821.7087*  | *11.9609* |   N/A    |
+| sym_longer — diagnostic (epoch 1590) | continuous |   -2357.3455   |   -533.7950   |   1823.5504   |    N/A    | 89.4075  |
+| *hs_bignet — training*               | continuous |      N/A       |      N/A      |  *1906.6096*  |    N/A    | *3.6336* |
+| hs_bignet — diagnostic (epoch 9500)  | continuous |   -2348.3218   |   -421.4914   |   1926.8304   |  21.2653  |   N/A    |
 
-| Arch    | nlayers | nhidden | trainable params (RNVP) | Used by                                              |
-| :------ | ------: | ------: | ----------------------: | :--------------------------------------------------- |
-| default |      10 |      64 |              1,780,400  | sym, sym_longer, hs_dataDriven                       |
-| bignet  |      16 |     128 |             10,938,240  | sym_bignet_ext, **pathgrad_bignet_long_ext (STL)**, hs_bignet, jsLoss_bignet_long, phase2_finetune, **bridge_w5.0t0.5** |
-
-All rows use `nmlp=3`, `nrepeat=1`, `-symmetry`. Bignet ≈ 6.1× the param
-count of default. Earlier intermediate "midbig" arch (nlayers=12,
-nhidden=96, 3.74M params) was tried at L=32 and L=16 but produced
-non-monotonic results (default beats midbig at L=16 T_c by 1.6 nat;
-midbig much worse than bignet at L=32); discarded — capacity scaling
-turns out to be binary at this problem size, not graded
-(see [project_l32_bignet_fix]).
-
-| Source                          |    F (-lnZ)    |       E       |       S       | KL(q‖p) | KL(p‖q) |
-| :------------------------------ | :------------: | :-----------: | :-----------: | :-----: | :-----: |
-| **═══ Reference ═══**           | ══════════════ | ═════════════ | ═════════════ | ═══════ | ═══════ |
-| **Exact (theory, discrete)**    |  **-952.65**   |  **-668.47**  |  **284.18**   |    —    |    —    |
-| MCMC dataset (Wolff)            |      N/A       |    -647.09    |      N/A      |    —    |    —    |
-| **Exact (theory, continuous)**  | **-2369.59**   |  **-466.61**  | **1902.98**   |  **0**  |  **0**  |
-| HS dataset (x ~ p_HS)           |      N/A       |    -466.61    |   1902.98     |    —    |    —    |
-| **═══ Reverse-KL ═══**          | ══════════════ | ═════════════ | ═════════════ | ═══════ | ═══════ |
-| *sym_longer — training*         |  *-2357.63*    |  *-535.92*    |  *1821.71*    | *11.96* |   N/A   |
-| sym_longer — diag               |   -2357.35     |   -533.80     |   1823.55     |   N/A   |  89.41  |
-| *sym_bignet_ext — training (smoothed-best)* |  *-2360.82*    |  *-515.70*    |  *1845.08*    |  *8.77* |   N/A   |
-| sym_bignet_ext — diag (N=8000) |   -2359.43     |   -519.18     |   1840.25     |  10.16  |  64.58  |
-| **═══ Reverse-KL (path-gradient / STL) ═══** | ══════════════ | ═════════════ | ═════════════ | ═══════ | ═══════ |
-| *pathgrad_bignet_long_ext — training (smoothed-best)* |  *-2361.39*    |  *-515.01*    |  *1846.31*    |  *8.20* |   N/A   |
-| pathgrad_bignet_long_ext — diag (N=8000) |   -2361.53     |   -513.02     |   1848.51     |  8.05   |  55.37  |
-| **═══ Forward-KL ═══**          | ══════════════ | ═════════════ | ═════════════ | ═══════ | ═══════ |
-| *hs_bignet — training*          |      N/A       |     N/A       |  *1906.61*    |   N/A   |  *3.63* |
-| hs_bignet — diag                |   -2348.32     |   -421.49     |   1926.83     |  21.27  |   N/A   |
-| **═══ Mixed-objective ═══**     | ══════════════ | ═════════════ | ═════════════ | ═══════ | ═══════ |
-| *jsLoss_bignet_long — training* |  *-2353.13*    |     N/A       |     N/A       | *~16.5* | *~17.0* |
-| jsLoss_bignet_long — diag       |   -2351.29     |   -463.93     |   1887.36     |  18.30  |  19.23  |
-| *phase2_finetune — training*    |  *-1067.10*    |     N/A       |     N/A       | *~17.6* |   N/A   |
-| phase2_finetune — diag (ep1500, corrected) |   -2351.60     |   -494.39     |   1857.20     |  17.99  |  30.88  |
-| **═══ Bridge-reweighted ═══**   | ══════════════ | ═════════════ | ═════════════ | ═══════ | ═══════ |
-| *bridge_w5.0t0.5 — training (last-200 mean unweighted MLE)* | N/A | N/A | *1924.06* | N/A | (weighted; n/c) |
-| bridge_w5.0t0.5 — diag (ep1800) |   -2341.70     |   -411.67     |   1930.03     |  27.89  |  21.28  |
-
-### How KL(q‖p) and KL(p‖q) are obtained
-
-Definitions:
-
-- **KL(q‖p) = E_{x~q}[log q(x) − log p(x)]**  — reverse / mode-seeking;
-  penalizes the flow for placing mass where the target doesn't.
-- **KL(p‖q) = E_{x~p}[log p(x) − log q(x)]**  — forward / mass-covering;
-  penalizes the flow for missing mass the target has.
-
-Both are non-negative; both equal zero iff `q = p` everywhere.
-
-For the Ising HS continuous-field representation, `p(x) = exp(−A(x))/Z_c`
-so `log p(x) = −A(x) − log Z_c`. Substituting gives two computational
-forms per direction — one usable during training (on-objective: the loss
-itself is a sample-average estimate of that KL up to a constant), the
-other usable only after training as a "diagnostic" (off-objective, needs
-samples from the other distribution):
-
-| Direction          | Formula                                          | Source for the number in the table                                                                       |
-| :----------------- | :----------------------------------------------- | :------------------------------------------------------------------------------------------------------- |
-| KL(q‖p) — training | `F_c^q + lnZ_c = LOSS_rev + lnZ_c`               | Read from the *training-row* of a reverse-KL run; LOSS = E_q[A + log q] = F_c^q is what the optimizer logs. |
-| KL(q‖p) — diag     | `(1/N) Σ_i [log q(x_i) + A(x_i)] + lnZ_c`, x_i ~ q | Fresh model samples drawn after training (forward-KL or mixed runs only — for rev-KL it'd just re-estimate the on-objective). |
-| KL(p‖q) — training | `CE − H(p_HS) = LOSS_fwd − (E_p[A] + lnZ_c)`     | Read from the *training-row* of a forward-KL run; LOSS = −E_data[log q] = CE is what the optimizer logs. |
-| KL(p‖q) — diag     | `(1/N) Σ_i [−log q(x_i)] − H(p_HS)`, x_i ~ p     | Fresh HS samples scored by the trained flow; the off-objective check for reverse-KL/mixed runs.          |
-| KL(p‖q) — bridge training | (not shown — see note)                    | The training `LOSS` for a bridge run is `(Σ wᵢ·(−log qᵢ))/Σ wᵢ` against a *re-weighted* target `p̃ ∝ (1+α·1[bridge])·p`, not directly comparable to other rows. The `ENTROPY` HDF5 column carries the standard unweighted MLE for fair comparison. |
-
-Constants: `lnZ_c = 2369.587` for L=32 T_c (continuous-field Z, from
-`etc/exactz.md` plus the HS correction); `H(p_HS) = E_p[A] + lnZ_c` is
-estimated by MC on the HS dataset (1902.98 nat, matching theory to ~3
-decimals).
-
-By construction the *training row* carries the **on-objective** KL (the
-one that mode minimises) and the *diagnostic row* carries the
-**off-objective** KL. Where a diagnostic can re-estimate the
-on-objective as a sanity check (sample-noise gap should be tiny), it's
-omitted from the table cell to avoid double-counting; the consistency
-check is in the notes below.
-
-### "Why are mixed-objective KLs worse than sym_bignet when the visuals look better?"
-
-Short answer: **visual quality tracks forward KL (mass coverage)**, not
-reverse KL — but the table's training row for each method shows only the
-*on-objective* KL, which is reverse-KL for sym_bignet (low: 9.40) and
-mostly forward-KL for the mixed methods (so you don't see how badly
-sym_bignet does on forward-KL in its training row).
-
-Comparing **fresh sample-estimate** diagnostics in **both** directions
-(the diag rows above):
-
-| Method                              | KL(q‖p) — reverse | KL(p‖q) — forward | mag_abs_q (data 2.38) | xi_q (data 8.57) | G(L/2)/G(0) (data 0.48) |
-| :---------------------------------- | ----------------: | ----------------: | --------------------: | ---------------: | ----------------------: |
-| sym_bignet_ext (rev-KL, ext)        | 10.16             | 64.58             | 3.11                  | 12.02            | 0.74                    |
-| pathgrad_bignet_long_ext (STL, ext) | **8.05**          | **55.37**         | 3.08                  | 11.87            | 0.73                    |
-| jsLoss_bignet_long                  | 18.30             | 19.23             | 2.80                  | 10.41            | —                       |
-| hs_bignet                           | 21.27             | **16.01**         | 2.45                  | 8.90             | 0.51                    |
-| phase2_finetune (corrected)         | 17.99             | 30.88             | 2.99                  | 11.30            | 0.70                    |
-| **bridge_w5.0t0.5**                 | 27.89             | 21.28             | **2.40**              | **8.62**         | **0.49**                |
-
-So sym_bignet is the **best** on reverse-KL (mode-seeking) but the
-**worst** on forward-KL — by a 4× margin (64.58 vs 16.01). Its samples
-have `mag_abs_q = 3.11` (data: 2.38) and `xi_q = 12.0` (data: 8.6) —
-the flow over-sharpens the magnetization peaks and over-extends the
-correlation length, producing visually "stiff" configs with large
-coherent domains. That's what reverse-KL incentivises: concentrate mass
-where the target has mass, even if you under-sample the tails.
-
-The mixed methods balance both directions, ending up with `mag_abs_q`
-and `xi_q` close to data values. They look more like data because
-forward-KL forces them to cover the data's typical configs — including
-the bridge / weak-magnetization region that sym_bignet under-represents.
-
-So the KL numbers ARE correct; they're measuring something the eye
-doesn't easily resolve. The eye sees typical samples (≈ forward-KL
-behaviour), the reverse-KL number sees the worst-case "model puts mass
-where it shouldn't" tail (which can be small even when the model misses
-the bridge entirely).
-
-The **bridge_w5.0t0.5** row added in the 2026-05-28 update extends this
-trade-off front by a fifth point: it gives up another ~6 nat on each
-KL direction relative to hs_bignet, but lands within ~1% of the data
-on *all three* structural statistics — magnetization, correlation
-length, and the half-lattice two-point function `G(L/2)/G(0)`. No
-other L=32 method matches the data that closely on all three at once.
-For visual-quality / physical-statistics matching this is now the
-preferred flow at L=32; for variational free energy / HMC proposals,
-`sym_bignet` remains better. See the "Bridge-targeted upweighting"
-section below for the mechanism.
-
-The **phase2_finetune (corrected)** row also tells a cleaner story
-than the original anchor-mistaken row: real phase2 has KL_rev=18.0
-(better than hs_bignet's 21.3, the anchor) but pays for it with
-KL_fwd=30.9 (worse than the anchor's 16.0) — i.e. the reverse-KL
-refinement *did* sharpen the modes as designed, at the cost of
-forward-KL coverage. The bridge collapse hypothesis from earlier
-holds: mag_abs_q went 2.45 → 2.99, xi_q went 8.90 → 11.30 — phase2 is
-quantitatively further from data than the anchor it started from on
-the structural statistics.
-
-**Caveat about `phase2_finetune` — diagnostic was loading the wrong
-checkpoint.** Phase2 trained for 2000 epochs with `savePeriod=500`, so
-its true final checkpoint is `epoch1500.saving`. But the savings/
-folder also held an `epoch9500.saving` (MD5-identical to
-`hs_bignet/savings/epoch9500.saving`) — a leftover anchor copy from
-the finetune seeding. The diagnostic script picks the highest-epoch
-file in `savings/`, so it loaded the anchor and reported anchor
-numbers, *not* phase2. The CE_pq, Hq, mag_abs_q etc. matching
-`hs_bignet` to 4 decimals was the smoking gun.
-
-Fixed by moving the stray anchor to
-`savings/_anchor_seed/` (outside the glob). Re-diagnostic re-running
-on `epoch1500.saving` (the actual phase2 final); table values for
-phase2 — diag will be updated when it lands. The training-row
-KL_rev ≈ 17.6 nat (back-calculated from LOSS + lnZ_c − N·logσ) should
-now have a properly-comparable diagnostic counterpart.
-
-**Resolution (2026-05-28).** The re-diagnostic (job 38843546) landed
-and the summary table now carries the corrected row:
-KL_rev = 17.99 nat (matches the back-calculated training estimate of
-~17.6 to within 0.4 nat — the small gap is N=8000 sample noise),
-KL_fwd = 30.88 nat (≈2× the anchor's 16.01), and mag_abs_q / xi_q go
-2.45 → 2.99 / 8.90 → 11.30 — phase2 is *further* from data on the
-structural diagnostics than the hs_bignet anchor it started from.
-The structural-diagnostics reading table below is updated to reflect
-this. See "Phase2 anchor-confusion finding" below for the full
-post-mortem and the lesson for future fine-tune seeding.
-
-### Bridge-targeted upweighting — design and result
-
-Replacement for the failed `-entropyBeta` approach (see
-`entropy_reg_review.md`). Entropy reg pushed `H(q)` globally and
-fattened marginal tails rather than the bridge specifically; large β
-had no upper bound and the loss diverged. Bridge upweighting acts only
-on the |M|-small region of the dataset, so there is no incentive to
-put mass outside the data support.
-
-**Mechanism** (in `train/learn.py` dataDriven branch): for each batch
-sample `x_i`, compute `M_i = mean(x_i)` over the spatial dims. Build
-per-sample weights `w_i = 1 + α · 1[|M_i| < thresh]`. Replace the
-standard MLE `loss = mean(−log q)` with the normalized weighted form
-`loss = (Σ w_i · −log q_i) / Σ w_i`. At α=0 this reduces exactly to
-standard MLE — no behaviour change for existing runs. The unweighted
-MLE (`−E_data[log q]`) is still recorded in the `ENTROPY` HDF5 column
-for fair comparison against no-bridge baselines.
-
-**First run config**: L=32 hs_bignet arch, `WEIGHT=5.0 THRESH=0.5`,
-2000 epochs on L40. At thresh=0.5, ~2.5% of the HS dataset has
-|M_i| < 0.5; the effective bridge mass in the loss is then
-`(1 + 5·0.025) / (1 + 5·0.025·0.5)` ≈ ~5× concentration push relative
-to natural sampling.
-
-**Results** (job 38838104 training + 38841300 diagnostic):
-
-- Pure-MLE (unweighted) at ep ~2000: 1924.06 nat. hs_bignet baseline
-  at matched epoch: 1924.03 nat. **No fit penalty against the natural
-  target** — the bridge term doesn't make the rest of the distribution
-  measurably harder to fit.
-- Diagnostic on N=8000 fresh samples at ep 1800:
-  - `mag_abs_q = 2.40` (data 2.38) — within 1%.
-  - `xi_q = 8.62` (data 8.57) — within 1%.
-  - `G(L/2)/G(0) = 0.49` (data 0.48) — within 2%.
-  - KL(q‖p) = 27.89, KL(p‖q) = 21.28 — both ≈6 nat worse than
-    hs_bignet baseline.
-
-**Reading**: the flow successfully matched a *reweighted* target
-`p̃(x) ∝ (1+α·1[|M|<0.5])·p(x)`, and against that target it's doing
-well — but the summary-table KL columns score against the unmodified
-`p`, so the gap shows up. The structural statistics measure properties
-of typical samples from `q`, which is where the bridge-reweighting
-improvement is visible: nothing else lands within 1% on all three of
-`mag_abs_q`, `xi_q`, `G(L/2)/G(0)`.
-
-This is a **methodology trade-off**, not a failure — pay a few nat of
-KL for structural fidelity. For sampling utility, visual quality, and
-physics-comparison work, bridge upweighting at W=5 is the new
-preferred L=32 flow.
-
-**Open from this experiment**:
-- Sweep `W ∈ {2, 5, 10, 20}` and `THRESH ∈ {0.3, 0.5, 0.8, 1.0}` to
-  trace the Pareto curve between KL fit and structural fidelity.
-- Re-train for longer (10k+ epochs) to see if extended training
-  closes the 6-nat KL gap or it's structural.
-- Diagnose the bridge density directly (`bridge_q = P_q(|M| < ε)`)
-  to confirm the mass is actually landing in the bridge region and
-  not redistributed across some other tail.
-
-### Phase2 anchor-confusion finding
-
-**What happened**: phase2 trained for 2000 epochs with
-`savePeriod=500`, so its true final checkpoint is `epoch1500.saving`.
-But the `phase2_finetune/savings/` folder also held an
-`epoch9500.saving` which was MD5-identical to
-`hs_bignet/savings/epoch9500.saving` — a leftover anchor copy from
-the finetune seeding. The diagnostic script picks the highest-epoch
-file, so the original "phase2 — diag" row was actually the hs_bignet
-anchor's diagnostic, *not* phase2's.
-
-**Smoking gun**: `CE_pq`, `Hp_mc`, `KL_qp`, `KL_pq`, `Hq`,
-`mag_abs_q` in the phase2 diagnostic JSON matched the hs_bignet JSON
-to four decimal places (KL_pq=16.0055 in both, identical to all
-reported precision). Not a coincidence — same checkpoint, same data,
-same script.
-
-**Fix**: moved the stray file to
-`phase2_finetune/savings/_anchor_seed/SymmMERA_..._epoch9500.saving`
-(outside the diagnostic-script glob). The diagnostic now picks
-`epoch1500.saving` (the real phase2 final). Re-diagnostic (job
-38843546) populated the "phase2 — diag (ep1500, corrected)" row in
-the summary table above.
-
-**Implication for the pre-fix numbers**: the original "phase2 — diag"
-row (KL_qp=21.26, KL_pq=16.01, mag_abs_q=2.45) was *anchor* numbers,
-not phase2 numbers. The training-row KL_rev ≈ 17.6 nat (back-
-calculated from `LOSS + lnZ_c − N·logσ`) was correct all along; the
-diagnostic just wasn't verifying it. After correction, the diag-row
-KL_rev = 17.99 nat matches the training-row to within 0.4 nat (well
-within N=8000 sample noise).
-
-**Lesson**: when seeding a fine-tune by copying an anchor's
-checkpoint, store it under a sub-path the diagnostic glob doesn't
-traverse, or rename it (e.g. `epoch0000_anchor.saving`) so it sorts
-below the actual training output. We've patched this case; the
-general fix is to scrub the anchor-seed file as soon as training
-starts producing its own checkpoints.
-
-### Structural diagnostics: `mag_abs_q` and `xi_q`
-
-Both numbers are post-hoc statistics computed by
-`flow_sample_diagnostic.py` on samples `x ~ q` drawn from the trained
-flow; their `_p` counterparts are the same statistics on `x ~ p_HS`
-samples from the HS continuous-field dataset, so each row is a
-flow-vs-data comparison. They catch failure modes the scalar
-`<A>` / `<E>` / KL numbers don't visually distinguish.
-
-- **`mag_abs_q = E_q[|M|]`** where `M = (1/N) Σᵢ xᵢ` — per-config mean
-  of the continuous field, averaged in absolute value. At T_c the 2D
-  Ising data has near-Z₂-symmetric bimodal magnetization with peaks at
-  ±M₀; `<|M|> ≈ M₀` tells you "how far from M=0 do typical configs
-  sit." Interpretation:
-  - `mag_abs_q ≈ mag_abs_p` (≈2.38 at L=32 T_c): flow's magnetization
-    distribution overlaps the data's.
-  - `mag_abs_q > mag_abs_p`: flow over-concentrates near the data
-    peaks — the bridge region (|M| ≈ 0) is under-sampled.
-    *Reverse-KL over-sharpening signature.*
-  - `mag_abs_q < mag_abs_p`: too much mass at small |M|, the flow
-    hasn't learned the broken-symmetry structure.
-
-- **`xi_q = Σᵣ G(r)/G(0)`** along the lattice axis — effective
-  correlation length, summed normalized two-point correlation
-  `G(r) = ⟨xᵢ x_{i+r}⟩ − ⟨xᵢ⟩⟨x_{i+r}⟩`. At T_c the correlation
-  length diverges (infinite system); at L=32 the data's
-  `xi_p ≈ 8.6 ≈ L/4` is the expected near-critical long-range value.
-  - `xi_q ≈ xi_p`: flow reproduces the spatial structure.
-  - `xi_q > xi_p`: flow makes overly large coherent domains — visually
-    "stiff," locked into one sign across most of the lattice.
-  - `xi_q < xi_p`: only local/short-range structure learned; the
-    critical long-range physics is missed.
-
-A flow can have a low KL on the scalar metrics while still failing
-spatial structure (or vice-versa) — these are the columns to watch
-when "looks like data" is what matters. Reading the diagnostic table
-above through this lens:
-
-| Method                        | mag_abs_q (data 2.38) | xi_q (data 8.57) | Reading                                                              |
-| :---------------------------- | --------------------: | ---------------: | :------------------------------------------------------------------- |
-| sym_bignet                    | 3.11                  | 12.02            | over-sharpened both ways — bridge ≈ collapsed, domains too rigid     |
-| jsLoss_bignet_long            | 2.80                  | 10.41            | mildly over-sharpened; partial bridge                                |
-| hs_bignet                     | 2.45                  |  8.90            | mass-covering — close to data on |M|, slightly long on xi            |
-| phase2_finetune (corrected)   | 2.99                  | 11.30            | reverse-KL refinement sharpened the modes — *further* from data than the anchor on both |
-| **bridge_w5.0t0.5**           | **2.40**              | **8.62**         | **on data** for both — best structural match at L=32                  |
-
-So "phase2 looks like data" in the rendered samples = its
-`mag_abs_q` and `xi_q` track the data values closely — except we just
-saw that read was actually the *anchor*'s numbers. The real phase2
-diagnostic is en route.
-
-**Update (2026-05-28).** With the corrected re-diagnostic landed, the
-real phase2 numbers are mag_abs_q=2.99 and xi_q=11.30 — *worse* than
-the anchor on both, not better. The "phase2 looks like data" reading
-from the original anchor-mistaken row is therefore retracted: the
-true closest-to-data method at L=32 is now `bridge_w5.0t0.5` (2.40 /
-8.62 / G(L/2)/G(0)=0.49) and `hs_bignet` (2.45 / 8.90 / 0.51) sitting
-just behind it.
-
-### STL vs reverse-KL training trajectory
-
-The extended runs `sym_bignet_ext` and `pathgrad_bignet_long_ext`
-continue from their respective pre-ext checkpoints for an additional
-5000 epochs each (Adam-state-discarding `-load`, so the first ~500
-epochs of each extension is optimiser burn-in; see
-[project_resume_optimizer_state]). The on-objective KL trajectories,
-smoothed over a 100-epoch window:
-
-![STL vs reverse-KL on-objective KL trajectory at L=32 T_c](figures/stl_vs_revkl_L32_trajectory.png)
-
-Key features visible in the plot:
-
-- **STL (pathgrad)** runs at lower KL than `sym_bignet` reverse-KL
-  throughout — the gap is roughly 1 nat from ep ~2000 onwards.
-- Both pre-ext runs (solid) end above their ext continuations
-  (dashed): training had not yet asymptoted at 5000–6000 ep.
-- The ext-continuation join is marked by the dotted vertical lines;
-  the initial bump at each join is the Adam-state-rebuild burn-in.
-- Best-smoothed KL over the full pre-ext + ext trajectory:
-  **`pathgrad_bignet_long_ext` = 8.20 nat** vs
-  **`sym_bignet_ext` = 8.77 nat**, a **0.57-nat STL win** that is
-  consistent with the L=8 STL pilot result (0.13–0.18 nat win
-  there). The relative gain is larger at L=32, suggesting STL's
-  low-variance gradient pays off more at higher dimensionality.
-
-This is the trajectory snapshot taken now; the per-method
-**flow_samples** and **flow_correlations** plots (which need a
-fresh `x ~ q` diagnostic run) are filled in as the GPU diag jobs
-for these two flows complete.
-
-### Notes
-
+Notes:
 - Each flow gets **two rows** — *training* and *diagnostic* — the same run
   as the optimiser logged it vs. as a fresh `x ~ q` sample measures it. For
   a converged reverse-KL run the two should agree.
-- `sym_bignet_ext` training row is the **best-smoothed (300-ep window)**
-  KL_rev = F_q − F_c^exact across the concatenated pre-ext + ext
-  trajectory: ep ~4013 of the ext, KL_rev ≈ **8.77 nat**. Replaces the
-  earlier `sym_bignet`-only entry (KL_rev = 9.40 at ep 5925), reflecting
-  the 5000-epoch extension. (The pre-ext sym_bignet's row content is
-  preserved in `git` history and in the `STL vs reverse-KL training
-  trajectory` plot above as the green solid curve.)
-  `pathgrad_bignet_long_ext` training row is the same best-smoothed
-  metric on the STL trajectory: ep ~4213 of the ext, KL_rev ≈ **8.20 nat**
-  — 0.57 nat better than `sym_bignet_ext` at matched 5000-ep ext, see
-  `[project_l32_stl_win_at_critical_scale]` for the L=8 → L=32
-  STL-win progression.
-  `sym_longer` training row is the best-smoothed across its trajectory;
-  `hs_bignet` training row is the best-smoothed; `jsLoss_bignet_long`
-  and `phase2_finetune` training rows are their late-stage stable values.
 - **Datasets**: `E` is a plain sample average; `F = -lnZ` cannot be
   estimated from samples (needs the partition function) → N/A. HS
   `S_c = E_p[A] + lnZ_c` is an MC entropy estimate (uses exact `lnZ_c`);
   MCMC gives only `E_d`.
+- `KL(q‖p)` / `KL(p‖q)`: each direction appears once per flow. The
+  *training* row carries the **on-objective** KL — the one that mode
+  minimises, recovered from the loss (reverse-KL `KL(q‖p)=loss+lnZ_c`;
+  forward-KL `KL(p‖q)=loss-H(p_HS)`). The *diagnostic* row carries the
+  **off-objective** KL, which training cannot see. `—` = not applicable
+  (theory-discrete / dataset rows); `0` for continuous theory.
 - A **negative** training-row `KL(p‖q)` means the MLE loss dipped below
   the entropy floor `H(p_HS)` — training-set overfitting (seen at L=8/16).
 - The per-run breakdown for *all* methods stays in the flow-diagnostic
   table above; this summary keeps only the best of each mode.
-- `sym_bignet_ext` (bignet reverse-KL, 5000-ep continuation):
-  currently the best **score-function** reverse-KL run at L=32,
-  beating both default-arch `sym_longer` (11.96 nat) and the
-  Phase-2 finetune (~17.6 nat). Confirms capacity helps both directions,
-  not just forward KL.
-- `pathgrad_bignet_long_ext` (bignet reverse-KL via STL path
-  gradient, 5000-ep continuation): the overall L=32 reverse-KL
-  champion at 8.20 nat on-objective KL. STL replaces the score-function
-  term in reverse-KL with a low-variance reparam-only gradient
-  (Roeder 2017 / Vaitl 2024); the L=32 win of 0.57 nat over
-  sym_bignet_ext is consistent with — and larger than — the L=8 STL
-  pilot win of 0.13–0.18 nat.
-- `jsLoss_bignet_long`: combined JS loss LOSS_js≈-216; per-direction
-  components L_rev≈-2353, L_fwd≈1920 read from training logs.
-  KL_rev ≈ L_rev + lnZ_c = 16.5 nat; KL_fwd ≈ L_fwd - H(p_HS) = 17.0 nat.
-  Both directions balanced and within ~1 nat of single-direction baselines.
-- `phase2_finetune`: reverse-KL refinement from `hs_bignet` anchor with
-  σ-standardized inputs. KL_rev = LOSS + lnZ_c - N·log σ =
-  -1067.10 + 2369.587 - 1284.95 ≈ 17.6 nat. Worse than `sym_bignet`
-  (the bridge collapsed: bridge_p 0.0095 → 0.000), confirming that
-  reverse-KL refinement on top of a forward-KL anchor over-sharpens
-  the modes at the cost of the connecting density.
-- **In progress**: `hsBignet_ent0.05` (entropy-regularized Phase-1) —
-  adds `-β·H(q)` to the MLE loss to widen the bridge region.
-  Pending results — submitted as job 38812652. (Update 2026-05-28:
-  entropy reg verified non-functional — see `entropy_reg_review.md`;
-  replaced by bridge-targeted upweighting `-bridgeWeight`.)
-- **Bridge upweighting** (`-bridgeWeight α -bridgeThresh M`): works as
-  designed. Trades ~6 nat of KL in both directions for ~1% structural
-  match (`mag_abs_q`, `xi_q`, `G(L/2)/G(0)`) to data. Memory:
-  `project_bridge_upweighting`. Sweep over W and threshold pending.
-- **NSF L=32 bignet + gradClip=5.0** (job 38838150): ran the full
-  8000 epochs with no NaN — clipping fixes the bignet divergence that
-  previously hit at ep 5928. But smoothed-best LOSS = 1926.84 →
-  KL_fwd = 23.86 nat, vs unclipped NSF's pre-NaN best of 3.32 nat and
-  RNVP bignet's 3.63 nat. Clipping at 5.0 is throttling useful updates
-  as well as bad ones; NSF bignet stable now but no longer competitive
-  with RNVP at this clip threshold. Open: try larger clip threshold
-  (10, 20) or warmup schedule.
-- **Phase2 corrected diag** (job 38843546): landed; real numbers in
-  the table. See "Phase2 anchor-confusion finding" section for the
-  fix and the cleaner phase2-vs-anchor comparison the corrected
-  numbers enable.
 
-## Flow samples and physical observables — per method
+## Flow visualizations — configurations + physical observables
 
-_Each method gets one row with **configurations** (left: sigmoid(2x)
-grid of flow samples vs HS data) and **physical observables**
-(right: per-config magnetisation distribution + normalised axial
-two-point correlation G(r)/G(0), flow vs HS data). Ordered to match
-the summary table: reverse-KL → STL (path-gradient) → forward-KL → mixed._
+_Per method: left = flow samples (configurations, `sigmoid(2x)` render_
+_of `flow (q)` vs `HS data (p)`); right = flow correlations (magnetisation_
+_distribution P(M) + axial two-point correlation G(r)/G(0), flow vs data)._
 
-### sym  *(reverse-KL, default arch)*
+### hsBignet_baseline_b64
 
 <p>
-<img src="figures/32Ising_T2.269_sym__flow_samples.png" alt="sym flow samples" width="42%">
-<img src="figures/32Ising_T2.269_sym__flow_correlations.png" alt="sym flow correlations" width="56%">
+<img src="../../data/32Ising_T2.269_hsBignet_baseline_b64/flow_samples.png" alt="hsBignet_baseline_b64 flow samples" width="42%">
+<img src="../../data/32Ising_T2.269_hsBignet_baseline_b64/flow_correlations.png" alt="hsBignet_baseline_b64 flow correlations" width="56%">
 </p>
 
-### sym_bignet_ext  *(reverse-KL, bignet — extended 5000-ep continuation of sym_bignet, best reverse-KL on training KL)*
+### hsBignet_bridge_w5
 
 <p>
-<img src="figures/32Ising_T2.269_sym_bignet_ext__flow_samples.png" alt="sym_bignet_ext flow samples" width="42%">
-<img src="figures/32Ising_T2.269_sym_bignet_ext__flow_correlations.png" alt="sym_bignet_ext flow correlations" width="56%">
+<img src="../../data/32Ising_T2.269_hsBignet_bridge_w5.0t0.5/flow_samples.png" alt="hsBignet_bridge_w5 flow samples" width="42%">
+<img src="../../data/32Ising_T2.269_hsBignet_bridge_w5.0t0.5/flow_correlations.png" alt="hsBignet_bridge_w5 flow correlations" width="56%">
 </p>
 
-### pathgrad_bignet_long_ext  *(reverse-KL via STL path-gradient, bignet — 5000-ep continuation)*
-
-STL path-gradient surrogate (Roeder 2017 / Vaitl 2024) replaces the
-score-function term in reverse-KL with a low-variance reparam-only
-gradient. At L=32 matched 5000-ep ext, STL beats `sym_bignet_ext`
-by **0.57 nat** on the on-objective KL (8.20 vs 8.77, smoothed-best
-over the trajectory).
+### hsBignet_combined_lam1
 
 <p>
-<img src="figures/32Ising_T2.269_pathgrad_bignet_long_ext__flow_samples.png" alt="pathgrad_bignet_long_ext flow samples" width="42%">
-<img src="figures/32Ising_T2.269_pathgrad_bignet_long_ext__flow_correlations.png" alt="pathgrad_bignet_long_ext flow correlations" width="56%">
+<img src="../../data/32Ising_T2.269_hsBignet_combined_lam1.0_stride8h32_b64/flow_samples.png" alt="hsBignet_combined_lam1 flow samples" width="42%">
+<img src="../../data/32Ising_T2.269_hsBignet_combined_lam1.0_stride8h32_b64/flow_correlations.png" alt="hsBignet_combined_lam1 flow correlations" width="56%">
 </p>
 
-### hs_dataDriven  *(forward-KL, default arch)*
+### hsBignet_hcg_perscale_fixdil_gc5
 
 <p>
-<img src="figures/32Ising_T2.269_hs_dataDriven__flow_samples.png" alt="hs_dataDriven flow samples" width="42%">
-<img src="figures/32Ising_T2.269_hs_dataDriven__flow_correlations.png" alt="hs_dataDriven flow correlations" width="56%">
+<img src="../../data/32Ising_T2.269_hsBignet_hcg_perscale_fixdil_gc5.0_b64/flow_samples.png" alt="hsBignet_hcg_perscale_fixdil_gc5 flow samples" width="42%">
+<img src="../../data/32Ising_T2.269_hsBignet_hcg_perscale_fixdil_gc5.0_b64/flow_correlations.png" alt="hsBignet_hcg_perscale_fixdil_gc5 flow correlations" width="56%">
 </p>
 
-### hs_bignet  *(forward-KL, bignet)*
+### hsBignet_hcg_perscale_fixdil_nr2_gc5
 
 <p>
-<img src="figures/32Ising_T2.269_hs_bignet__flow_samples.png" alt="hs_bignet flow samples" width="42%">
-<img src="figures/32Ising_T2.269_hs_bignet__flow_correlations.png" alt="hs_bignet flow correlations" width="56%">
+<img src="../../data/32Ising_T2.269_hsBignet_hcg_perscale_fixdil_nr2_gc5.0_b64/flow_samples.png" alt="hsBignet_hcg_perscale_fixdil_nr2_gc5 flow samples" width="42%">
+<img src="../../data/32Ising_T2.269_hsBignet_hcg_perscale_fixdil_nr2_gc5.0_b64/flow_correlations.png" alt="hsBignet_hcg_perscale_fixdil_nr2_gc5 flow correlations" width="56%">
 </p>
 
-### jsLoss_bignet_long  *(mixed — balanced JS)*
+### hsBignet_hcg_shared_b64
 
 <p>
-<img src="figures/32Ising_T2.269_jsLoss_bignet_long_lam0.5__flow_samples.png" alt="jsLoss_bignet_long flow samples" width="42%">
-<img src="figures/32Ising_T2.269_jsLoss_bignet_long_lam0.5__flow_correlations.png" alt="jsLoss_bignet_long flow correlations" width="56%">
+<img src="../../data/32Ising_T2.269_hsBignet_hcg_shared_b64/flow_samples.png" alt="hsBignet_hcg_shared_b64 flow samples" width="42%">
+<img src="../../data/32Ising_T2.269_hsBignet_hcg_shared_b64/flow_correlations.png" alt="hsBignet_hcg_shared_b64 flow correlations" width="56%">
 </p>
 
-### phase2_finetune  *(mixed — fwd→rev workflow)*
+### hsBignet_hcg_shared_nr2_b64
 
 <p>
-<img src="figures/32Ising_T2.269_phase2_finetune__flow_samples.png" alt="phase2_finetune flow samples" width="42%">
-<img src="figures/32Ising_T2.269_phase2_finetune__flow_correlations.png" alt="phase2_finetune flow correlations" width="56%">
+<img src="../../data/32Ising_T2.269_hsBignet_hcg_shared_nr2_b64/flow_samples.png" alt="hsBignet_hcg_shared_nr2_b64 flow samples" width="42%">
+<img src="../../data/32Ising_T2.269_hsBignet_hcg_shared_nr2_b64/flow_correlations.png" alt="hsBignet_hcg_shared_nr2_b64 flow correlations" width="56%">
 </p>
 
-### bridge_w5.0t0.5  *(bridge-reweighted — best structural match)*
+### hsBignet_i1_df4
 
 <p>
-<img src="figures/32Ising_T2.269_hsBignet_bridge_w5.0t0.5__flow_samples.png" alt="bridge_w5.0t0.5 flow samples" width="42%">
-<img src="figures/32Ising_T2.269_hsBignet_bridge_w5.0t0.5__flow_correlations.png" alt="bridge_w5.0t0.5 flow correlations" width="56%">
+<img src="../../data/32Ising_T2.269_hsBignet_i1_df4.0/flow_samples.png" alt="hsBignet_i1_df4 flow samples" width="42%">
+<img src="../../data/32Ising_T2.269_hsBignet_i1_df4.0/flow_correlations.png" alt="hsBignet_i1_df4 flow correlations" width="56%">
 </p>
 
-
-## Phase-1 improvement ablation at L=32 (ep 19,800, N = 4,000)
-
-A separate L=32 experiment line tested **III.1** (multi-scale loss),
-**I.1** (Student-t prior, the negation experiment), and **I.2**
-(conditional Gaussian prior) from
-`analyzers/rg_fixed_point/improvements_zh.md`, with a 2 × 2 ablation
-matrix (III.1 × I.2 stacked at `batch=64`), plus single-variable
-sweeps over `lambda_scale`, `condPriorSlowStride`, and the Student-t
-`df`. The four-cell matrix runs **all share batch=64** (forced down
-from the original hs_bignet `batch=128` by the scaleLoss extra
-forward graph); the sweep runs and the Student-t run stay at
-`batch=128` for full single-method comparison vs the historical
-table above.
-
-HS anchors (from the same `_p` fields, identical across runs):
-`mag_p = 2.382`, `xi_p = 8.568`, `g_longrange_p = 0.477`.
-
-### 2 × 2 ablation matrix (b = 64)
-
-| Run                                    | F_c^q          | KL(q‖p) | KL(p‖q)       | mag (data 2.38) | xi (data 8.57) | g_longrange (data 0.477) |
-| :------------------------------------- | -------------: | ------: | ------------: | --------------: | -------------: | -----------------------: |
-| **baseline_b64** (Gauss prior, no scaleLoss)     | -2346.16 ± 0.77 | 23.42 | 17.05 ± 0.46 | 2.441 | 8.786 | 0.503 |
-| **iii1_lam1.0_b64** (+ III.1 scaleLoss=1)        | -2347.75 ± 0.76 | 21.84 | 16.59 ± 0.47 | 2.448 | 8.754 | 0.499 |
-| **i2_stride8h32_b64** (+ I.2 cond. prior)        | -2348.42 ± 0.81 | 21.16 | 16.05 ± 0.47 | **2.376** | **8.584** | **0.487** |
-| **combined_lam1.0_stride8h32_b64** (I.2 + III.1) | -2348.38 ± 0.73 | 21.20 | **15.88 ± 0.47** | **2.347** | **8.394** | **0.478** |
-
-**Single-variable Δ vs baseline_b64**:
-
-| Intervention            | Δ KL_qp | Δ KL_pq | Δ mag  | Δ xi    | Δ gL    |
-| :---------------------- | ------: | ------: | -----: | ------: | ------: |
-| + III.1 (scaleLoss=1.0) | −1.59   | −0.46   | +0.007 | −0.032  | −0.004  |
-| + I.2 (cond. prior)     | **−2.26** | **−0.99** | **−0.065** | **−0.202** | **−0.016** |
-| + both (combined)       | −2.22   | **−1.17** | **−0.094** | **−0.392** | **−0.025** |
-
-**Interaction effect** = combined − iii1 − i2 + baseline:
-- KL_qp:   +1.63 (sub-additive, mild antagonism)
-- KL_pq:   +0.28 (essentially additive)
-- gL:      **−0.005** (super-linear structural synergy)
-
-⇒ **The two interventions are synergistic on *structure***
-(gL drops super-linearly) **but mildly antagonistic on KL_qp**.
-The combined run has the matrix's closest structural match: mag
-within 0.03 of HS, xi within 0.18, **gL = 0.478 ≈ data anchor 0.477**.
-
-### iii1 λ_scale sweep (b = 64)
-
-| λ_scale | F_c^q          | KL_qp | KL_pq | gL    | L_scale (training avg, ep ≥ 19,700) |
-| ------: | -------------: | ----: | ----: | ----: |------------------------------------:|
-| 0.0     | -2346.16 ± 0.77 | 23.42 | 17.05 | 0.503 | —                                   |
-| 0.1     | -2345.37 ± 0.81 | 24.22 | 17.04 | 0.509 | 0.81 (penalty too weak; ≈ init)     |
-| **1.0** | -2347.75 ± 0.76 | 21.84 | 16.59 | 0.499 | **0.31** (converged sweet spot)     |
-| 10.0    | -2347.89 ± 0.50 | 21.70 | **30.15** | 0.509 | **0.012** (over-driven)            |
-
-⇒ **λ=1.0 is the III.1 sweet spot**. **λ=10.0's marginal KL_qp gain (~0.1 nat)
-comes from mode-collapse** — `KL(p‖q)` nearly doubles (17.05 → 30.15) and
-`gL` *worsens* by 0.006 vs λ=1.0. The improvements.md prediction
-that "λ_scale anti-correlates with V5 RMS-G" is borne out by the
-KL_pq trajectory: λ=10 strongly degrades forward KL because the flow
-abandons bridge regions to satisfy the tightened scale constraint.
-
-### i2 slow_stride sweep (b = 128)
-
-| stride | slow grid | F_c^q          | KL_qp     | KL_pq | gL    | Note                                        |
-| -----: | --------: | -------------: | --------: | ----: | ----: | :------------------------------------------ |
-| **4**  | 16 × 16   | -2352.46 ± 0.69 | **17.13** | **14.14** | 0.493 | **best single-variable ablation** — Δ −6.3 nat KL_qp vs baseline |
-| 8      | 8 × 8     |  N/A           | **604,190** ⚠️ | 21.97 | 0.012 | **late-training divergence** — the original Phase-1 b=128 i2 run; **discard for any conclusion** (memory `project_l32_late_training_instability`) |
-| 16     | 2 × 2     | -2349.11 ± 0.76 | 20.48     | 15.78 | 0.501 | middling — coarse slow grid limits prior structure |
-
-⇒ **Conditional prior performance scales monotonically with slow-grid
-density**: 16 × 16 → 8 × 8 → 2 × 2 worsens. The L=32 verdict for I.2 must
-come from `stride=4` since the original `stride=8` b=128 run diverged
-late-training (a hard reminder to always use best-smoothed over
-trajectory, not last-100). **I.2 at stride=4 b=128 is the single
-biggest improvement in the 9-run single-variable ablation** — Δ KL_qp
-= **−6.3 nat** vs baseline.
-
-### Student-t prior (b = 128)
-
-| Quantity | baseline (= original `hs_bignet`, ep 19,900) | i1_df4.0 | Δ vs baseline_b64 |
-| :------- | -------------------------------------------:| --------:| -----------------:|
-| F_c^q    | -2348.65 (Summary table above)              | -2348.23 ± 0.77 | —                |
-| KL_qp    | 23.42 (baseline_b64 matched-row)            | 21.36    | −2.07             |
-| KL_pq    | 17.05                                       | 15.54    | −1.51             |
-| mag      | 2.441                                       | 2.389    | **−0.052**        |
-| xi       | 8.786                                       | 8.546    | **−0.24**         |
-| gL       | 0.503                                       | 0.483    | **−0.020**        |
-
-⇒ Student-t delivers a balanced 1.5–2 nat improvement on every metric,
-**with no metric degrading**, but no metric improves as dramatically
-as `i2_stride4`. **Consistent with improvements.md's negation-experiment
-positioning** — heavy-tail prior has a real but small effect.
-
-**(Cross-L note)** At L=64 the same I.1 Student-t run is the only
-intervention with a clearly visible *structural* improvement
-(`gL` Δ = **−0.029** at L=64 vs **−0.020** at L=32 — the negation
-experiment unexpectedly *strengthens* with L). See
-`concise_report_L64_T2.269.md` § "Phase-1 improvement ablation at L=64"
-for the parallel ablation and cross-L verdict.
-
-### Phase-1 ablation visuals — `flow_samples.png` + `flow_correlations.png`
-
-_Same format as the original-method panels above: per-config
-magnetisation distribution + log-log G(r)/G(0), flow vs HS data._
-
-#### baseline_b64 *(Gaussian prior, no scaleLoss, b = 64)*
+### hsBignet_i2_stride16h32
 
 <p>
-<img src="../../data/32Ising_T2.269_hsBignet_baseline_b64/flow_samples.png" alt="baseline_b64 flow samples" width="42%">
-<img src="../../data/32Ising_T2.269_hsBignet_baseline_b64/flow_correlations.png" alt="baseline_b64 flow correlations" width="56%">
+<img src="../../data/32Ising_T2.269_hsBignet_i2_stride16h32/flow_samples.png" alt="hsBignet_i2_stride16h32 flow samples" width="42%">
+<img src="../../data/32Ising_T2.269_hsBignet_i2_stride16h32/flow_correlations.png" alt="hsBignet_i2_stride16h32 flow correlations" width="56%">
 </p>
 
-#### iii1_lam1.0_b64 *(+ III.1 multi-scale loss)*
+### hsBignet_i2_stride4h32
 
 <p>
-<img src="../../data/32Ising_T2.269_hsBignet_iii1_lam1.0_b64/flow_samples.png" alt="iii1_lam1.0_b64 flow samples" width="42%">
-<img src="../../data/32Ising_T2.269_hsBignet_iii1_lam1.0_b64/flow_correlations.png" alt="iii1_lam1.0_b64 flow correlations" width="56%">
+<img src="../../data/32Ising_T2.269_hsBignet_i2_stride4h32/flow_samples.png" alt="hsBignet_i2_stride4h32 flow samples" width="42%">
+<img src="../../data/32Ising_T2.269_hsBignet_i2_stride4h32/flow_correlations.png" alt="hsBignet_i2_stride4h32 flow correlations" width="56%">
 </p>
 
-#### i2_stride8h32_b64 *(+ I.2 conditional Gaussian prior)*
+### hsBignet_i2_stride4h32_b64
 
 <p>
-<img src="../../data/32Ising_T2.269_hsBignet_i2_stride8h32_b64/flow_samples.png" alt="i2_stride8h32_b64 flow samples" width="42%">
-<img src="../../data/32Ising_T2.269_hsBignet_i2_stride8h32_b64/flow_correlations.png" alt="i2_stride8h32_b64 flow correlations" width="56%">
+<img src="../../data/32Ising_T2.269_hsBignet_i2_stride4h32_b64/flow_samples.png" alt="hsBignet_i2_stride4h32_b64 flow samples" width="42%">
+<img src="../../data/32Ising_T2.269_hsBignet_i2_stride4h32_b64/flow_correlations.png" alt="hsBignet_i2_stride4h32_b64 flow correlations" width="56%">
 </p>
 
-#### combined_lam1.0_stride8h32_b64 *(I.2 + III.1 stacked — best structural fit in the 2 × 2)*
+### hsBignet_i2_stride8h32
 
 <p>
-<img src="../../data/32Ising_T2.269_hsBignet_combined_lam1.0_stride8h32_b64/flow_samples.png" alt="combined flow samples" width="42%">
-<img src="../../data/32Ising_T2.269_hsBignet_combined_lam1.0_stride8h32_b64/flow_correlations.png" alt="combined flow correlations" width="56%">
+<img src="../../data/32Ising_T2.269_hsBignet_i2_stride8h32/flow_samples.png" alt="hsBignet_i2_stride8h32 flow samples" width="42%">
+<img src="../../data/32Ising_T2.269_hsBignet_i2_stride8h32/flow_correlations.png" alt="hsBignet_i2_stride8h32 flow correlations" width="56%">
 </p>
 
-#### i2_stride4h32 *(I.2 + finer slow grid b=128 — single biggest ablation Δ)*
-
-_Slow grid 16 × 16; **largest Δ KL_qp = −6.3 nat** of any
-single-variable run in this report._
+### hsBignet_i2_stride8h32_b64
 
 <p>
-<img src="../../data/32Ising_T2.269_hsBignet_i2_stride4h32/flow_samples.png" alt="i2_stride4h32 flow samples" width="42%">
-<img src="../../data/32Ising_T2.269_hsBignet_i2_stride4h32/flow_correlations.png" alt="i2_stride4h32 flow correlations" width="56%">
+<img src="../../data/32Ising_T2.269_hsBignet_i2_stride8h32_b64/flow_samples.png" alt="hsBignet_i2_stride8h32_b64 flow samples" width="42%">
+<img src="../../data/32Ising_T2.269_hsBignet_i2_stride8h32_b64/flow_correlations.png" alt="hsBignet_i2_stride8h32_b64 flow correlations" width="56%">
 </p>
 
-#### i2_stride16h32 *(I.2 + coarser slow grid b=128)*
+### hsBignet_i2_stride8h32_nr2_b64
 
 <p>
-<img src="../../data/32Ising_T2.269_hsBignet_i2_stride16h32/flow_samples.png" alt="i2_stride16h32 flow samples" width="42%">
-<img src="../../data/32Ising_T2.269_hsBignet_i2_stride16h32/flow_correlations.png" alt="i2_stride16h32 flow correlations" width="56%">
+<img src="../../data/32Ising_T2.269_hsBignet_i2_stride8h32_nr2_b64/flow_samples.png" alt="hsBignet_i2_stride8h32_nr2_b64 flow samples" width="42%">
+<img src="../../data/32Ising_T2.269_hsBignet_i2_stride8h32_nr2_b64/flow_correlations.png" alt="hsBignet_i2_stride8h32_nr2_b64 flow correlations" width="56%">
 </p>
 
-#### i1_df4.0 *(I.1 Student-t prior, df = 4, b = 128)*
-
-_The improvements.md "negation experiment" — predicted small effect
-because heavy tails don't touch spatial structure. Delivers
-balanced 1.5–2 nat improvement on every metric; **at L=64 (see
-companion report) it produces the cleanest structural improvement
-of any intervention**._
+### hsBignet_i2_stride8h64_b64
 
 <p>
-<img src="../../data/32Ising_T2.269_hsBignet_i1_df4.0/flow_samples.png" alt="i1_df4.0 flow samples" width="42%">
-<img src="../../data/32Ising_T2.269_hsBignet_i1_df4.0/flow_correlations.png" alt="i1_df4.0 flow correlations" width="56%">
+<img src="../../data/32Ising_T2.269_hsBignet_i2_stride8h64_b64/flow_samples.png" alt="hsBignet_i2_stride8h64_b64 flow samples" width="42%">
+<img src="../../data/32Ising_T2.269_hsBignet_i2_stride8h64_b64/flow_correlations.png" alt="hsBignet_i2_stride8h64_b64 flow correlations" width="56%">
 </p>
 
-#### iii1_lam0.1_b64 *(III.1 λ = 0.1 — penalty too weak)*
-
-_L_scale stayed at ≈ 0.81 (init); see iii1 λ sweep table above
-for why this is "too weak"._
+### hsBignet_iii1_lam0
 
 <p>
-<img src="../../data/32Ising_T2.269_hsBignet_iii1_lam0.1_b64/flow_samples.png" alt="iii1_lam0.1_b64 flow samples" width="42%">
-<img src="../../data/32Ising_T2.269_hsBignet_iii1_lam0.1_b64/flow_correlations.png" alt="iii1_lam0.1_b64 flow correlations" width="56%">
+<img src="../../data/32Ising_T2.269_hsBignet_iii1_lam0.1_b64/flow_samples.png" alt="hsBignet_iii1_lam0 flow samples" width="42%">
+<img src="../../data/32Ising_T2.269_hsBignet_iii1_lam0.1_b64/flow_correlations.png" alt="hsBignet_iii1_lam0 flow correlations" width="56%">
 </p>
 
-#### iii1_lam10.0_b64 *(III.1 λ = 10.0 — over-tightened, mode collapse)*
-
-_L_scale crushed to 0.012, but `KL(p‖q) = 30.15` (1.77 × baseline)
-and `gL = 0.509` (worse than baseline by 0.006) confirm the
-"satisfying scale constraint at the cost of bridge / forward fit"
-pathology._
+### hsBignet_iii1_lam1
 
 <p>
-<img src="../../data/32Ising_T2.269_hsBignet_iii1_lam10.0_b64/flow_samples.png" alt="iii1_lam10.0_b64 flow samples" width="42%">
-<img src="../../data/32Ising_T2.269_hsBignet_iii1_lam10.0_b64/flow_correlations.png" alt="iii1_lam10.0_b64 flow correlations" width="56%">
+<img src="../../data/32Ising_T2.269_hsBignet_iii1_lam1.0_b64/flow_samples.png" alt="hsBignet_iii1_lam1 flow samples" width="42%">
+<img src="../../data/32Ising_T2.269_hsBignet_iii1_lam1.0_b64/flow_correlations.png" alt="hsBignet_iii1_lam1 flow correlations" width="56%">
 </p>
 
-**See `analyzers/rg_fixed_point/improvements_results.md` (English) /
-`improvements_results_zh.md` (中文) for the per-scheme verdict tables
-and the recommended Phase-2 priority ordering this dataset
-motivates.**
+### hsBignet_iii1_lam10
+
+<p>
+<img src="../../data/32Ising_T2.269_hsBignet_iii1_lam10.0_b64/flow_samples.png" alt="hsBignet_iii1_lam10 flow samples" width="42%">
+<img src="../../data/32Ising_T2.269_hsBignet_iii1_lam10.0_b64/flow_correlations.png" alt="hsBignet_iii1_lam10 flow correlations" width="56%">
+</p>
+
+### hs_bignet
+
+<p>
+<img src="../../data/32Ising_T2.269_hs_bignet/flow_samples.png" alt="hs_bignet flow samples" width="42%">
+<img src="../../data/32Ising_T2.269_hs_bignet/flow_correlations.png" alt="hs_bignet flow correlations" width="56%">
+</p>
+
+### hs_dataDriven
+
+<p>
+<img src="../../data/32Ising_T2.269_hs_dataDriven/flow_samples.png" alt="hs_dataDriven flow samples" width="42%">
+<img src="../../data/32Ising_T2.269_hs_dataDriven/flow_correlations.png" alt="hs_dataDriven flow correlations" width="56%">
+</p>
+
+### hs_haarPrior
+
+<p>
+<img src="../../data/32Ising_T2.269_hs_haarPrior/flow_samples.png" alt="hs_haarPrior flow samples" width="42%">
+<img src="../../data/32Ising_T2.269_hs_haarPrior/flow_correlations.png" alt="hs_haarPrior flow correlations" width="56%">
+</p>
+
+### hs_weightTying
+
+<p>
+<img src="../../data/32Ising_T2.269_hs_weightTying/flow_samples.png" alt="hs_weightTying flow samples" width="42%">
+<img src="../../data/32Ising_T2.269_hs_weightTying/flow_correlations.png" alt="hs_weightTying flow correlations" width="56%">
+</p>
+
+### jsLoss_bignet_long_lam0
+
+<p>
+<img src="../../data/32Ising_T2.269_jsLoss_bignet_long_lam0.5/flow_samples.png" alt="jsLoss_bignet_long_lam0 flow samples" width="42%">
+<img src="../../data/32Ising_T2.269_jsLoss_bignet_long_lam0.5/flow_correlations.png" alt="jsLoss_bignet_long_lam0 flow correlations" width="56%">
+</p>
+
+### pathgrad_bignet_long_ext
+
+<p>
+<img src="../../data/32Ising_T2.269_pathgrad_bignet_long_ext/flow_samples.png" alt="pathgrad_bignet_long_ext flow samples" width="42%">
+<img src="../../data/32Ising_T2.269_pathgrad_bignet_long_ext/flow_correlations.png" alt="pathgrad_bignet_long_ext flow correlations" width="56%">
+</p>
+
+### phase2_finetune
+
+<p>
+<img src="../../data/32Ising_T2.269_phase2_finetune/flow_samples.png" alt="phase2_finetune flow samples" width="42%">
+<img src="../../data/32Ising_T2.269_phase2_finetune/flow_correlations.png" alt="phase2_finetune flow correlations" width="56%">
+</p>
+
+### sym
+
+<p>
+<img src="../../data/32Ising_T2.269_sym/flow_samples.png" alt="sym flow samples" width="42%">
+<img src="../../data/32Ising_T2.269_sym/flow_correlations.png" alt="sym flow correlations" width="56%">
+</p>
+
+### sym_bignet
+
+<p>
+<img src="../../data/32Ising_T2.269_sym_bignet/flow_samples.png" alt="sym_bignet flow samples" width="42%">
+<img src="../../data/32Ising_T2.269_sym_bignet/flow_correlations.png" alt="sym_bignet flow correlations" width="56%">
+</p>
+
+### sym_bignet_ext
+
+<p>
+<img src="../../data/32Ising_T2.269_sym_bignet_ext/flow_samples.png" alt="sym_bignet_ext flow samples" width="42%">
+<img src="../../data/32Ising_T2.269_sym_bignet_ext/flow_correlations.png" alt="sym_bignet_ext flow correlations" width="56%">
+</p>
 

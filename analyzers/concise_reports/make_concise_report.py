@@ -84,7 +84,14 @@ def check_diagnostic_freshness(L, t_str):
 
 
 def find_method_pngs(L, t_str, png_name):
-    """{method: path-relative-to-analyzers} for data/{L}Ising_T{t}_*/{png}."""
+    """{method: path-relative-to-report} for data/{L}Ising_T{t}_*/{png}.
+
+    Paths are made relative to CONCISE_REPORTS (where the report file
+    lives) so image links resolve correctly. Earlier versions used
+    ANALYZERS as the base, which broke when the report moved into the
+    analyzers/concise_reports/ subfolder (rendered as ../data/... but
+    should be ../../data/... from the report's location).
+    """
     out = {}
     for fp in sorted(glob.glob(
             os.path.join(REPO, "data", f"{L}Ising_T{t_str}_*", png_name))):
@@ -94,7 +101,7 @@ def find_method_pngs(L, t_str, png_name):
         method = m.group(1)
         if "broken" in method.lower():
             continue  # skip explicitly-broken runs
-        out[method] = os.path.relpath(fp, ANALYZERS)
+        out[method] = os.path.relpath(fp, CONCISE_REPORTS)
     return out
 
 
@@ -144,31 +151,39 @@ def main():
                   f"— run `loss_analyzer_fixT.py -L {L} -t {t_str}` first._", ""]
 
     lines += [
-        "## Flow samples — flow output (x ~ q) vs HS target data (x ~ p)",
+        "## Flow visualizations — configurations + physical observables",
         "",
-        "_Each panel pair: left = configurations the trained flow generates,_",
-        "_right = HS samples from the true target. Same sigmoid(2x) rendering._",
+        "_Per method: left = flow samples (configurations, `sigmoid(2x)` render_",
+        "_of `flow (q)` vs `HS data (p)`); right = flow correlations (magnetisation_",
+        "_distribution P(M) + axial two-point correlation G(r)/G(0), flow vs data)._",
         "",
     ]
     if methods:
         for mth in methods:
-            if mth in samples:
-                lines += [f"### {mth}", "", f"![{mth} flow samples]({samples[mth]})", ""]
+            lines += [f"### {mth}", ""]
+            has_s = mth in samples
+            has_c = mth in corr
+            if has_s and has_c:
+                # Side-by-side using HTML <p> — the width ratio matches the P2.x
+                # figure convention (flow_samples is squarer, correlations
+                # is wider).
+                lines += [
+                    "<p>",
+                    f'<img src="{samples[mth]}" alt="{mth} flow samples" width="42%">',
+                    f'<img src="{corr[mth]}" alt="{mth} flow correlations" width="56%">',
+                    "</p>",
+                    "",
+                ]
+            elif has_s:
+                lines += [f"![{mth} flow samples]({samples[mth]})", ""]
+            elif has_c:
+                lines += [f"![{mth} flow correlations]({corr[mth]})", ""]
     else:
-        lines += ["_No flow_samples.png found. Run `shell/visualize_flows.sh`._", ""]
-
-    lines += [
-        "## Flow correlations — magnetisation P(M) and two-point G(r)",
-        "",
-        "_Left: per-config magnetisation distribution. Right: normalised_",
-        "_axial two-point correlation G(r)/G(0). Flow (q) vs HS data (p)._",
-        "",
-    ]
-    for mth in methods:
-        if mth in corr:
-            lines += [f"### {mth}", "", f"![{mth} flow correlations]({corr[mth]})", ""]
-    if not any(m in corr for m in methods):
-        lines += ["_No flow_correlations.png found. Run `shell/visualize_flows.sh`._", ""]
+        lines += [
+            "_No flow_samples.png / flow_correlations.png found. "
+            "Run `shell/visualize_flows.sh` or `analyze_L<N>.sh`._",
+            "",
+        ]
 
     out_path = os.path.join(CONCISE_REPORTS, f"concise_report_L{L}_T{t_str}.md")
     with open(out_path, "w", encoding="utf-8") as f:
