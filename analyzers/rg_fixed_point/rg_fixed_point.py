@@ -69,6 +69,10 @@ FOLDERS = {
     "T_c jsLoss_bignet_long (mixed JS)": "data/32Ising_T2.269_jsLoss_bignet_long_lam0.5",
     "T_c phase2_finetune (mixed 2-stage)": "data/32Ising_T2.269_phase2_finetune",
     "T_c bridge_w5.0t0.5 (bridge-reweighted)": "data/32Ising_T2.269_hsBignet_bridge_w5.0t0.5",
+    # ----- L=64 T_c comparison (2026-07-13, champion added) -----
+    "L=64 baseline_b16 (A nr=1)":                 "data/64Ising_T2.269_hsBignet_baseline_b16",
+    "L=64 i2_stride8h32_nr2_b16 (D nr=2)":        "data/64Ising_T2.269_hsBignet_i2_stride8h32_nr2_b16",
+    "L=64 fixdil+VP-1e-3 nr=1 (champion ★)":      "data/64Ising_T2.269_hsBignet_hcg_perscale_fixdil_vp1e-3_nr1_b16",
 }
 
 # Panel groupings for output plots. hs_bignet (forward-KL T_c) anchors
@@ -91,6 +95,14 @@ PANELS = {
         "T_c phase2_finetune (mixed 2-stage)",
         "T_c bridge_w5.0t0.5 (bridge-reweighted)",
         "T = 2.40  (high T, disorder)",
+    ],
+    # L=64 champion vs L=64 baselines (2026-07-13). Answers: does the
+    # VP-regularized fixdil+HCG champion show a different depth-MSE
+    # signature than baseline A or the Phase-2 D reference?
+    "rg_fixed_point_L64_champion.png": [
+        "L=64 baseline_b16 (A nr=1)",
+        "L=64 i2_stride8h32_nr2_b16 (D nr=2)",
+        "L=64 fixdil+VP-1e-3 nr=1 (champion ★)",
     ],
 }
 
@@ -144,6 +156,13 @@ STYLE = {
     "L=64 baseline_nr2_b16 (P2.x C64)":           dict(color="#ad1457", linestyle=":",  marker="x",
                                                      linewidth=2.0, markersize=10),
     "L=64 i2_stride8h32_nr2_b16 (P2.x D64 ★)":   dict(color="#880e4f", linestyle="-",  marker="*",
+                                                     linewidth=2.8, markersize=14),
+    # ----- L=64 champion panel (2026-07-13) -----
+    "L=64 baseline_b16 (A nr=1)":                 dict(color="#bdbdbd", linestyle="-",  marker="o",
+                                                     linewidth=2.0, markersize=9),
+    "L=64 i2_stride8h32_nr2_b16 (D nr=2)":        dict(color="#880e4f", linestyle="--", marker="s",
+                                                     linewidth=2.2, markersize=9),
+    "L=64 fixdil+VP-1e-3 nr=1 (champion ★)":      dict(color="#0a8aa6", linestyle="-",  marker="*",
                                                      linewidth=2.8, markersize=14),
 }
 
