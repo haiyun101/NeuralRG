@@ -1,3 +1,5 @@
 {
-    "commentTranslate.targetLanguage": "zh-CN"
+    "commentTranslate.targetLanguage": "zh-CN",
+    "terminal.integrated.copyOnSelection": true,
+    "terminal.integrated.macOptionClickForcesSelection": true
 }

@@ -16,3 +16,5 @@ opt/*
 logs/
 # AI chat history export
 HISTORY/
+# Session-local scratchpad — verification scripts, prune helpers, __pycache__
+scratchpad/
