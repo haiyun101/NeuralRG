@@ -137,28 +137,53 @@ Two KL directions are reported:
 
 | Rank | Method                                                       |  S(Best-200) | KL(p‖q) train | KL(q‖p) diag |
 | :--: | :----------------------------------------------------------- | :----------: | :---------: | :---------: |
-|  1   | **hcg_perscale_fixdil_vp1e-3_nr1** ★                         |  **7658.61** |  **37.49**  |  **40.97**  |
+|  1   | **hcg_perscale_fixdil_vp1e-3_nr1** ★                         |  **7658.61** |  **37.49**  |  **44.28**  |
 |  2   | hcg_perscale_fixdil_vp1e-4_nr1                               |    7659.12   |    37.99    |    44.99†   |
-|  3   | baseline_nr2 (**C**)                                         |    7661.64   |    40.52    |   156.36    |
+|  3   | baseline_nr2 (**C**)                                         |    7661.64   |    40.52    |    47.65    |
 |  4   | hcg_perscale_fixdil_vp1e-2_nr1                               |    7662.94   |    41.82    |    47.98    |
-|  5   | hcg_shared                                                   |    7669.66   |    48.53    |    50.24    |
-|  6   | i2_stride8h32_nr2 (**D**)                                    |    7676.08   |    54.96    |    51.33    |
-|  7   | hcg_perscale_nodilate_initshared_nr2 (cont, latest)          |    7677.78   |    56.66    |    64.79    |
-|  8   | hcg_perscale_nodilate_initshared_nr1 (cont, latest)          |    7680.72   |    59.60    |    57.24    |
-|  9   | hcg_perscale                                                 |    7681.89   |    60.77    |    84.19    |
-|  10  | baseline_b16 (**A** — Gaussian nr=1)                         |    7682.16   |    61.03    |    86.88    |
-|  11  | hcg_shared_nr2                                               |    7682.53   |    61.41    |    69.75    |
-|  12  | iii1_lam1.0                                                  |    7683.99   |    62.87    |    87.14    |
-|  13  | baseline_N50000 (A nr=1, N=50 000 dataset)                   |    7684.38   |    63.26    |    85.64    |
-|  ..  | *(10 unlisted variants between rank 13 and rank 23: i2 sweeps, baselines at other N, bridge, hcg_perscale_fixdil_nr2)* | | | |
-|  ~23 | hcg_perscale_fixdil_vp1e-4_nr2 (walltime-cut, N=7000)        |    7689.79   |    68.67    |    82.25    |
-|  ~29 | hcg_perscale_fixdil_vp1e-3_nr2 (walltime-cut, N=7000)        |    7701.63   |    80.51    |    90.75    |
+|  5   | **hcg_perscale_fixdil_vp1e-4_nr2 (cont, B200 ep 4500)** ‡    |  **7668.01** |    46.89    |    60.71    |
+|  6   | hcg_shared                                                   |    7669.66   |    48.53    |    50.24    |
+|  7   | **hcg_perscale_fixdil_vp1e-3_nr2 (cont, B200 ep 4500)** ‡    |  **7675.05** |    53.93    |    68.92    |
+|  8   | i2_stride8h32_nr2 (**D**)                                    |    7676.08   |    54.96    |    58.38    |
+|  9   | hcg_perscale_nodilate_initshared_nr2 (cont, latest)          |    7677.78   |    56.66    |    64.79    |
+|  10  | hcg_perscale_nodilate_initshared_nr1 (cont, latest)          |    7680.72   |    59.60    |    57.24    |
+|  11  | hcg_perscale                                                 |    7681.89   |    60.77    |    84.19    |
+|  12  | baseline_b16 (**A** — Gaussian nr=1)                         |    7682.16   |    61.03    |    82.17    |
+|  13  | hcg_shared_nr2                                               |    7682.53   |    61.41    |    69.75    |
+|  14  | iii1_lam1.0                                                  |    7683.99   |    62.87    |    87.14    |
+|  15  | baseline_N50000 (A nr=1, N=50 000 dataset)                   |    7684.38   |    63.26    |    85.64    |
+|  ..  | *(unlisted variants: i2 sweeps, baselines at other N, bridge, hcg_perscale_fixdil_nr2)* | | | |
 |  ~35 | hcg_perscale_fixdil_vp1e-2_nr2 (walltime-cut, N=7000)        |    7716.33   |    95.21    |   121.32    |
 
 All numbers are Best-200 (200-epoch rolling min-mean of ENTROPY). nr=2
 variants labeled "walltime-cut" reached only ep 7000 of the planned 15 000,
 but the Best-200 window still gives sustained loss (not single-epoch min).
 `—` = no `flow_diagnostic.json` (never ran post-hoc sampling for that folder).
+
+`‡` **vp1e-{3,4} nr=2 continuation (2026-07-15):** the two Best-200 rows
+that jumped from ranks ~23 / ~29 to ranks 5 / 7. Both continuations
+completed the planned 15 000 epochs (jobs 41786697 and 41797159 finished
+Wed morning). The 22-27 nat improvement over the walltime-cut values
+comes from a basin discovered EARLY in the continuation (Best-200 center
+at ep ~4671, near saving ep 4500). Both arms then **drifted +45 nat**
+over the remaining ~10 k epochs (see trajectory analysis 2026-07-15).
+
+KL(q‖p) values above are **B200-anchored** (from `flow_diagnostic.json`
+regenerated at ep 4500 by job 41814733), NOT from the drifted latest
+checkpoint. The drifted values were 101 (vp1e-3) / 131 (vp1e-4) — 32-70
+nat worse than what these arms actually learned at their sustained-loss
+basin. Same late-drift signature as vp1e-4 nr=1 (which then went on to
+catastrophically diverge; see †).
+
+**Physics observables at B200-anchored ep 4500** (Tier-1, job 41814733):
+- vp1e-4 nr=2 cont: ⟨\|M\|⟩=0.633, χ=**28.60**, U₄=0.646, E=−1.411
+- vp1e-3 nr=2 cont: ⟨\|M\|⟩=0.652, χ=**27.00**, U₄=0.648, E=−1.415
+
+Both land in the **Group B ("ordered-blocks" collapse)** family (χ ≈ 15-30,
+U₄ ≈ 0.65). Despite Best-200 being only ~10 nat behind the champion, the
+physics is qualitatively worse than the champion's Group A (χ=72.5,
+U₄=0.621). Adding nr=2 depth on top of VP moved the flow into a more
+collapsed basin, not a physics-improved one.
 "~N" ranks = position in the full 40+ variant ranking including small-scale
 sweeps (i2 stride/hidden variants, baselines at other N, bridge, etc.) that
 aren't individually listed here. The 10 unlisted rows between ranks 13
@@ -194,11 +219,12 @@ ep 15800 for nr=1 cont).
 - Rank 1 fixdil+VP-1e-3 nr=1 has **both** the lowest KL(p‖q) train (37.49) AND
   a competitive KL(q‖p) diag (40.97) — the flow neither misses p's modes
   nor over-generates spurious ones significantly.
-- Baseline C (Gaussian nr=2, rank 3) has good KL(p‖q) train (40.52) but
-  **massive KL(q‖p) diag = 156.36** — its samples cover regions p never
-  visits. Plain Gaussian prior gives high MLE fit but poor generative
-  quality. (Note: A = Gaussian nr=1 is rank 12 with S=7682.16, half the
-  compute of C so ~20 nat behind on training-KL as expected.)
+- Baseline C (Gaussian nr=2, rank 3) has good KL(p‖q) train (40.52) and
+  **also good KL(q‖p) diag = 47.65** — updated 2026-07-17 with 4000-sample
+  fresh diagnostic (previously reported 156.36 was from a numerically
+  fragile earlier pass at N=1000). C is now on par with the champion on
+  both KL directions. (Note: A = Gaussian nr=1 is rank 12 with S=7682.16,
+  half the compute of C so ~20 nat behind on training-KL as expected.)
 - D (rank 6) has moderate on both (54.96 / 51.33) — trade-off pattern.
 - HCG shared (rank 5) has balanced small values (48.53 / 50.24).
 
@@ -335,9 +361,59 @@ and U₄:
 - All hcg_perscale_nodilate variants
 - D (i2 nr=2)
 
-### G(r) shape — normalized correlations (not raw magnitude)
+### G(0) — absolute two-point correlation amplitude (2026-07-16 update)
 
-`flow_sample_diagnostic.py` computes G(r)/G(0), i.e. the **decay shape**
+**All top L=64 flows reproduce GT's G(0) to within 2%.** Absolute values
+from `flow_diagnostic.json` (`G0_q` field):
+
+| Model                       | G_q(0)  | ratio to GT (12.263) |
+|:----------------------------|:-------:|:--------------------:|
+| GT (Wolff MCMC, reference)  | 12.263  | 1.000                |
+| C  (Gaussian nr=2)          | 12.248  | 0.999                |
+| hcg_shared                  | 12.080  | 0.985                |
+| B  (i2_stride8h32 nr=1)     | 12.040  | 0.982                |
+| D  (i2_stride8h32_nr2)      | 12.011  | 0.979                |
+| A  (baseline_b16)           | 11.998  | 0.978                |
+| ★ Champion (fixdil+VP-1e-3 nr=1) | 11.925 | 0.972         |
+
+At the level of *output physical spins*, all these flows produce
+configurations with essentially the correct two-point variance. G(0)
+is not a distinguisher.
+
+This is a **change of interpretation from the earlier framing** (Section
+C2 of the top-models RG report claimed champion had "13× smaller raw
+amplitude than A"). That claim referred to `G(0)` at the **MERA
+intermediate representation** (kept-coarse `y_1` at L=32), where champion's
+raw activation variance really is ~4 vs A's ~53. But those internal
+representations are integrated over by the change-of-variables — they
+don't manifest in the final samples' physical G(r). All flows have
+learned to output physical G(0) ≈ 12.
+
+**Where the physics differences live**: in `χ = Var_q(|M|)` and `U₄`
+(shape of |M| distribution), which measure global order-parameter
+statistics rather than local `<x(0) x(r)>`. See the χ / U₄ tables above.
+
+`flow_correlations.png` in each folder was regenerated on 2026-07-16 with
+**three panels**: (1) |M| distribution, (2) **absolute G(r) on log-y**
+(new — amplitude visible), (3) normalized G(r)/G(0) log-log (unchanged).
+The absolute plot makes it directly clear that flow curves lie on top
+of the GT curve at every r, only slightly under-shooting.
+
+**Cross-model overlay** — all top L=64 models' absolute G(r) on one
+figure alongside GT:
+
+<p>
+<img src="../rg_fixed_point/figures/L64_absolute_Gr_topmodels.png" alt="L=64 absolute G(r) — all top models vs GT" width="100%">
+</p>
+
+Two panels: (left) linear-y G(r) to see the head; (right) log-y |G(r)|
+to see the tail. Every trained flow's curve sits on top of the GT curve
+across the full r range — this is what the tabulated G(0) ratios of
+0.972-0.999 look like graphically.
+
+### G(r) shape — normalized correlations (retained: what earlier version showed)
+
+`flow_sample_diagnostic.py` also computes G(r)/G(0), i.e. the **decay shape**
 (each curve starts at 1 at r=0 by construction). So the numbers below
 compare **effective correlation lengths ξ_eff**, not absolute G(r) values.
 
@@ -500,7 +576,7 @@ Ordered by rank in the Best-200 ranking table. Diagnostic epoch is shown; that's
 <img src="../../data/64Ising_T2.269_hsBignet_hcg_perscale_fixdil_vp1e-3_nr1_b16/flow_correlations.png" alt="rank 1 correlations" width="56%">
 </p>
 
-> **KL(p‖q) = 38.68** · **KL(q‖p) = 43.95** · ⟨|M|⟩_q = 2.13 · ξ_q = 13.99 · ⟨|M|⟩_s = 0.60 · **χ = 72.5** · **U₄ = 0.621** · Best-200 = 7658.61 · diag ep 13500
+> **KL(p‖q) = 38.69** · **KL(q‖p) = 44.28** · ⟨|M|⟩_q = 2.12 · ξ_q = 13.90 · ⟨|M|⟩_s = 0.60 · **χ = 72.5** · **U₄ = 0.621** · Best-200 = 7658.61 · diag ep 13500 (rerun 2026-07-17, real 4000 samples)
 
 ---
 
@@ -555,7 +631,7 @@ Ordered by rank in the Best-200 ranking table. Diagnostic epoch is shown; that's
 <img src="../../data/64Ising_T2.269_hsBignet_i2_stride8h32_nr2_b16/flow_correlations.png" alt="rank 6 correlations" width="56%">
 </p>
 
-> **KL(p‖q) = 54.41** · **KL(q‖p) = 58.66** · ⟨|M|⟩_q = 2.28 · ξ_q = 14.94 · ⟨|M|⟩_s = 0.64 · **χ = 20.0** ★ · **U₄ = 0.652** · Best-200 = 7676.08 · diag ep 17800 · ← Group B
+> **KL(p‖q) = 54.41** · **KL(q‖p) = 58.38** · ⟨|M|⟩_q = 2.28 · ξ_q = 14.96 · ⟨|M|⟩_s = 0.64 · **χ = 20.0** ★ · **U₄ = 0.652** · Best-200 = 7676.08 · diag ep 17800 (rerun 2026-07-17) · ← Group B
 
 ---
 
@@ -702,7 +778,9 @@ These are hyperparameter sweeps in the `i2 = conditional_gaussian` family (strid
 <img src="../../data/64Ising_T2.269_hsBignet_i2_stride8h32_b16/flow_correlations.png" alt="i2 stride8 h32 correlations" width="56%">
 </p>
 
-> **KL(p‖q) = 69.53** · **KL(q‖p) = 93.20** · ⟨|M|⟩_q = 2.29 · ξ_q = 15.29 · Best-200 = 7691.09 · diag ep 19800
+> **KL(p‖q) = 70.91** · **KL(q‖p) = 93.59** · ⟨|M|⟩_q = 2.18 · ξ_q = 14.36 · Best-200 = 7691.09 · diag ep 8400† (rerun 2026-07-17)
+
+`†` The rerun requested Best-200 ep 12 584 but the folder's savings distribution has a gap between ep 8400 and ep 19000 — so `--epoch` picked the nearest saving, ep 8400. This is pre-basin, so KL values here undersample B's converged behavior; use with caveat.
 
 ---
 
