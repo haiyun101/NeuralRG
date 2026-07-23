@@ -388,12 +388,20 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("--N", type=int, default=2000, help="HS samples to use")
     p.add_argument("--outdir", default="analyzers")
+    p.add_argument("--filter", default=None,
+                   help="Regex; keep only FOLDERS labels matching (case-insensitive)")
     args = p.parse_args()
     os.makedirs(os.path.join(args.outdir, "figures"), exist_ok=True)
     os.makedirs(os.path.join(args.outdir, "csv"), exist_ok=True)
 
+    folders = FOLDERS
+    if args.filter:
+        pat = re.compile(args.filter, re.IGNORECASE)
+        folders = {k: v for k, v in FOLDERS.items() if pat.search(k)}
+        print(f"[filter] '{args.filter}' matched {len(folders)}/{len(FOLDERS)} labels")
+
     results = []
-    for label, folder in FOLDERS.items():
+    for label, folder in folders.items():
         try:
             r = run_one(folder, label, N=args.N)
             results.append(r)

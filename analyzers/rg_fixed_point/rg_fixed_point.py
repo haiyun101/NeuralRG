@@ -73,6 +73,22 @@ FOLDERS = {
     "L=64 baseline_b16 (A nr=1)":                 "data/64Ising_T2.269_hsBignet_baseline_b16",
     "L=64 i2_stride8h32_nr2_b16 (D nr=2)":        "data/64Ising_T2.269_hsBignet_i2_stride8h32_nr2_b16",
     "L=64 fixdil+VP-1e-3 nr=1 (champion ★)":      "data/64Ising_T2.269_hsBignet_hcg_perscale_fixdil_vp1e-3_nr1_b16",
+    # ----- L=64 cross-T comparison (2026-07-14) -----
+    # nr=2 models trained across the transition. All three at the same
+    # architecture; only T changes. Answers "is V0/V1 deep-MSE a T_c
+    # fingerprint at L=64 like it is at L=32?"
+    "L=64 T2.15 baseline_nr2 (C, ordered)":         "data/64Ising_T2.15_hsBignet_baseline_nr2_b16",
+    "L=64 T2.22 baseline_nr2 (C, near T_c)":         "data/64Ising_T2.22_hsBignet_baseline_nr2_b16",
+    "L=64 T2.32 baseline_nr2 (C, near T_c)":         "data/64Ising_T2.32_hsBignet_baseline_nr2_b16",
+    "L=64 T2.4  baseline_nr2 (C, disordered)":       "data/64Ising_T2.4_hsBignet_baseline_nr2_b16",
+    "L=64 T2.15 i2_stride8h32_nr2 (D, ordered)":     "data/64Ising_T2.15_hsBignet_i2_stride8h32_nr2_b16",
+    "L=64 T2.22 i2_stride8h32_nr2 (D, near T_c)":     "data/64Ising_T2.22_hsBignet_i2_stride8h32_nr2_b16",
+    "L=64 T2.32 i2_stride8h32_nr2 (D, near T_c)":     "data/64Ising_T2.32_hsBignet_i2_stride8h32_nr2_b16",
+    "L=64 T2.4  i2_stride8h32_nr2 (D, disordered)":   "data/64Ising_T2.4_hsBignet_i2_stride8h32_nr2_b16",
+    "L=64 T2.15 fixdil+VP-1e-3 nr=2 (VP, ordered)":     "data/64Ising_T2.15_hsBignet_hcg_perscale_fixdil_vp1e-3_nr2_b16",
+    "L=64 T2.22 fixdil+VP-1e-3 nr=2 (VP, near T_c)":     "data/64Ising_T2.22_hsBignet_hcg_perscale_fixdil_vp1e-3_nr2_b16",
+    "L=64 T2.32 fixdil+VP-1e-3 nr=2 (VP, near T_c)":     "data/64Ising_T2.32_hsBignet_hcg_perscale_fixdil_vp1e-3_nr2_b16",
+    "L=64 T2.4  fixdil+VP-1e-3 nr=2 (VP, disordered)":   "data/64Ising_T2.4_hsBignet_hcg_perscale_fixdil_vp1e-3_nr2_b16",
 }
 
 # Panel groupings for output plots. hs_bignet (forward-KL T_c) anchors
@@ -103,6 +119,24 @@ PANELS = {
         "L=64 baseline_b16 (A nr=1)",
         "L=64 i2_stride8h32_nr2_b16 (D nr=2)",
         "L=64 fixdil+VP-1e-3 nr=1 (champion ★)",
+    ],
+    # L=64 cross-T for D (Phase-2 reference architecture — same config,
+    # only T varies). Answers: is V0/V1 deep-MSE a T_c fingerprint at
+    # L=64 like it is at L=32 (per the T=2.15 / T=2.269 / T=2.4 baseline
+    # panel)?
+    "rg_fixed_point_L64_across_T_D.png": [
+        "L=64 T2.15 i2_stride8h32_nr2 (D, ordered)",
+        "L=64 T2.22 i2_stride8h32_nr2 (D, near T_c)",
+        "L=64 i2_stride8h32_nr2_b16 (D nr=2)",   # T_c row
+        "L=64 T2.32 i2_stride8h32_nr2 (D, near T_c)",
+        "L=64 T2.4  i2_stride8h32_nr2 (D, disordered)",
+    ],
+    # Same for the VP-regularized champion-analog (fixdil+VP-1e-3 nr=2).
+    "rg_fixed_point_L64_across_T_VP.png": [
+        "L=64 T2.15 fixdil+VP-1e-3 nr=2 (VP, ordered)",
+        "L=64 T2.22 fixdil+VP-1e-3 nr=2 (VP, near T_c)",
+        "L=64 T2.32 fixdil+VP-1e-3 nr=2 (VP, near T_c)",
+        "L=64 T2.4  fixdil+VP-1e-3 nr=2 (VP, disordered)",
     ],
 }
 
@@ -164,6 +198,22 @@ STYLE = {
                                                      linewidth=2.2, markersize=9),
     "L=64 fixdil+VP-1e-3 nr=1 (champion ★)":      dict(color="#0a8aa6", linestyle="-",  marker="*",
                                                      linewidth=2.8, markersize=14),
+    # ----- L=64 cross-T (2026-07-14): shared marker per model type, color = T -----
+    # D nr=2 across T (marker "s")
+    "L=64 T2.15 i2_stride8h32_nr2 (D, ordered)":     dict(color="#2c6cb0", linestyle="-",  marker="s"),
+    "L=64 T2.22 i2_stride8h32_nr2 (D, near T_c)":     dict(color="#7d5bcc", linestyle="-",  marker="s"),
+    "L=64 T2.32 i2_stride8h32_nr2 (D, near T_c)":     dict(color="#c05a95", linestyle="-",  marker="s"),
+    "L=64 T2.4  i2_stride8h32_nr2 (D, disordered)":   dict(color="#c1311b", linestyle="-",  marker="s"),
+    # champion-analog VP nr=2 across T (marker "*")
+    "L=64 T2.15 fixdil+VP-1e-3 nr=2 (VP, ordered)":     dict(color="#2c6cb0", linestyle="-",  marker="*", linewidth=2.0, markersize=11),
+    "L=64 T2.22 fixdil+VP-1e-3 nr=2 (VP, near T_c)":     dict(color="#7d5bcc", linestyle="-",  marker="*", linewidth=2.0, markersize=11),
+    "L=64 T2.32 fixdil+VP-1e-3 nr=2 (VP, near T_c)":     dict(color="#c05a95", linestyle="-",  marker="*", linewidth=2.0, markersize=11),
+    "L=64 T2.4  fixdil+VP-1e-3 nr=2 (VP, disordered)":   dict(color="#c1311b", linestyle="-",  marker="*", linewidth=2.0, markersize=11),
+    # C = baseline_nr2 across T (marker "o"). T_c already covered as "L=64 baseline_nr2_b16 (P2.x C64)".
+    "L=64 T2.15 baseline_nr2 (C, ordered)":         dict(color="#2c6cb0", linestyle=":",  marker="o"),
+    "L=64 T2.22 baseline_nr2 (C, near T_c)":         dict(color="#7d5bcc", linestyle=":",  marker="o"),
+    "L=64 T2.32 baseline_nr2 (C, near T_c)":         dict(color="#c05a95", linestyle=":",  marker="o"),
+    "L=64 T2.4  baseline_nr2 (C, disordered)":       dict(color="#c1311b", linestyle=":",  marker="o"),
 }
 
 
@@ -333,12 +383,24 @@ def main():
     p.add_argument("--N", type=int, default=10000, help="probe batch size")
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--outdir", default="analyzers")
+    p.add_argument("--filter", default=None,
+                   help="Regex; keep only FOLDERS labels matching. Speeds "
+                        "up scoped reruns (e.g. --filter 'champion|A nr=1' "
+                        "or --filter 'L=64'). Case-insensitive.")
     args = p.parse_args()
     os.makedirs(os.path.join(args.outdir, "figures"), exist_ok=True)
     os.makedirs(os.path.join(args.outdir, "csv"), exist_ok=True)
 
+    folders = FOLDERS
+    if args.filter:
+        pat = re.compile(args.filter, re.IGNORECASE)
+        folders = {k: v for k, v in FOLDERS.items() if pat.search(k)}
+        print(f"[filter] '{args.filter}' matched {len(folders)}/{len(FOLDERS)} labels:")
+        for k in folders:
+            print(f"    {k}")
+
     results = []
-    for label, folder in FOLDERS.items():
+    for label, folder in folders.items():
         try:
             r = run_one(folder, label, N=args.N, seed=args.seed)
             results.append(r)

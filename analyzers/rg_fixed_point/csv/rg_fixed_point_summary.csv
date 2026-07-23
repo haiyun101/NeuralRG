@@ -35,3 +35,18 @@ T_c bridge_w5.0t0.5 (bridge-reweighted),data/32Ising_T2.269_hsBignet_bridge_w5.0
 T_c bridge_w5.0t0.5 (bridge-reweighted),data/32Ising_T2.269_hsBignet_bridge_w5.0t0.5,32,2.269185314213022,1800,False,5,2,f_2->f_3,1.052777647972107
 T_c bridge_w5.0t0.5 (bridge-reweighted),data/32Ising_T2.269_hsBignet_bridge_w5.0t0.5,32,2.269185314213022,1800,False,5,2,f_3->f_4,2.183405637741089
 T_c bridge_w5.0t0.5 (bridge-reweighted),data/32Ising_T2.269_hsBignet_bridge_w5.0t0.5,32,2.269185314213022,1800,False,5,2,f_4->f_5,2.211911916732788
+L=64 baseline_b16 (A nr=1),data/64Ising_T2.269_hsBignet_baseline_b16,64,2.269185314213022,19800,False,6,2,f_1->f_2,0.41570770740509033
+L=64 baseline_b16 (A nr=1),data/64Ising_T2.269_hsBignet_baseline_b16,64,2.269185314213022,19800,False,6,2,f_2->f_3,0.13688190281391144
+L=64 baseline_b16 (A nr=1),data/64Ising_T2.269_hsBignet_baseline_b16,64,2.269185314213022,19800,False,6,2,f_3->f_4,0.05617848038673401
+L=64 baseline_b16 (A nr=1),data/64Ising_T2.269_hsBignet_baseline_b16,64,2.269185314213022,19800,False,6,2,f_4->f_5,0.1322706937789917
+L=64 baseline_b16 (A nr=1),data/64Ising_T2.269_hsBignet_baseline_b16,64,2.269185314213022,19800,False,6,2,f_5->f_6,0.1909528374671936
+L=64 i2_stride8h32_nr2_b16 (D nr=2),data/64Ising_T2.269_hsBignet_i2_stride8h32_nr2_b16,64,2.269185314213022,19800,False,6,4,f_1->f_2,3.1628823280334473
+L=64 i2_stride8h32_nr2_b16 (D nr=2),data/64Ising_T2.269_hsBignet_i2_stride8h32_nr2_b16,64,2.269185314213022,19800,False,6,4,f_2->f_3,1.6728121042251587
+L=64 i2_stride8h32_nr2_b16 (D nr=2),data/64Ising_T2.269_hsBignet_i2_stride8h32_nr2_b16,64,2.269185314213022,19800,False,6,4,f_3->f_4,0.12007680535316467
+L=64 i2_stride8h32_nr2_b16 (D nr=2),data/64Ising_T2.269_hsBignet_i2_stride8h32_nr2_b16,64,2.269185314213022,19800,False,6,4,f_4->f_5,0.041619326919317245
+L=64 i2_stride8h32_nr2_b16 (D nr=2),data/64Ising_T2.269_hsBignet_i2_stride8h32_nr2_b16,64,2.269185314213022,19800,False,6,4,f_5->f_6,5.781147587556601e-14
+L=64 fixdil+VP-1e-3 nr=1 (champion ★),data/64Ising_T2.269_hsBignet_hcg_perscale_fixdil_vp1e-3_nr1_b16,64,2.269185314213022,14500,False,6,2,f_1->f_2,1.6519713401794434
+L=64 fixdil+VP-1e-3 nr=1 (champion ★),data/64Ising_T2.269_hsBignet_hcg_perscale_fixdil_vp1e-3_nr1_b16,64,2.269185314213022,14500,False,6,2,f_2->f_3,0.0888996571302414
+L=64 fixdil+VP-1e-3 nr=1 (champion ★),data/64Ising_T2.269_hsBignet_hcg_perscale_fixdil_vp1e-3_nr1_b16,64,2.269185314213022,14500,False,6,2,f_3->f_4,0.006941867060959339
+L=64 fixdil+VP-1e-3 nr=1 (champion ★),data/64Ising_T2.269_hsBignet_hcg_perscale_fixdil_vp1e-3_nr1_b16,64,2.269185314213022,14500,False,6,2,f_4->f_5,0.0030124089680612087
+L=64 fixdil+VP-1e-3 nr=1 (champion ★),data/64Ising_T2.269_hsBignet_hcg_perscale_fixdil_vp1e-3_nr1_b16,64,2.269185314213022,14500,False,6,2,f_5->f_6,0.0028846634086221457

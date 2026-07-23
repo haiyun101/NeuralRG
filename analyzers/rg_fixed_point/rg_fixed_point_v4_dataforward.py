@@ -141,6 +141,8 @@ FOLDERS = {
     "L=32 i2_stride8h32_nr2_b64 (P2.x D32)":     "data/32Ising_T2.269_hsBignet_i2_stride8h32_nr2_b64",
     "L=64 baseline_nr2_b16 (P2.x C64)":           "data/64Ising_T2.269_hsBignet_baseline_nr2_b16",
     "L=64 i2_stride8h32_nr2_b16 (P2.x D64 ★)":   "data/64Ising_T2.269_hsBignet_i2_stride8h32_nr2_b16",
+    # ----- L=64 champion (2026-07-14) -----
+    "L=64 fixdil+VP-1e-3 nr=1 (champion ★)":      "data/64Ising_T2.269_hsBignet_hcg_perscale_fixdil_vp1e-3_nr1_b16",
 }
 STYLE = {k: ORIG_STYLE[k] for k in FOLDERS}
 
@@ -477,12 +479,20 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("--N", type=int, default=2000, help="HS samples to use")
     p.add_argument("--outdir", default="analyzers")
+    p.add_argument("--filter", default=None,
+                   help="Regex; keep only FOLDERS labels matching (case-insensitive)")
     args = p.parse_args()
     os.makedirs(os.path.join(args.outdir, "figures"), exist_ok=True)
     os.makedirs(os.path.join(args.outdir, "csv"), exist_ok=True)
 
+    folders = FOLDERS
+    if args.filter:
+        pat = re.compile(args.filter, re.IGNORECASE)
+        folders = {k: v for k, v in FOLDERS.items() if pat.search(k)}
+        print(f"[filter] '{args.filter}' matched {len(folders)}/{len(FOLDERS)} labels")
+
     results = []
-    for label, folder in FOLDERS.items():
+    for label, folder in folders.items():
         try:
             r = run_one(folder, label, N=args.N)
             results.append(r)
