@@ -182,6 +182,13 @@ def main():
                     help="destination nr=2 folder to create")
     ap.add_argument("--overwrite", action="store_true",
                     help="allow overwriting an existing dst folder")
+    ap.add_argument("--batch", type=int, default=8,
+                    help="dst batch size (default 8 — halved from typical "
+                         "L=64 nr=1 batch=16 to fit L=64 nr=2 activations "
+                         "in a 40 GB A100). Written into dst parameters.hdf5.")
+    ap.add_argument("--grad-accum", type=int, default=2, dest="grad_accum",
+                    help="dst gradAccum (default 2 — matches nr=1 effective "
+                         "batch after --batch halving). Written into dst hdf5.")
     args = ap.parse_args()
 
     src_folder = args.src.rstrip("/")
@@ -204,13 +211,47 @@ def main():
         if "nrepeat" in f:
             del f["nrepeat"]
         f["nrepeat"] = 2
-        # Force -load-safe: overwrite folder to match dst (main.py uses -folder
-        # from CLI anyway, but keep hdf5 consistent).
+
+        # Override batch + gradAccum for the doubled model (matches --batch
+        # and --grad-accum CLI defaults, which halve batch and doubles accum
+        # to keep effective batch equal to source while fitting activations
+        # in a 40 GB A100).
+        old_batch = int(np.array(f["batch"])) if "batch" in f else -1
+        old_ga    = int(np.array(f["gradAccum"])) if "gradAccum" in f else -1
+        if "batch"     in f: del f["batch"]
+        if "gradAccum" in f: del f["gradAccum"]
+        f["batch"]     = args.batch
+        f["gradAccum"] = args.grad_accum
+
+        # Backfill CLI-only training flags absent in older source HDF5s.
+        # main.py's -load only overrides args.<flag> when the HDF5 key is
+        # present, so a missing key silently falls back to the CLI-parser
+        # default — which for -dataDriven / -noDeq / -skipHMC is False.
+        # For nr=1 champions predating the flag-persistence commit, this
+        # caused fromnr1 to silently train in reverse-KL mode. Backfill
+        # with the values the source obviously used (data-driven training).
+        backfill = {
+            "dataDriven": True,   # source was data-driven (has dataPath / used HS)
+            "noDeq":      True,   # source used continuous HS input, not spins+deq
+            "skipHMC":    True,   # source ran forward-KL; HMC eval was skipped
+        }
+        # gradClip: only backfill if absent; 5.0 is the default we use for VP.
+        if "gradClip" not in f:
+            f["gradClip"] = 5.0
+            print("[convert] parameters.hdf5: gradClip = 5.0 (backfilled)")
+        for k, v in backfill.items():
+            if k in f:
+                continue
+            f[k] = bool(v)
+            print(f"[convert] parameters.hdf5: {k} = {v} (backfilled)")
+
         L = int(np.array(f["L"]))
         nlayers = int(np.array(f["nlayers"]))
     S = int(np.log2(L))
     print(f"[convert] L={L}, S={S}, nlayers={nlayers}")
     print(f"[convert] parameters.hdf5: nrepeat {old_nr} → 2")
+    print(f"[convert] parameters.hdf5: batch {old_batch} → {args.batch}, "
+          f"gradAccum {old_ga} → {args.grad_accum}")
 
     # (2) Load src saving, transform state dict, save to dst savings/.
     src_saving = find_saving(src_folder, args.epoch)

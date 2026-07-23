@@ -247,16 +247,15 @@ def save_flow_png(folder, x_q_vis, x_p_vis, epoch, label):
 
 
 def save_corr_png(folder, M_q, M_p, G_q, G_p, epoch, label, T=None, L=None):
-    """Two panels: per-config magnetisation histogram, and normalised G(r)/G(0).
+    """Two panels: per-config magnetisation, normalised G(r)/G(0) log-log.
 
-    These resolve structure the scalar <A>/H/KL numbers cannot: the
-    magnetisation spread (global order) and the correlation length (whether
-    the flow reproduces critical large-scale domains, not just local noise).
+    - Panel 1: |M| distribution — global order.
+    - Panel 2: normalised |G(r)|/G(0) on log-log — shape / correlation-length.
+      At T_c (within 0.01 of 2.269), overlays Onsager `G ∝ r^{-η}`, η=1/4.
 
-    Panel 2 is rendered on log-log axes. At T_c (within 0.01 of 2.269) a
-    dashed reference line `G ∝ r^(-η)` with η=1/4 (Onsager exact for the
-    2D Ising universality class) is overlaid, anchored at the r=1 point
-    of the HS data, so the slope match is visually direct.
+    (Absolute G(r) is available in the JSON as G0_q * Gnorm_q if needed for
+    cross-model amplitude comparison — see analyzers/rg_fixed_point/figures/
+    L64_absolute_Gr_topmodels.png for the cross-model overlay.)
     """
     try:
         import matplotlib
@@ -267,7 +266,7 @@ def save_corr_png(folder, M_q, M_p, G_q, G_p, epoch, label, T=None, L=None):
         return None
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(11.5, 4.6))
 
-    # panel 1: per-config magnetisation  M = (1/N) Sum x_i
+    # panel 1: per-config magnetisation
     mmax = np.abs(M_q).max()
     if M_p is not None:
         mmax = max(mmax, float(np.abs(M_p).max()))
@@ -282,10 +281,7 @@ def save_corr_png(folder, M_q, M_p, G_q, G_p, epoch, label, T=None, L=None):
     ax1.set_title("per-config magnetisation")
     ax1.legend(fontsize=9)
 
-    # panel 2: log-log normalised axial two-point correlation |G(r)| / G(0).
-    # r=0 dropped (1 by construction; log undefined). |G| keeps the
-    # plot well-defined when finite-L wrap-around drives G(r) slightly
-    # negative near r=L/2.
+    # panel 2: LOG-LOG normalised |G(r)|/G(0). r=0 dropped (log(0) undef).
     r_all = np.arange(len(G_q))
     r_mask = r_all >= 1
     r = r_all[r_mask]
@@ -295,11 +291,7 @@ def save_corr_png(folder, M_q, M_p, G_q, G_p, epoch, label, T=None, L=None):
         Gp_norm = np.abs(G_p[r_mask] / G_p[0])
         ax2.loglog(r, Gp_norm, "s-", color="C1", label="HS data  x ~ p")
 
-    # T_c reference line: G(r) ~ r^(-eta), eta=1/4 (Onsager).
-    # Only meaningful at criticality; off-critical G(r) decays
-    # exponentially, so the line would be misleading there.
     if T is not None and abs(T - 2.269185314213022) < 0.01:
-        # anchor at r=1, prefer p (data) if available, else q (flow).
         if G_p is not None:
             y1 = float(np.abs(G_p[1] / G_p[0]))
         else:
@@ -313,7 +305,7 @@ def save_corr_png(folder, M_q, M_p, G_q, G_p, epoch, label, T=None, L=None):
     ax2.set_xlabel("lattice distance  r")
     ax2.set_ylabel("|G(r)| / G(0)")
     title_suffix = f"  (T={T:.3f}{', T_c' if T is not None and abs(T-2.269185314213022)<0.01 else ''})" if T is not None else ""
-    ax2.set_title("axial two-point correlation (log-log)" + title_suffix)
+    ax2.set_title("normalised G(r)/G(0) (log-log)" + title_suffix)
     ax2.grid(alpha=0.3, which="both")
     ax2.legend(fontsize=9)
 

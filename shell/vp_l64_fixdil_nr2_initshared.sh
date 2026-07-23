@@ -38,7 +38,11 @@ N="200000"
 HS_PT="data/mcmc_data/hs_L${L}_T${T}_N${N}.pt"
 VP_LAMBDA="${VP_LAMBDA:?VP_LAMBDA env var required (e.g. 1e-3, 1e-4)}"
 EPOCHS="${EPOCHS:-15000}"
-BATCH="${BATCH:-16}"
+# batch=8 gradAccum=2 (effective batch 16, same as nr=1) — halved batch
+# fits nr=2 activations in 40 GB A100; batch=16 nr=2 OOMs (verified by
+# job 41798360 earlier this session).
+BATCH="${BATCH:-8}"
+GRADACCUM="${GRADACCUM:-2}"
 
 SHARED_FOLDER="./data/64Ising_T2.269_hsBignet_hcg_shared_nr2_b16"
 if [ ! -d "$SHARED_FOLDER/savings" ]; then
@@ -62,7 +66,7 @@ python -u main.py \
     -cuda 0 \
     -epochs "$EPOCHS" \
     -batch "$BATCH" \
-    -gradAccum 1 \
+    -gradAccum "$GRADACCUM" \
     -nlayers 16 -nmlp 3 -nhidden 128 -nrepeat 2 \
     -lr 1e-3 \
     -gradClip 5.0 \
