@@ -54,6 +54,7 @@ group.add_argument("-gradClip", type=float, default=0.0, help="Max gradient norm
 group.add_argument("-bridgeWeight", type=float, default=0.0, help="Bridge-targeted upweighting: each training sample with |M|<bridgeThresh gets weight (1+bridgeWeight) instead of 1. 0 disables.")
 group.add_argument("-bridgeThresh", type=float, default=0.5, help="Per-sample magnetization threshold for the bridge region (|M_i|<thresh -> upweighted). Only used with -bridgeWeight>0.")
 group.add_argument("-volumePreservingWeight", type=float, default=0.0, help="Soft volume-preserving regularizer: loss += lambda * mean((log|det J_MERA|)^2). 0 = off (default). Forces MERA's Jacobian toward 0 so HCG prior variance actually reflects the data marginal variance (rescues σ interpretability). Only active with -dataDriven.")
+group.add_argument("-volumePreservingPerLayer", type=int, default=0, help="1 = penalize sum of per-block (log|det J_block|)^2 instead of the total's square. Blocks cannot cancel each other out via expand/contract pairs. Aimed at nr=2 arms that collapse under the standard total VP. Requires -volumePreservingWeight > 0.")
 group.add_argument("-pathGrad", action='store_true', help="Reverse-KL path-gradient (STL) estimator: backward through path only, drop explicit-theta score-function term. Vaitl et al. 2024 (arxiv:2403.15881). Adds one inverse pass per step (~50%% wall-time overhead). Reverse-KL only for now.")
 group.add_argument("-scaleLoss", type=float, default=0.0, help="Multi-scale loss coefficient lambda_scale. Adds lambda_scale * sum_s MSE(zscore(y_s[::2,::2]), zscore(y_{s+1})) to the training loss. Penalizes deviation from scale invariance at every MERA scale; targets the rev-KL deep-block collapse and fwd-KL deep-block inflation diagnosed in rg_fixed_point_report.md. 0 disables. (forward-KL / dataDriven only for now.)")
 group.add_argument("-cosineAnneal", action='store_true', help="Use CosineAnnealingLR scheduler over full training: lr smoothly decays from -lr to cosineEtaMin (default lr*0.01) over -epochs. Off by default; opt-in only (existing runs unaffected). Mutually exclusive in effect with the legacy -adaptivelr StepLR (adaptivelr takes priority if both set).")
@@ -209,6 +210,7 @@ else:
         f.create_dataset("bridgeWeight", data=args.bridgeWeight)
         f.create_dataset("bridgeThresh", data=args.bridgeThresh)
         f.create_dataset("volumePreservingWeight", data=args.volumePreservingWeight)
+        f.create_dataset("volumePreservingPerLayer", data=args.volumePreservingPerLayer)
         f.create_dataset("scaleLoss", data=args.scaleLoss)
         f.create_dataset("priorType", data=np.string_(args.priorType))
         f.create_dataset("condPriorSlowStride", data=args.condPriorSlowStride)
@@ -424,6 +426,7 @@ LOSS,ZACC,ZOBS,XACC,XOBS = train.learnInterface(
     entropyBeta=args.entropyBeta, gradClip=args.gradClip,
     bridgeWeight=args.bridgeWeight, bridgeThresh=args.bridgeThresh,
     volumePreservingWeight=args.volumePreservingWeight,
+    volumePreservingPerLayer=bool(args.volumePreservingPerLayer),
     pathGrad=args.pathGrad,
     scaleLoss=args.scaleLoss,
     cosineAnneal=args.cosineAnneal, cosineEtaMin=args.cosineEtaMin,

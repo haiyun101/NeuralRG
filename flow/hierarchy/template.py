@@ -34,6 +34,29 @@ class HierarchyBijector(Flow):
             x = collect(self.indexI[no],self.indexJ[no],x,x_)
         return x,forwardLogjac
 
+    def forward_with_per_block_logjac(self, x):
+        """Same as ``forward`` but returns per-block log|det J| as a list
+        instead of the sum. Used by the per-layer VP penalty:
+
+          L_VP_per_layer = λ · Σ_block  E_data[ (log|det J_block|)² ]
+
+        which forces every RNVP block to be individually volume-preserving,
+        vs the default global VP that only penalizes the sum. Fixes the
+        "adjacent blocks cancel via expand/contract pairs" pathology that
+        allows nr=2 arms to collapse under the standard VP.
+        """
+        batchSize = x.shape[0]
+        channelSize = x.shape[1]
+        per_block_logjac = []
+        for no in range(len(self.indexI)):
+            x, x_ = dispatch(self.indexI[no], self.indexJ[no], x)
+            x_, logProbability = self.layerList[no].forward(
+                x_.reshape(-1, channelSize, *self.kernelShape))
+            per_block_logjac.append(
+                logProbability.reshape(batchSize, -1).sum(1))       # (B,)
+            x = collect(self.indexI[no], self.indexJ[no], x, x_)
+        return x, per_block_logjac
+
     def forward_with_intermediates(self, x):
         """Same as ``forward`` but also returns per-scale snapshots.
 

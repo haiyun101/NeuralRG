@@ -288,7 +288,7 @@ def learn(source, flow, batchSize, epochs, lr=1e-3, save = True, saveSteps = 10,
     return LOSS,ACC,OBS
 
 
-def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save=True, saveSteps=10, savePath=None, keepSavings=3, weight_decay=0.001, adaptivelr=False, HMCsteps=10, HMCthermal=10, HMCepsilon=0.2, measureFn=None, alpha=1.0, skipHMC=True, dataDriven=False, dataPath=None, targetT=None, noDeq=False, jsLoss=False, jsLambda=0.5, jsMemOpt=False, entropyBeta=0.0, gradClip=0.0, bridgeWeight=0.0, bridgeThresh=0.5, volumePreservingWeight=0.0, pathGrad=False, scaleLoss=0.0, cosineAnneal=False, cosineEtaMin=None, gradAccum=1, optimizerState=None):
+def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save=True, saveSteps=10, savePath=None, keepSavings=3, weight_decay=0.001, adaptivelr=False, HMCsteps=10, HMCthermal=10, HMCepsilon=0.2, measureFn=None, alpha=1.0, skipHMC=True, dataDriven=False, dataPath=None, targetT=None, noDeq=False, jsLoss=False, jsLambda=0.5, jsMemOpt=False, entropyBeta=0.0, gradClip=0.0, bridgeWeight=0.0, bridgeThresh=0.5, volumePreservingWeight=0.0, volumePreservingPerLayer=False, pathGrad=False, scaleLoss=0.0, cosineAnneal=False, cosineEtaMin=None, gradAccum=1, optimizerState=None):
     # gradAccum: number of micro-batches to accumulate gradients over before
     # calling optimizer.step(). Splits batchSize into gradAccum micro-batches
     # of size (batchSize // gradAccum) each, so effective batch is preserved.
@@ -596,8 +596,18 @@ def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save=True, saveStep
                 # un-symmetrized forward pass.
                 _vp_penalty_value = float("nan")
                 if volumePreservingWeight > 0:
-                    _, _logjac_mera = _inner_mera.forward(x_std)
-                    _vp_penalty_raw = _logjac_mera.pow(2).mean()
+                    if volumePreservingPerLayer:
+                        # Per-layer VP: Σ_block E[(log|det J_block|)²].
+                        # Prevents adjacent blocks from cancelling each
+                        # other via expand/contract pairs (which the global
+                        # VP allows). Each RNVP block must be individually
+                        # volume-preserving.
+                        _, _per_block = _inner_mera.forward_with_per_block_logjac(x_std)
+                        _vp_penalty_raw = sum(lj.pow(2).mean() for lj in _per_block)
+                    else:
+                        # Global VP: E[(Σ log|det J_block|)²]. Allows cancellation.
+                        _, _logjac_mera = _inner_mera.forward(x_std)
+                        _vp_penalty_raw = _logjac_mera.pow(2).mean()
                     loss = loss + volumePreservingWeight * _vp_penalty_raw
                     _vp_penalty_value = float(_vp_penalty_raw.item())
 
