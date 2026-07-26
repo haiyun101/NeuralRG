@@ -288,7 +288,7 @@ def learn(source, flow, batchSize, epochs, lr=1e-3, save = True, saveSteps = 10,
     return LOSS,ACC,OBS
 
 
-def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save=True, saveSteps=10, savePath=None, keepSavings=3, weight_decay=0.001, adaptivelr=False, HMCsteps=10, HMCthermal=10, HMCepsilon=0.2, measureFn=None, alpha=1.0, skipHMC=True, dataDriven=False, dataPath=None, targetT=None, noDeq=False, jsLoss=False, jsLambda=0.5, jsMemOpt=False, entropyBeta=0.0, gradClip=0.0, bridgeWeight=0.0, bridgeThresh=0.5, volumePreservingWeight=0.0, volumePreservingPerLayer=False, pathGrad=False, scaleLoss=0.0, cosineAnneal=False, cosineEtaMin=None, gradAccum=1, optimizerState=None):
+def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save=True, saveSteps=10, savePath=None, keepSavings=3, weight_decay=0.001, adaptivelr=False, HMCsteps=10, HMCthermal=10, HMCepsilon=0.2, measureFn=None, alpha=1.0, skipHMC=True, dataDriven=False, dataPath=None, targetT=None, noDeq=False, jsLoss=False, jsLambda=0.5, jsMemOpt=False, entropyBeta=0.0, gradClip=0.0, bridgeWeight=0.0, bridgeThresh=0.5, volumePreservingWeight=0.0, volumePreservingPerLayer=False, pathGrad=False, scaleLoss=0.0, physRegWeightChi=0.0, physRegWeightU4=0.0, physRegBatch=128, physRegTargetChi=float("nan"), physRegTargetU4=float("nan"), bf16=False, cosineAnneal=False, cosineEtaMin=None, gradAccum=1, optimizerState=None):
     # gradAccum: number of micro-batches to accumulate gradients over before
     # calling optimizer.step(). Splits batchSize into gradAccum micro-batches
     # of size (batchSize // gradAccum) each, so effective batch is preserved.
@@ -377,6 +377,38 @@ def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save=True, saveStep
         dataset = TensorDataset(mcmc_data)
         dataloader = DataLoader(dataset, batch_size=microBatch, shuffle=True, drop_last=True)
         data_iterator = iter(dataloader)
+
+        # ── Physical-observable regularizer setup ───────────────────────
+        # Auto-compute chi/U4 targets from data if user didn't provide.
+        # Convention: use soft spin s = tanh(x_physical), M = mean(s) per sample,
+        #   chi = N * (⟨M²⟩ − ⟨|M|⟩²),  U4 = 1 − ⟨M⁴⟩ / (3⟨M²⟩²)
+        # Physical x = data_std * x_standardized (undo -dataDriven scaling).
+        # We compute on the FULL data batch (or a big subset) for accurate GT.
+        _need_phys_reg = (physRegWeightChi > 0.0 or physRegWeightU4 > 0.0)
+        if _need_phys_reg or not (physRegTargetChi != physRegTargetChi):  # nan check via self-ineq
+            with torch.no_grad():
+                _n_data_for_gt = min(len(mcmc_data), 5000)
+                _idx = torch.randperm(len(mcmc_data))[:_n_data_for_gt]
+                _x_gt = mcmc_data[_idx].float()   # already physical (not standardized)
+                if _x_gt.dim() == 3:
+                    _x_gt = _x_gt.unsqueeze(1)
+                _s = torch.tanh(_x_gt)             # soft spin ≈ sign(x) for |x| >> 1
+                _M = _s.reshape(_s.shape[0], -1).mean(dim=-1)   # per-sample magnetization
+                _N_sites = _s.shape[-1] * _s.shape[-2]
+                _chi_data = _N_sites * (_M.pow(2).mean() - _M.abs().mean().pow(2))
+                _M2 = _M.pow(2).mean(); _M4 = _M.pow(4).mean()
+                _U4_data = 1.0 - _M4 / (3 * _M2.pow(2) + 1e-12)
+            print(f"  [phys-reg] data-derived targets from N={_n_data_for_gt}: "
+                  f"chi = {_chi_data.item():.3f}, U4 = {_U4_data.item():.4f}")
+        # Resolve targets: user override wins if not NaN
+        if physRegTargetChi != physRegTargetChi:   # NaN
+            physRegTargetChi = float(_chi_data.item()) if _need_phys_reg else float("nan")
+        if physRegTargetU4 != physRegTargetU4:
+            physRegTargetU4 = float(_U4_data.item()) if _need_phys_reg else float("nan")
+        if _need_phys_reg:
+            print(f"  [phys-reg] using targets: chi = {physRegTargetChi:.3f}, "
+                  f"U4 = {physRegTargetU4:.4f}   "
+                  f"(λ_chi={physRegWeightChi}, λ_U4={physRegWeightU4}, batch={physRegBatch})")
     else:
         # Reverse-KL: if we're resuming from a forward-KL run that used input
         # standardization, the flow expects standardized inputs and returns
@@ -524,6 +556,15 @@ def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save=True, saveStep
 
         elif dataDriven:
             # --- Data-Driven Forward KL (MLE) ---
+            # Optional bf16 autocast: wraps forward passes in bfloat16 for
+            # ~2x speedup on A100 Tensor Cores. No GradScaler needed since
+            # bf16 has fp32-equivalent dynamic range. Gradients + optimizer
+            # stay in fp32. Autocast auto-detects backward pass — outside
+            # the `with` block is safe (all our .backward() calls are).
+            from contextlib import nullcontext
+            _amp_ctx = (torch.cuda.amp.autocast(dtype=torch.bfloat16)
+                        if bf16 and str(x_.device).startswith("cuda")
+                        else nullcontext())
             # Gradient-accumulation guard: entropyBeta path does its own
             # flow.zero_grad() inside the loss body, which would wipe out
             # accumulated grads. The two are not jointly supported.
@@ -563,7 +604,8 @@ def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save=True, saveStep
                 # so gradients/training dynamics are identical to training on the
                 # standardized data, but the logged loss stays physical).
                 x_std = x / data_std
-                log_prob = flow.logProbability(x_std) - log_jac_std
+                with _amp_ctx:
+                    log_prob = flow.logProbability(x_std) - log_jac_std
 
                 # Record Energy and Entropy for the MCMC dataset
                 # (source is defined on the original-scale x — do NOT standardize here)
@@ -596,18 +638,19 @@ def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save=True, saveStep
                 # un-symmetrized forward pass.
                 _vp_penalty_value = float("nan")
                 if volumePreservingWeight > 0:
-                    if volumePreservingPerLayer:
-                        # Per-layer VP: Σ_block E[(log|det J_block|)²].
-                        # Prevents adjacent blocks from cancelling each
-                        # other via expand/contract pairs (which the global
-                        # VP allows). Each RNVP block must be individually
-                        # volume-preserving.
-                        _, _per_block = _inner_mera.forward_with_per_block_logjac(x_std)
-                        _vp_penalty_raw = sum(lj.pow(2).mean() for lj in _per_block)
-                    else:
-                        # Global VP: E[(Σ log|det J_block|)²]. Allows cancellation.
-                        _, _logjac_mera = _inner_mera.forward(x_std)
-                        _vp_penalty_raw = _logjac_mera.pow(2).mean()
+                    with _amp_ctx:
+                        if volumePreservingPerLayer:
+                            # Per-layer VP: Σ_block E[(log|det J_block|)²].
+                            # Prevents adjacent blocks from cancelling each
+                            # other via expand/contract pairs (which the global
+                            # VP allows). Each RNVP block must be individually
+                            # volume-preserving.
+                            _, _per_block = _inner_mera.forward_with_per_block_logjac(x_std)
+                            _vp_penalty_raw = sum(lj.pow(2).mean() for lj in _per_block)
+                        else:
+                            # Global VP: E[(Σ log|det J_block|)²]. Allows cancellation.
+                            _, _logjac_mera = _inner_mera.forward(x_std)
+                            _vp_penalty_raw = _logjac_mera.pow(2).mean()
                     loss = loss + volumePreservingWeight * _vp_penalty_raw
                     _vp_penalty_value = float(_vp_penalty_raw.item())
 
@@ -617,17 +660,44 @@ def learnInterface(source, flow, batchSize, epochs, lr=1e-3, save=True, saveStep
                 # subsets after per-sample z-scoring. Default coefficient
                 # 0 disables. Extra cost = one un-symmetrized forward.
                 if scaleLoss > 0:
-                    _, _, _intermediates = _inner_mera.forward_with_intermediates(x_std)
-                    _scale_loss_raw = _compute_scale_invariance_loss(_intermediates)
+                    with _amp_ctx:
+                        _, _, _intermediates = _inner_mera.forward_with_intermediates(x_std)
+                        _scale_loss_raw = _compute_scale_invariance_loss(_intermediates)
                     loss = loss + scaleLoss * _scale_loss_raw
                     _scale_loss_value = float(_scale_loss_raw.item())
                 else:
                     _scale_loss_value = float('nan')
 
+                # Physical-observable regularizer: match χ and U₄ of flow
+                # samples to data-derived targets. Adds:
+                #   λ_χ · (χ_flow − χ_target)²   +   λ_U · (U₄_flow − U₄_target)²
+                # Sampling is differentiable so gradient flows through.
+                # Un-standardize flow output to physical x (undo dataDriven
+                # scaling) before applying tanh spin proxy. Costs 1 flow.sample
+                # of size physRegBatch per micro-step.
+                _phys_chi_value = float("nan"); _phys_u4_value = float("nan")
+                if physRegWeightChi > 0.0 or physRegWeightU4 > 0.0:
+                    with _amp_ctx:
+                        _u_flow, _ = flow.sample(physRegBatch)  # standardized samples
+                    _x_flow_phys = _u_flow * data_std        # undo dataDriven scaling
+                    _s_soft = torch.tanh(_x_flow_phys)       # soft spin, ≈ sign for |x|≫1
+                    _M_flow = _s_soft.reshape(_s_soft.shape[0], -1).mean(dim=-1)  # (B,)
+                    _N_sites = _s_soft.shape[-1] * _s_soft.shape[-2]
+                    _chi_flow = _N_sites * (_M_flow.pow(2).mean() - _M_flow.abs().mean().pow(2))
+                    _M2 = _M_flow.pow(2).mean(); _M4 = _M_flow.pow(4).mean()
+                    _U4_flow = 1.0 - _M4 / (3 * _M2.pow(2) + 1e-12)
+                    _phys_chi_value = float(_chi_flow.item())
+                    _phys_u4_value = float(_U4_flow.item())
+                    if physRegWeightChi > 0.0:
+                        loss = loss + physRegWeightChi * (_chi_flow - physRegTargetChi).pow(2)
+                    if physRegWeightU4 > 0.0:
+                        loss = loss + physRegWeightU4 * (_U4_flow - physRegTargetU4).pow(2)
+
                 if alpha > 0:
                     # -log_jac_std cancels in the difference, but keep it explicit
                     # so both terms are on the same (physical) scale.
-                    log_prob_sym = flow.logProbability(-x_std) - log_jac_std
+                    with _amp_ctx:
+                        log_prob_sym = flow.logProbability(-x_std) - log_jac_std
                     loss += alpha * (log_prob.mean() - log_prob_sym.mean())**2
 
                 if entropyBeta > 0:

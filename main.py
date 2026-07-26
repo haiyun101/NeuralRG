@@ -70,6 +70,15 @@ group.add_argument("-hcgDilated", type=int, default=1, help="1 = per-level CNN u
 group.add_argument("-hcgCircular", type=int, default=1, help="1 = HCG CNN uses padding_mode='circular' (respects Ising periodic BC, default). 0 = zero-padding (matches i2 original but structurally biased at boundaries).")
 group.add_argument("-hcgSharedDilations", type=str, default="", help="Progressive dilation for the shared HCG CNN (only meaningful with -hcgScaleShared=1). Comma-separated list of 3 dilations for the CNN's three conv layers, e.g. '1,2,4' → effective RF = 15 (vs default 7 with uniform dilation=1). Empty (default) → uniform dilation=1, RF=7. Useful for L>=32 where Level 1's coarser context is >3 sites away.")
 group.add_argument("-hcgInitFromShared", type=str, default="", help="Path to a shared HCG run folder (containing savings/*.saving). Only meaningful with -hcgScaleShared=0 (per-scale). At start of training, loads that shared checkpoint and copies its single CNN's weights into every per-scale CNN — per-scale starts from a scale-invariant point and may then differentiate or stay similar. Useful for testing whether per-scale physics genuinely differs from scale-invariance, given a good starting minimum.")
+group.add_argument("-loadFromSmallerL", type=str, default="", help="Path to a smaller-L champion checkpoint (a *.saving file). At start of training, transfers MERA blocks 0..min(N_src,N_tgt)-1 (scale-index aligned) and HCG per-scale CNNs (stride-aligned) from that checkpoint into this run. The larger-L run's extra coarsest MERA blocks + coarsest HCG CNN(s) stay at fresh init. RG-universality warm-start experiment: does a well-trained smaller-L champion give a bigger-L run a head start? Only meaningful when target uses -priorType hierarchical_conditional_gaussian and -hcgScaleShared=0.")
+group.add_argument("-loadFromSmallerLStrides", type=str, default="", help="Comma-separated HCG strides (coarsest→finest) of the source ckpt used with -loadFromSmallerL, e.g. '16,8,4,2,1' for an L=32 source. Required whenever -loadFromSmallerL is set. Ensures the per-scale CNN alignment maps by physical stride, not by level index.")
+group.add_argument("-loadFromSmallerLComponents", type=str, default="both", choices=["both", "mera", "cnn"], help="Which weights to transfer from the smaller-L source. 'both' (default) = transfer MERA + HCG CNN. 'mera' = only MERA blocks (CNN stays fresh init). 'cnn' = only HCG CNNs (MERA stays fresh init). Ablation to isolate which component contains more transferable physics.")
+group.add_argument("-physRegWeightChi", type=float, default=0.0, help="Physical-observable regularizer coefficient λ_χ for susceptibility. Adds λ_χ · (χ(flow_samples) − χ_target)² to the training loss. χ = N·(⟨M²⟩−⟨|M|⟩²) with M = mean sigmoid(2x) per sample (matches main.py:measure() convention). Only fires when >0 AND -dataDriven. Extra cost: one flow.sample of size -physRegBatch per step.")
+group.add_argument("-physRegWeightU4", type=float, default=0.0, help="Physical-observable regularizer coefficient λ_U for Binder cumulant U₄=1−⟨M⁴⟩/(3⟨M²⟩²). Same sampling as -physRegWeightChi. Combining χ and U₄ regularizers gives multi-observable physics constraint.")
+group.add_argument("-physRegBatch", type=int, default=128, help="Flow-sample batch size for computing χ and U₄ per training step. Larger = less noise but higher cost. 128 samples give ~7% std on χ estimate for L=32.")
+group.add_argument("-physRegTargetChi", type=float, default=float("nan"), help="Target χ value (Ising susceptibility at T_c). If NaN (default), auto-compute from the loaded HS dataset once at startup. Override to use exact reference values.")
+group.add_argument("-physRegTargetU4", type=float, default=float("nan"), help="Target U₄ (Binder cumulant, ≈0.611 at 2D Ising T_c). If NaN, auto-compute from HS dataset at startup.")
+group.add_argument("-bf16", action="store_true", help="Enable bf16 mixed-precision training via torch.cuda.amp.autocast(dtype=bfloat16). A100 Tensor Cores give ~2× speedup on bf16 vs fp32 for conv/linear ops. bf16 has same 8-bit exponent as fp32 so no GradScaler needed. Trade-off: 7-bit mantissa (vs fp32's 23) may destabilize log|det J| accumulator — verify loss trajectory before committing long runs. Only affects the flow's forward passes; optimizer state and gradients accumulate in fp32.")
 
 group = parser.add_argument_group('Ising target parameters')
 #
@@ -164,6 +173,8 @@ if args.load:
             _dp = str(np.array(f["dataPath"]).item().decode())
             if _dp:
                 args.dataPath = _dp
+        if "bf16" in f:
+            args.bf16 = bool(np.array(f["bf16"]))
 else:
     epochs = args.epochs
     batch = args.batch
@@ -212,6 +223,12 @@ else:
         f.create_dataset("volumePreservingWeight", data=args.volumePreservingWeight)
         f.create_dataset("volumePreservingPerLayer", data=args.volumePreservingPerLayer)
         f.create_dataset("scaleLoss", data=args.scaleLoss)
+        f.create_dataset("physRegWeightChi", data=args.physRegWeightChi)
+        f.create_dataset("physRegWeightU4", data=args.physRegWeightU4)
+        f.create_dataset("physRegBatch", data=args.physRegBatch)
+        f.create_dataset("physRegTargetChi", data=args.physRegTargetChi)
+        f.create_dataset("physRegTargetU4", data=args.physRegTargetU4)
+        f.create_dataset("bf16", data=bool(args.bf16))
         f.create_dataset("priorType", data=np.string_(args.priorType))
         f.create_dataset("condPriorSlowStride", data=args.condPriorSlowStride)
         f.create_dataset("condPriorHidden", data=args.condPriorHidden)
@@ -409,6 +426,27 @@ if args.hcgInitFromShared and not args.load:
                   f"{len(perscale_state)}/{len(perscale_trainable)} state entries populated "
                   f"(CNN entries duplicated from shared CNN)")
 
+# Optional: warm-start from a smaller-L champion (stride-aligned transfer).
+# Copies MERA blocks 0..min(N_src, N_tgt)-1 and HCG per-scale CNNs by
+# matched stride. Only fires when the source is a per-scale HCG checkpoint
+# and target uses per-scale HCG too. See train/transfer.py.
+if args.loadFromSmallerL and not args.load:
+    if args.priorType != "hierarchical_conditional_gaussian":
+        print(f"[warn] -loadFromSmallerL given but priorType is "
+              f"{args.priorType}; skipping.")
+    elif args.hcgScaleShared:
+        print("[warn] -loadFromSmallerL given but -hcgScaleShared=1 "
+              "(target has no per-scale CNNs to warm-start); skipping.")
+    elif not args.loadFromSmallerLStrides:
+        raise SystemExit("-loadFromSmallerL requires -loadFromSmallerLStrides "
+                         "(comma-separated source strides, e.g. '16,8,4,2,1' for L=32)")
+    else:
+        from train.transfer import transfer_from_smaller_L
+        src_strides = [int(s) for s in args.loadFromSmallerLStrides.split(",")]
+        transfer_from_smaller_L(fw, args.loadFromSmallerL,
+                                src_strides=src_strides, device=device,
+                                components=args.loadFromSmallerLComponents)
+
 def measure(x):
         p = torch.sigmoid(2.*x).reshape(-1, target.nvars[0])
         s = 2.*p.data.cpu().numpy() - 1.
@@ -429,6 +467,12 @@ LOSS,ZACC,ZOBS,XACC,XOBS = train.learnInterface(
     volumePreservingPerLayer=bool(args.volumePreservingPerLayer),
     pathGrad=args.pathGrad,
     scaleLoss=args.scaleLoss,
+    physRegWeightChi=args.physRegWeightChi,
+    physRegWeightU4=args.physRegWeightU4,
+    physRegBatch=args.physRegBatch,
+    physRegTargetChi=args.physRegTargetChi,
+    physRegTargetU4=args.physRegTargetU4,
+    bf16=args.bf16,
     cosineAnneal=args.cosineAnneal, cosineEtaMin=args.cosineEtaMin,
     gradAccum=args.gradAccum,
     optimizerState=loaded_optimizer_state,

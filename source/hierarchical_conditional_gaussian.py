@@ -267,6 +267,97 @@ class HierarchicalConditionalGaussian(Source):
         print(f"[init_perscale_from_shared] copied {n_copied} tensors from shared → "
               f"{len(self.cnns)} per-scale CNNs (each level = same starting weights)")
 
+    def init_perscale_from_smaller_L_state(self, smaller_state_dict,
+                                            smaller_strides):
+        """Copy per-scale CNNs from a smaller-L champion, aligned by stride.
+
+        Motivation: RG universality. At a critical point, the conditional
+        whitener at a given physical stride (e.g., stride 8 predicting
+        stride-8 sites given stride-16 core) should be the same regardless
+        of the outer lattice size. A well-trained L=32 champion's CNN at
+        stride 8 should therefore be a good initialisation for a bigger-L
+        run's CNN at the same stride.
+
+        Alignment: for each of my own levels k ≥ 1 with stride s = strides[k],
+        find k_src in smaller_strides whose stride equals s, and copy
+        smaller.cnns[k_src - 1] → self.cnns[k - 1]. Levels whose stride is
+        NOT present in smaller_strides (typically the coarsest 1-2 levels
+        of the bigger-L run) keep their fresh init.
+
+        Requires:
+          - self.scale_shared = False (per-scale CNNs)
+          - smaller_state_dict was saved from a scale_shared=False HCG
+            (has keys 'prior.cnns.{k}.<param>')
+          - smaller_strides is the strides list of the source run
+
+        Prints a summary of which levels were copied vs left fresh.
+        """
+        if self.cnns is None:
+            print("[warn] init_perscale_from_smaller_L: scale_shared=True, "
+                  "nothing to init")
+            return
+
+        # Group source CNN params by level: {k_src: {param_name: tensor}}
+        prefix = "prior.cnns."
+        src_by_level = {}
+        for key, val in smaller_state_dict.items():
+            if not key.startswith(prefix):
+                continue
+            rest = key[len(prefix):]                # e.g. "0.0.weight"
+            k_src_str, param_name = rest.split(".", 1)
+            k_src = int(k_src_str)
+            src_by_level.setdefault(k_src, {})[param_name] = val
+
+        if not src_by_level:
+            print(f"[warn] init_perscale_from_smaller_L: no keys with prefix "
+                  f"'{prefix}' — is the source ckpt scale_shared=True?")
+            return
+
+        # Build stride → src-level index map (smaller_strides has coarsest→
+        # finest ordering, matching self.strides). CNN levels are 1..K-1;
+        # cnns[k-1] corresponds to strides[k].
+        src_K = len(smaller_strides)
+        src_level_of_stride = {smaller_strides[k]: k for k in range(1, src_K)}
+
+        # Copy self.cnns[k-1] ← src.cnns[k_src - 1] whenever strides match
+        n_levels_copied = 0
+        n_levels_skipped = 0
+        with torch.no_grad():
+            for k in range(1, self.K):
+                s = self.strides[k]
+                if s not in src_level_of_stride:
+                    n_levels_skipped += 1
+                    print(f"  [Level {k}, stride {s:>3d}] no matching stride in "
+                          f"smaller_L → leaving fresh init")
+                    continue
+                k_src = src_level_of_stride[s]
+                if (k_src - 1) not in src_by_level:
+                    n_levels_skipped += 1
+                    print(f"  [Level {k}, stride {s:>3d}] source level "
+                          f"{k_src} weights missing → leaving fresh init")
+                    continue
+
+                dst_cnn = self.cnns[k - 1]
+                src_params = src_by_level[k_src - 1]
+                cnn_sd = dst_cnn.state_dict()
+                n_params_copied = 0
+                for name, param in src_params.items():
+                    if name in cnn_sd and cnn_sd[name].shape == param.shape:
+                        cnn_sd[name].copy_(param)
+                        n_params_copied += 1
+                    else:
+                        exp = tuple(cnn_sd[name].shape) if name in cnn_sd else "MISSING"
+                        print(f"  [Level {k} stride {s}] ⚠ shape mismatch "
+                              f"for '{name}': src {tuple(param.shape)} vs "
+                              f"dst {exp} → skipping this param")
+                n_levels_copied += 1
+                print(f"  [Level {k}, stride {s:>3d}] copied from source "
+                      f"Level {k_src}  ({n_params_copied} tensors)")
+
+        print(f"[init_perscale_from_smaller_L] {n_levels_copied}/"
+              f"{self.K - 1} destination levels warm-started; "
+              f"{n_levels_skipped} left at fresh init")
+
     # ---------------------------------------------------------------------
     # Core: compute (μ, log_sigma) for level k conditioned on coarser context.
     # ---------------------------------------------------------------------
