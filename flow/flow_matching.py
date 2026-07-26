@@ -211,6 +211,174 @@ class MERAUNet(nn.Module):
         return self.out_conv(h)
 
 
+# ─────────────────── True MERA-structured velocity field ───────────────────
+
+
+class MERAPatchBlock(nn.Module):
+    """Small time-modulated MLP for 2×2 patches — one 'MERA block' worth of
+    processing. Analogous to an RNVP coupling block but not invertible:
+    outputs a delta (velocity contribution) with same shape as input patches.
+
+    FiLM time modulation on the middle hidden layer. Zero-init on output so
+    initial velocity ≈ 0.
+    """
+
+    def __init__(self, hidden=256, temb_dim=128, in_channels=1, kernel_size=2, n_hidden_layers=2):
+        super().__init__()
+        core = (kernel_size ** 2) * in_channels                     # 4 for 2×2 single ch
+        self.core = core
+        # Input projection
+        self.in_lin = nn.Linear(core, hidden)
+        # Hidden layers with time modulation
+        self.mid_lins = nn.ModuleList([nn.Linear(hidden, hidden) for _ in range(n_hidden_layers)])
+        self.temb_projs = nn.ModuleList([nn.Linear(temb_dim, hidden * 2) for _ in range(n_hidden_layers)])
+        # Output projection (zero-init for identity-like start)
+        self.out_lin = nn.Linear(hidden, core)
+        with torch.no_grad():
+            self.out_lin.weight.zero_()
+            self.out_lin.bias.zero_()
+
+    def forward(self, patches, temb_broadcast):
+        """
+        patches: (B_p, C, kernel, kernel) — B_p may be batch * num_patches
+        temb_broadcast: (B_p, temb_dim) — already expanded to match B_p
+        Returns delta patches of same shape as input.
+        """
+        B_p = patches.shape[0]
+        x = patches.reshape(B_p, self.core)
+        h = self.in_lin(x)
+        h = F.silu(h)
+        for mid_lin, temb_proj in zip(self.mid_lins, self.temb_projs):
+            gamma, beta = temb_proj(F.silu(temb_broadcast)).chunk(2, dim=-1)
+            h = h * (1.0 + gamma) + beta
+            h = F.silu(mid_lin(h))
+        h = self.out_lin(h)
+        return h.reshape(patches.shape)
+
+
+class TrueMERAVelocityField(nn.Module):
+    """True MERA-structured velocity field for Flow Matching.
+
+    Same 2×2 patch decomposition as MERA (dispatch/collect on offset-0 and
+    offset-shifted index sets, log2(L) × 2 × nrepeat layers total), but each
+    'block' is a small time-modulated MLP producing a velocity delta instead
+    of an invertible RNVP transformation.
+
+    Sequential accumulation: h ← h + block_l(dispatch(h, l)), and the
+    accumulated deltas are the returned velocity v(x, t).
+
+    Not invertible; not a flow. Just outputs v(x, t) for CFM MSE training.
+
+    Params: depth × (~n_hidden_layers × hidden² + FiLM). L=64 nr=1 with
+    hidden=256, n_hidden_layers=2 → depth=12, ~1.5M params (small!).
+    Bump hidden or n_hidden_layers to match MERAUNet's 22M if needed.
+    """
+
+    def __init__(self, L, nrepeat=1, hidden=256, temb_dim=128,
+                 in_channels=1, n_hidden_layers=2):
+        super().__init__()
+        from .hierarchy.im2col import getIndeices
+
+        self.L = L
+        self.n_scales = int(math.log2(L))
+        self.nrepeat = nrepeat
+        self.depth = 2 * self.n_scales * nrepeat
+        self.kernel_size = 2
+
+        # Time embedding
+        self.time_embed = nn.Sequential(
+            SinusoidalTimeEmbedding(temb_dim),
+            nn.Linear(temb_dim, temb_dim),
+            nn.SiLU(),
+            nn.Linear(temb_dim, temb_dim),
+        )
+
+        # Build MERA-style index list (SAME as MERA class)
+        # For each scale s and offset o in {0, stride}:
+        #   getIndeices(shape=[L,L], height=2, width=2, stride=2×2^s,
+        #               dilation=2^s, offset={0 or 2^s})
+        kernelSize = 2
+        shape = [L, L]
+        self._layer_buffer_names = []
+        for scale_idx in range(self.n_scales):
+            for rep_idx in range(nrepeat):
+                for offset in (0, kernelSize ** scale_idx):
+                    indexI, indexJ = getIndeices(
+                        shape, kernelSize, kernelSize,
+                        kernelSize * (kernelSize ** scale_idx),
+                        kernelSize ** scale_idx, offset,
+                    )
+                    ni = f"indexI_s{scale_idx}_r{rep_idx}_o{offset}"
+                    nj = f"indexJ_s{scale_idx}_r{rep_idx}_o{offset}"
+                    self.register_buffer(ni, torch.as_tensor(indexI, dtype=torch.long))
+                    self.register_buffer(nj, torch.as_tensor(indexJ, dtype=torch.long))
+                    self._layer_buffer_names.append((ni, nj))
+
+        # One MLP block per layer
+        self.blocks = nn.ModuleList([
+            MERAPatchBlock(hidden=hidden, temb_dim=temb_dim,
+                           in_channels=in_channels, kernel_size=kernelSize,
+                           n_hidden_layers=n_hidden_layers)
+            for _ in range(self.depth)
+        ])
+
+    def _get_indices(self, layer_idx):
+        name_i, name_j = self._layer_buffer_names[layer_idx]
+        return self._buffers[name_i], self._buffers[name_j]
+
+    def forward(self, x, t):
+        """
+        x: (B, 1, L, L), t: (B,) ∈ [0,1].
+        Returns velocity v: (B, 1, L, L) accumulated over all MERA-layer deltas.
+        """
+        from .hierarchy.im2col import dispatch, collect
+
+        temb = self.time_embed(t)                                    # (B, temb_dim)
+        B = x.shape[0]
+
+        h = x                                                          # current state (sequential accumulation)
+        v_total = torch.zeros_like(x)                                  # returned velocity
+
+        for layer_idx in range(self.depth):
+            indexI, indexJ = self._get_indices(layer_idx)
+
+            # dispatch: extract patches at layer's index set. dispatch returns
+            # (x_unchanged, x_) so we ignore the first return.
+            _, patches = dispatch(indexI, indexJ, h)
+            # patches shape: (B, C, H_patch, W_patch) with H_patch*W_patch =
+            # (L/(stride) × 2 × 2 per patch). But it's laid out as (B, C, N_patches, 2*2 aliased).
+            # Actually the raw dispatch output has shape matching the index shape.
+            B_p_and_more = patches.shape                              # (B, C, H_idx, W_idx)
+            # Reshape into (B * num_patches, C, kernel, kernel) — but the
+            # dispatch output isn't laid out that way naturally. Let's do it
+            # the way MERA does: reshape to (-1, C, kernel, kernel) after
+            # extraction. See template.py:
+            #     x_.reshape(-1, channelSize, *self.kernelShape)
+            patches_flat = patches.reshape(-1, patches.shape[1],
+                                            self.kernel_size, self.kernel_size)
+            B_p = patches_flat.shape[0]
+            num_patches = B_p // B                                    # patches per sample
+
+            # Broadcast temb to (B_p, temb_dim)
+            temb_expanded = temb.repeat_interleave(num_patches, dim=0)
+
+            # Process — returns delta with same shape
+            delta_flat = self.blocks[layer_idx](patches_flat, temb_expanded)
+            # Reshape back to what collect expects
+            delta_patches = delta_flat.reshape(patches.shape)
+
+            # collect: put delta into a zero field at those positions →
+            # sparse delta field
+            zero_lattice = torch.zeros_like(h)
+            delta = collect(indexI, indexJ, zero_lattice, delta_patches)
+
+            # Sequential update + accumulate velocity contribution
+            h = h + delta
+            v_total = v_total + delta
+
+        return v_total
+
+
 # ─────────────────── CFM training utilities ───────────────────
 
 

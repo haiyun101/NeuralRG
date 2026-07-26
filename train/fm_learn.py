@@ -26,7 +26,7 @@ import torch
 from torch.utils.data import DataLoader, TensorDataset
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from flow.flow_matching import VelocityUNet, MERAUNet, cfm_loss, sample_euler
+from flow.flow_matching import VelocityUNet, MERAUNet, TrueMERAVelocityField, cfm_loss, sample_euler
 
 
 def load_hs_data(L, T, dataPath=None):
@@ -80,13 +80,19 @@ def main():
     p.add_argument("-batch", type=int, default=128)
     p.add_argument("-nhidden", type=int, default=64)
     p.add_argument("-tembDim", type=int, default=128)
-    p.add_argument("-arch", choices=["unet", "meraunet"], default="unet",
+    p.add_argument("-arch", choices=["unet", "meraunet", "truemera"], default="unet",
                    help="unet = 2-stage U-Net (naive FM); meraunet = "
-                        "log2(L)-stage U-Net with MERA-style scale hierarchy "
-                        "(physics-aware FM)")
+                        "log2(L)-stage U-Net with MERA-style scale hierarchy; "
+                        "truemera = full MERA structure (im2col dispatch/collect "
+                        "on 2×2 patches at every scale, time-modulated MLP blocks, "
+                        "sequential delta accumulation)")
     p.add_argument("-maxChannelMult", type=int, default=4,
                    help="max channel multiplier for MERA U-Net; caps channel "
                         "doubling at nhidden × max_mult (default 4)")
+    p.add_argument("-meraNrepeat", type=int, default=1,
+                   help="[truemera only] blocks per scale (nrepeat), matches MERA convention")
+    p.add_argument("-meraHiddenLayers", type=int, default=2,
+                   help="[truemera only] internal hidden MLP layers per patch block")
     p.add_argument("-lr", type=float, default=1e-3)
     p.add_argument("-savePeriod", type=int, default=1000)
     p.add_argument("-samplePeriod", type=int, default=500)
@@ -117,6 +123,11 @@ def main():
         v_net = MERAUNet(L=args.L, nhidden=args.nhidden, temb_dim=args.tembDim,
                           max_channel_mult=args.maxChannelMult).to(device)
         arch_name = "MERAUNet"
+    elif args.arch == "truemera":
+        v_net = TrueMERAVelocityField(L=args.L, nrepeat=args.meraNrepeat,
+                                       hidden=args.nhidden, temb_dim=args.tembDim,
+                                       n_hidden_layers=args.meraHiddenLayers).to(device)
+        arch_name = "TrueMERAVelocityField"
     else:
         v_net = VelocityUNet(L=args.L, nhidden=args.nhidden, temb_dim=args.tembDim).to(device)
         arch_name = "VelocityUNet"
